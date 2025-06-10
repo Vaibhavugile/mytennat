@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "984950929715",
+    "project_id": "mytennat",
+    "storage_bucket": "mytennat.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:984950929715:android:d733677447d6e305166646",
+        "android_client_info": {
+          "package_name": "com.example.mytennat"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDR2tm1J1VZmKia0fM6UPhqbcoTFggYJOo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
