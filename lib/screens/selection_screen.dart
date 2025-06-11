@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'flat_with_flatmate_profile_screen.dart'; // Import the new screen
+import 'flatmate_profile_screen.dart'; // Import the new screen
 
 class SelectionScreen extends StatefulWidget {
   const SelectionScreen({super.key});
@@ -11,43 +13,96 @@ class _SelectionScreenState extends State<SelectionScreen> with SingleTickerProv
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideUpAnimation;
-  late Animation<double> _scaleAnimation; // For a subtle pop effect on cards
+  late Animation<double> _scaleAnimation;
+
+  // Declare customTheme here, outside the build method
+  final ThemeData customTheme = ThemeData(
+    primaryColor: const Color(0xFF1A237E),
+    colorScheme: ColorScheme.fromSwatch(
+      primarySwatch: const MaterialColor(
+        0xFF1A237E,
+        <int, Color>{
+          50: Color(0xFFE8EAF6),
+          100: Color(0xFFC5CAE9),
+          200: Color(0xFF9FA8DA),
+          300: Color(0xFF7986CB),
+          400: Color(0xFF5C6BC0),
+          500: Color(0xFF3F51B5),
+          600: Color(0xFF394AAE),
+          700: Color(0xFF303F9F),
+          800: Color(0xFF283593),
+          900: Color(0xFF1A237E),
+        },
+      ),
+      accentColor: const Color(0xFF00BFA5),
+    ),
+    scaffoldBackgroundColor: const Color(0xFFF0F2F5),
+    textTheme: const TextTheme(
+      headlineLarge: TextStyle(fontFamily: 'Roboto', fontSize: 38, fontWeight: FontWeight.bold, color: Color(0xFF263238)),
+      headlineSmall: TextStyle(fontFamily: 'Roboto', fontSize: 24, fontWeight: FontWeight.w700, color: Color(0xFF37474F)),
+      titleLarge: TextStyle(fontFamily: 'Roboto', fontSize: 19, color: Color(0xFF455A64)),
+      bodyLarge: TextStyle(fontFamily: 'Roboto', fontSize: 17, color: Color(0xFF546E7A)),
+      bodyMedium: TextStyle(fontFamily: 'Roboto', fontSize: 15, color: Color(0xFF78909C)),
+      bodySmall: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: Color(0xFF90A4AE)),
+    ),
+    cardTheme: CardTheme(
+      elevation: 8,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      margin: EdgeInsets.zero,
+      color: Colors.white,
+      shadowColor: Colors.black.withOpacity(0.08),
+    ),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 32),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        backgroundColor: const Color(0xFF00BFA5), // Using the original accent color
+        foregroundColor: Colors.white,
+        elevation: 5,
+        shadowColor: const Color(0xFF00BFA5).withOpacity(0.3),
+        textStyle: const TextStyle(fontFamily: 'Roboto', fontSize: 18, fontWeight: FontWeight.w600, letterSpacing: 0.5),
+        minimumSize: const Size(220, 0),
+      ),
+    ),
+    iconTheme: const IconThemeData(
+      color: Color(0xFF1A237E),
+      size: 70,
+    ),
+  );
 
   @override
   void initState() {
     super.initState();
     _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1400), // Slightly longer overall animation for smoothness
+      duration: const Duration(milliseconds: 1400),
     );
 
-    // Animation for the main title and description
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _animationController,
-        curve: const Interval(0.0, 0.7, curve: Curves.easeOut), // Fade in during the first 70%
+        curve: const Interval(0.0, 0.7, curve: Curves.easeOut),
       ),
     );
 
     _slideUpAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.4), // Start further below for a more pronounced slide
+      begin: const Offset(0, 0.4),
       end: Offset.zero,
     ).animate(
       CurvedAnimation(
         parent: _animationController,
-        curve: const Interval(0.2, 1.0, curve: Curves.easeOutCubic), // Slide up after a small delay
+        curve: const Interval(0.2, 1.0, curve: Curves.easeOutCubic),
       ),
     );
 
-    // Animation for the selection cards
-    _scaleAnimation = Tween<double>(begin: 0.75, end: 1.0).animate( // Slightly more pronounced scale
+    _scaleAnimation = Tween<double>(begin: 0.75, end: 1.0).animate(
       CurvedAnimation(
         parent: _animationController,
-        curve: const Interval(0.5, 1.0, curve: Curves.elasticOut), // Elastic pop effect
+        curve: const Interval(0.5, 1.0, curve: Curves.elasticOut),
       ),
     );
 
-    _animationController.forward(); // Start all animations
+    _animationController.forward();
   }
 
   @override
@@ -58,78 +113,15 @@ class _SelectionScreenState extends State<SelectionScreen> with SingleTickerProv
 
   @override
   Widget build(BuildContext context) {
-    // Define a custom theme for this screen to control text and primary colors
-    final customTheme = ThemeData(
-      // Enhanced Primary and Accent Colors
-      primaryColor: const Color(0xFF212121), // A deep, rich charcoal for primary elements
-      colorScheme: ColorScheme.fromSwatch(
-        primarySwatch: MaterialColor(
-          0xFF212121, // Main primary color
-          <int, Color>{
-            50: Color(0xFFECEFF1),
-            100: Color(0xFFCFD8DC),
-            200: Color(0xFFB0BEC5),
-            300: Color(0xFF90A4AE),
-            400: Color(0xFF78909C),
-            500: Color(0xFF607D8B),
-            600: Color(0xFF546E7A),
-            700: Color(0xFF455A64),
-            800: Color(0xFF37474F),
-            900: Color(0xFF263238),
-          },
-        ),
-        accentColor: const Color(0xFF5C6BC0), // A calming indigo/blue accent for highlights
-      ),
-      scaffoldBackgroundColor: const Color(0xFFF8F8F8), // A slightly brighter off-white background
-
-      // Enhanced Text Theme
-      textTheme: const TextTheme(
-        headlineLarge: TextStyle(fontFamily: 'Roboto', fontSize: 36, fontWeight: FontWeight.bold, color: Color(0xFF212121)), // Larger and bolder main question
-        headlineSmall: TextStyle(fontFamily: 'Roboto', fontSize: 22, fontWeight: FontWeight.w600, color: Color(0xFF333333)), // Slightly larger and semi-bold card titles
-        titleLarge: TextStyle(fontFamily: 'Roboto', fontSize: 18, color: Color(0xFF424242)),
-        bodyLarge: TextStyle(fontFamily: 'Roboto', fontSize: 16, color: Color(0xFF616161)),
-        bodyMedium: TextStyle(fontFamily: 'Roboto', fontSize: 14, color: Color(0xFF757575)),
-        bodySmall: TextStyle(fontFamily: 'Roboto', fontSize: 12, color: Color(0xFF9E9E9E)),
-      ),
-
-      // Enhanced Card Theme for a "Soft UI" / Neumorphic feel
-      cardTheme: CardTheme(
-        elevation: 10, // Increased elevation for a floating effect
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)), // Slightly more rounded corners
-        margin: EdgeInsets.zero,
-        color: Colors.white, // Card background remains white
-        shadowColor: Colors.black.withOpacity(0.1), // Softer, more diffuse shadow
-      ),
-
-      // Enhanced Elevated Button Theme
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 30), // Slightly more padding
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)), // Softer rounded corners
-          backgroundColor: const Color(0xFF5C6BC0), // Use accent color for buttons
-          foregroundColor: Colors.white, // White text on accent button
-          elevation: 7, // Pronounced button shadow
-          shadowColor: const Color(0xFF5C6BC0).withOpacity(0.3), // Shadow matching button color
-          textStyle: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, letterSpacing: 0.8), // Slightly larger, more spaced text
-          minimumSize: const Size(200, 0), // A bit wider button
-        ),
-      ),
-      iconTheme: const IconThemeData(
-        color: Color(0xFF424242), // Slightly softer icon color
-        size: 70, // Keep icon size consistent
-      ),
-    );
-
     return Theme(
       data: customTheme,
       child: Scaffold(
-        backgroundColor: customTheme.scaffoldBackgroundColor, // Use the new scaffold background color
+        backgroundColor: const Color(0xFFF0F2F5),
         body: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 28.0, vertical: 56.0), // Adjusted padding
+            padding: const EdgeInsets.symmetric(horizontal: 28.0, vertical: 64.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 FadeTransition(
                   opacity: _fadeAnimation,
@@ -139,134 +131,54 @@ class _SelectionScreenState extends State<SelectionScreen> with SingleTickerProv
                     textAlign: TextAlign.center,
                   ),
                 ),
-                const SizedBox(height: 72), // Increased spacing
-
+                const SizedBox(height: 80),
                 LayoutBuilder(
                   builder: (context, constraints) {
-                    if (constraints.maxWidth > 600) {
+                    final isWide = constraints.maxWidth > 600;
+                    final card1 = _buildAnimatedCard(
+                      context,
+                      icon: Icons.apartment_outlined,
+                      title: 'Looking for a Flat with Flatmate',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const FlatWithFlatmateProfileScreen()),
+                        );
+                      },
+                    );
+
+                    final card2 = _buildAnimatedCard(
+                      context,
+                      icon: Icons.people_outline,
+                      title: 'Looking for a Flatmate',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const FlatmateProfileScreen()),
+                        );
+                      },
+                    );
+
+                    if (isWide) {
                       return Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Expanded(
-                            child: AnimatedBuilder(
-                              animation: _animationController,
-                              builder: (context, child) {
-                                return Transform.scale(
-                                  scale: _scaleAnimation.value,
-                                  child: SlideTransition(
-                                    position: _slideUpAnimation,
-                                    child: Opacity(
-                                      opacity: _fadeAnimation.value,
-                                      child: _buildSelectionCard(
-                                        context,
-                                        theme: customTheme,
-                                        icon: Icons.apartment_outlined,
-                                        title: 'Looking for a Flat',
-                                        onTap: () {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(content: Text('Navigating to Flat Search...')),
-                                          );
-                                          // TODO: Navigate to the actual "Find a Flat" screen
-                                        },
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 28), // Increased spacing between cards
-                          Expanded(
-                            child: AnimatedBuilder(
-                              animation: _animationController,
-                              builder: (context, child) {
-                                return Transform.scale(
-                                  scale: _scaleAnimation.value,
-                                  child: SlideTransition(
-                                    position: _slideUpAnimation,
-                                    child: Opacity(
-                                      opacity: _fadeAnimation.value,
-                                      child: _buildSelectionCard(
-                                        context,
-                                        theme: customTheme,
-                                        icon: Icons.people_outline,
-                                        title: 'Looking for a Flatmate',
-                                        onTap: () {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(content: Text('Navigating to Flatmate Search...')),
-                                          );
-                                          // TODO: Navigate to the actual "Find a Flatmate" screen
-                                        },
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
+                          Expanded(child: card1),
+                          const SizedBox(width: 32),
+                          Expanded(child: card2),
                         ],
                       );
                     } else {
                       return Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          AnimatedBuilder(
-                            animation: _animationController,
-                            builder: (context, child) {
-                              return Transform.scale(
-                                scale: _scaleAnimation.value,
-                                child: SlideTransition(
-                                  position: _slideUpAnimation,
-                                  child: Opacity(
-                                    opacity: _fadeAnimation.value,
-                                    child: _buildSelectionCard(
-                                      context,
-                                      theme: customTheme,
-                                      icon: Icons.apartment_outlined,
-                                      title: 'Looking for a Flat',
-                                      onTap: () {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(content: Text('Navigating to Flat Search...')),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                          const SizedBox(height: 28), // Increased spacing between cards
-                          AnimatedBuilder(
-                            animation: _animationController,
-                            builder: (context, child) {
-                              return Transform.scale(
-                                scale: _scaleAnimation.value,
-                                child: SlideTransition(
-                                  position: _slideUpAnimation,
-                                  child: Opacity(
-                                    opacity: _fadeAnimation.value,
-                                    child: _buildSelectionCard(
-                                      context,
-                                      theme: customTheme,
-                                      icon: Icons.people_outline,
-                                      title: 'Looking for a Flatmate',
-                                      onTap: () {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(content: Text('Navigating to Flatmate Search...')),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
+                          card1,
+                          const SizedBox(height: 32),
+                          card2,
                         ],
                       );
                     }
                   },
                 ),
-                const SizedBox(height: 72), // Increased spacing at bottom
+                const SizedBox(height: 80),
               ],
             ),
           ),
@@ -275,7 +187,36 @@ class _SelectionScreenState extends State<SelectionScreen> with SingleTickerProv
     );
   }
 
-  // Helper method to build a consistent selection card
+  Widget _buildAnimatedCard(
+      BuildContext context, {
+        required IconData icon,
+        required String title,
+        required VoidCallback onTap,
+      }) {
+    final theme = Theme.of(context);
+    return AnimatedBuilder(
+      animation: _animationController,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: _scaleAnimation.value,
+          child: SlideTransition(
+            position: _slideUpAnimation,
+            child: Opacity(
+              opacity: _fadeAnimation.value,
+              child: _buildSelectionCard(
+                context,
+                theme: theme,
+                icon: icon,
+                title: title,
+                onTap: onTap,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildSelectionCard(
       BuildContext context, {
         required ThemeData theme,
@@ -290,33 +231,23 @@ class _SelectionScreenState extends State<SelectionScreen> with SingleTickerProv
       child: ClipRRect(
         borderRadius: theme.cardTheme.shape is RoundedRectangleBorder
             ? (theme.cardTheme.shape as RoundedRectangleBorder).borderRadius
-            : BorderRadius.circular(25), // Ensure fallback matches new radius
+            : BorderRadius.circular(20),
         child: InkWell(
           onTap: onTap,
-          splashColor: theme.colorScheme.primary.withOpacity(0.08), // Use primary color for ripple
-          highlightColor: Colors.transparent, // No highlight color
+          splashColor: theme.primaryColor.withOpacity(0.08), // Use primaryColor directly
+          highlightColor: Colors.transparent,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 40.0), // Increased padding within card
+            padding: const EdgeInsets.symmetric(horizontal: 28.0, vertical: 48.0),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Icon(
-                  icon,
-                  size: theme.iconTheme.size, // Use theme's icon size
-                  color: theme.iconTheme.color, // Use theme's icon color
-                ),
-                const SizedBox(height: 28), // Increased spacing below icon
-                Text(
-                  title,
-                  style: theme.textTheme.headlineSmall, // Use the defined text style
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 36), // Increased spacing before button
+                Icon(icon, size: theme.iconTheme.size, color: theme.iconTheme.color),
+                const SizedBox(height: 32),
+                Text(title, style: theme.textTheme.headlineSmall, textAlign: TextAlign.center),
+                const SizedBox(height: 40),
                 ElevatedButton(
                   onPressed: onTap,
                   style: theme.elevatedButtonTheme.style,
-                  child: const Text('Clicks Hards'),
+                  child: const Text('Get Started'),
                 ),
               ],
             ),
