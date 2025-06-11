@@ -241,10 +241,70 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
   // Changed _pages from late final to a getter
   List<Widget> get _pages => _buildPages();
 
+  // Declare controllers for text fields
+  late TextEditingController _ownerNameController;
+  late TextEditingController _ownerAgeController;
+  late TextEditingController _ownerOccupationController;
+  late TextEditingController _ownerBioController;
+  late TextEditingController _addressController;
+  late TextEditingController _rentController;
+  late TextEditingController _depositController;
+  late TextEditingController _numExistingFlatmatesController;
+
+
   @override
   void initState() {
     super.initState();
-    // Removed _pages = _buildPages(); from initState
+    // Initialize controllers with initial profile values
+    _ownerNameController = TextEditingController(text: _profile.ownerName);
+    _ownerAgeController = TextEditingController(text: _profile.ownerAge);
+    _ownerOccupationController = TextEditingController(text: _profile.ownerOccupation);
+    _ownerBioController = TextEditingController(text: _profile.ownerBio);
+    _addressController = TextEditingController(text: _profile.address);
+    _rentController = TextEditingController(text: _profile.rent);
+    _depositController = TextEditingController(text: _profile.deposit);
+    _numExistingFlatmatesController = TextEditingController(text: _profile.numExistingFlatmates);
+
+    // Add listeners to update _profile when text changes
+    _ownerNameController.addListener(() {
+      _profile.ownerName = _ownerNameController.text;
+    });
+    _ownerAgeController.addListener(() {
+      _profile.ownerAge = _ownerAgeController.text;
+    });
+    _ownerOccupationController.addListener(() {
+      _profile.ownerOccupation = _ownerOccupationController.text;
+    });
+    _ownerBioController.addListener(() {
+      _profile.ownerBio = _ownerBioController.text;
+    });
+    _addressController.addListener(() {
+      _profile.address = _addressController.text;
+    });
+    _rentController.addListener(() {
+      _profile.rent = _rentController.text;
+    });
+    _depositController.addListener(() {
+      _profile.deposit = _depositController.text;
+    });
+    _numExistingFlatmatesController.addListener(() {
+      _profile.numExistingFlatmates = _numExistingFlatmatesController.text;
+    });
+  }
+
+  @override
+  void dispose() {
+    // Dispose of all controllers
+    _ownerNameController.dispose();
+    _ownerAgeController.dispose();
+    _ownerOccupationController.dispose();
+    _ownerBioController.dispose();
+    _addressController.dispose();
+    _rentController.dispose();
+    _depositController.dispose();
+    _numExistingFlatmatesController.dispose();
+    _pageController.dispose();
+    super.dispose();
   }
 
   // --- Common Question Builders (Copied for consistency, ensure these are identical) ---
@@ -253,10 +313,9 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
     required String title,
     required String subtitle,
     required String hintText,
-    required Function(String) onChanged,
+    required TextEditingController controller, // Now accepts a controller
     TextInputType keyboardType = TextInputType.text,
     List<TextInputFormatter>? inputFormatters,
-    String? initialValue,
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -274,8 +333,7 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
           ),
           const SizedBox(height: 30),
           TextField(
-            controller: TextEditingController(text: initialValue),
-            onChanged: onChanged,
+            controller: controller, // Use the provided controller
             keyboardType: keyboardType,
             inputFormatters: inputFormatters,
             decoration: InputDecoration(
@@ -517,12 +575,7 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
         title: "What's your name?",
         subtitle: "This will be visible to potential flatmates.",
         hintText: "Enter your name",
-        onChanged: (value) {
-          setState(() {
-            _profile.ownerName = value;
-          });
-        },
-        initialValue: _profile.ownerName,
+        controller: _ownerNameController, // Pass the controller
       ),
 
       // Page 3: Owner Age
@@ -532,12 +585,7 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
         hintText: "Enter your age",
         keyboardType: TextInputType.number,
         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-        onChanged: (value) {
-          setState(() {
-            _profile.ownerAge = value;
-          });
-        },
-        initialValue: _profile.ownerAge,
+        controller: _ownerAgeController, // Pass the controller
       ),
 
       // Page 4: Owner Gender
@@ -558,12 +606,7 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
         title: "What do you do for a living?",
         subtitle: "Share your profession or student status.",
         hintText: "e.g., Software Engineer, Student, Freelancer",
-        onChanged: (value) {
-          setState(() {
-            _profile.ownerOccupation = value;
-          });
-        },
-        initialValue: _profile.ownerOccupation,
+        controller: _ownerOccupationController, // Pass the controller
       ),
 
       // Page 6: Owner Bio
@@ -571,12 +614,7 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
         title: "Tell us a bit about yourself as an owner/current flatmate.",
         subtitle: "Share something interesting! This helps flatmates get to know you.",
         hintText: "e.g., I'm a quiet person who loves reading...",
-        onChanged: (value) {
-          setState(() {
-            _profile.ownerBio = value;
-          });
-        },
-        initialValue: _profile.ownerBio,
+        controller: _ownerBioController, // Pass the controller
       ),
 
       // Page 7: Address
@@ -584,12 +622,7 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
         title: "What's the full address of the flat?",
         subtitle: "This will be used for location-based matching.",
         hintText: "Enter flat address",
-        onChanged: (value) {
-          setState(() {
-            _profile.address = value;
-          });
-        },
-        initialValue: _profile.address,
+        controller: _addressController, // Pass the controller
       ),
 
       // Page 8: Rent
@@ -599,12 +632,7 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
         hintText: "e.g., ₹15000",
         keyboardType: TextInputType.number,
         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-        onChanged: (value) {
-          setState(() {
-            _profile.rent = value;
-          });
-        },
-        initialValue: _profile.rent,
+        controller: _rentController, // Pass the controller
       ),
 
       // Page 9: Deposit
@@ -614,12 +642,7 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
         hintText: "e.g., ₹30000",
         keyboardType: TextInputType.number,
         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-        onChanged: (value) {
-          setState(() {
-            _profile.deposit = value;
-          });
-        },
-        initialValue: _profile.deposit,
+        controller: _depositController, // Pass the controller
       ),
 
       // Page 10: Availability Date
@@ -667,12 +690,7 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
         hintText: "e.g., 1, 2, None",
         keyboardType: TextInputType.number,
         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-        onChanged: (value) {
-          setState(() {
-            _profile.numExistingFlatmates = value;
-          });
-        },
-        initialValue: _profile.numExistingFlatmates,
+        controller: _numExistingFlatmatesController, // Pass the controller
       ),
 
       // Page 14: Flatmate Gender/Age Preference
