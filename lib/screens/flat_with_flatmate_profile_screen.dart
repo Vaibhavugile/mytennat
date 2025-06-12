@@ -4,58 +4,105 @@ import 'package:flutter/services.dart';
 
 // Data model to hold all the answers for the user seeking a flat
 class SeekingFlatmateProfile {
+  // Basic Info
   String name = '';
   String age = '';
   String gender = '';
   String occupation = '';
   String currentLocation = '';
+  String desiredCity = ''; // New field
   DateTime? moveInDate;
-  String budget = '';
+  String budgetMin = ''; // Updated from budget
+  String budgetMax = ''; // New field
+  String areaPreference = ''; // New field
   String bio = '';
+
+  // Habits
   String cleanliness = '';
   String socialHabits = '';
   String workSchedule = '';
   String noiseLevel = '';
-  String isSmoker = '';
-  String drinkingHabit = '';
-  String hasPets = '';
-  String dietaryPreference = '';
+  String smokingHabits = ''; // Updated from isSmoker
+  String drinkingHabits = ''; // Updated from drinkingHabit
+  String foodPreference = ''; // Updated from dietaryPreference
   String guestsFrequency = '';
+  String visitorsPolicy = ''; // New field
+  String petOwnership = ''; // Updated from hasPets
+  String petTolerance = ''; // New field
+  String sleepingSchedule = ''; // New field
+  String sharingCommonSpaces = ''; // New field
+  String guestsPolicyOvernight = ''; // New field
+  String personalSpaceVsSocialization = ''; // New field
+
+
+  // Looking For Preferences
   List<String> interests = [];
   String personality = '';
-  List<String> idealQualities = [];
-  List<String> dealBreakers = [];
-  String locationPreference = '';
-  String flatPreference = '';
+  String flatmateGenderPreference = ''; // New field
+  String flatmateAgePreference = ''; // New field
+  String flatmateOccupationPreference = ''; // New field
+  List<String> idealQualities = []; // Renamed from idealQualities
+  List<String> dealBreakers = []; // Renamed from dealBreakers
   String relationshipGoal = '';
+
+  // Flat Requirements
+  String locationPreference = ''; // Kept as is, but might be redundant with areaPreference
+  String flatPreference = '';
+  String furnishedUnfurnished = ''; // New field
+  String attachedBathroom = ''; // New field
+  String balcony = ''; // New field
+  String parking = ''; // New field
+  String wifi = ''; // New field
+
 
   @override
   String toString() {
     return 'SeekingFlatmateProfile(\n'
+        '  // Basic Info\n'
         '  name: $name,\n'
         '  age: $age,\n'
         '  gender: $gender,\n'
         '  occupation: $occupation,\n'
         '  currentLocation: $currentLocation,\n'
+        '  desiredCity: $desiredCity,\n'
         '  moveInDate: $moveInDate,\n'
-        '  budget: $budget,\n'
+        '  budgetMin: $budgetMin,\n'
+        '  budgetMax: $budgetMax,\n'
+        '  areaPreference: $areaPreference,\n'
         '  bio: $bio,\n'
+        '  // Habits\n'
         '  cleanliness: $cleanliness,\n'
         '  socialHabits: $socialHabits,\n'
         '  workSchedule: $workSchedule,\n'
         '  noiseLevel: $noiseLevel,\n'
-        '  isSmoker: $isSmoker,\n'
-        '  drinkingHabit: $drinkingHabit,\n'
-        '  hasPets: $hasPets,\n'
-        '  dietaryPreference: $dietaryPreference,\n'
+        '  smokingHabits: $smokingHabits,\n'
+        '  drinkingHabits: $drinkingHabits,\n'
+        '  foodPreference: $foodPreference,\n'
         '  guestsFrequency: $guestsFrequency,\n'
+        '  visitorsPolicy: $visitorsPolicy,\n'
+        '  petOwnership: $petOwnership,\n'
+        '  petTolerance: $petTolerance,\n'
+        '  sleepingSchedule: $sleepingSchedule,\n'
+        '  sharingCommonSpaces: $sharingCommonSpaces,\n'
+        '  guestsPolicyOvernight: $guestsPolicyOvernight,\n'
+        '  personalSpaceVsSocialization: $personalSpaceVsSocialization,\n'
+        '  // Looking For Preferences\n'
         '  interests: $interests,\n'
         '  personality: $personality,\n'
+        '  flatmateGenderPreference: $flatmateGenderPreference,\n'
+        '  flatmateAgePreference: $flatmateAgePreference,\n'
+        '  flatmateOccupationPreference: $flatmateOccupationPreference,\n'
         '  idealQualities: $idealQualities,\n'
         '  dealBreakers: $dealBreakers,\n'
+        '  relationshipGoal: $relationshipGoal,\n'
+        '  // Flat Requirements\n'
         '  locationPreference: $locationPreference,\n'
         '  flatPreference: $flatPreference,\n'
-        '  relationshipGoal: $relationshipGoal,\n'
+        '  furnishedUnfurnished: $furnishedUnfurnished,\n'
+        '  attachedBathroom: $attachedBathroom,\n'
+        '  balcony: $balcony,\n'
+        '  parking: $parking,\n'
+        '  wifi: $wifi,\n'
         ')';
   }
 }
@@ -265,9 +312,13 @@ class _FlatWithFlatmateProfileScreenState
   late TextEditingController _ageController;
   late TextEditingController _occupationController;
   late TextEditingController _currentLocationController;
-  late TextEditingController _budgetController;
+  late TextEditingController _desiredCityController; // New controller
+  late TextEditingController _budgetMinController; // New controller
+  late TextEditingController _budgetMaxController; // New controller
+  late TextEditingController _areaPreferenceController; // New controller
   late TextEditingController _bioController;
   late TextEditingController _workScheduleController;
+  late TextEditingController _sleepingScheduleController; // New controller
 
 
   @override
@@ -278,9 +329,14 @@ class _FlatWithFlatmateProfileScreenState
     _ageController = TextEditingController(text: _seekingFlatmateProfile.age);
     _occupationController = TextEditingController(text: _seekingFlatmateProfile.occupation);
     _currentLocationController = TextEditingController(text: _seekingFlatmateProfile.currentLocation);
-    _budgetController = TextEditingController(text: _seekingFlatmateProfile.budget);
+    _desiredCityController = TextEditingController(text: _seekingFlatmateProfile.desiredCity); // Init
+    _budgetMinController = TextEditingController(text: _seekingFlatmateProfile.budgetMin); // Init
+    _budgetMaxController = TextEditingController(text: _seekingFlatmateProfile.budgetMax); // Init
+    _areaPreferenceController = TextEditingController(text: _seekingFlatmateProfile.areaPreference); // Init
     _bioController = TextEditingController(text: _seekingFlatmateProfile.bio);
     _workScheduleController = TextEditingController(text: _seekingFlatmateProfile.workSchedule);
+    _sleepingScheduleController = TextEditingController(text: _seekingFlatmateProfile.sleepingSchedule); // Init
+
 
     // Add listeners to update the profile model as text changes
     _nameController.addListener(() {
@@ -295,14 +351,26 @@ class _FlatWithFlatmateProfileScreenState
     _currentLocationController.addListener(() {
       _seekingFlatmateProfile.currentLocation = _currentLocationController.text;
     });
-    _budgetController.addListener(() {
-      _seekingFlatmateProfile.budget = _budgetController.text;
+    _desiredCityController.addListener(() { // Listener
+      _seekingFlatmateProfile.desiredCity = _desiredCityController.text;
+    });
+    _budgetMinController.addListener(() { // Listener
+      _seekingFlatmateProfile.budgetMin = _budgetMinController.text;
+    });
+    _budgetMaxController.addListener(() { // Listener
+      _seekingFlatmateProfile.budgetMax = _budgetMaxController.text;
+    });
+    _areaPreferenceController.addListener(() { // Listener
+      _seekingFlatmateProfile.areaPreference = _areaPreferenceController.text;
     });
     _bioController.addListener(() {
       _seekingFlatmateProfile.bio = _bioController.text;
     });
     _workScheduleController.addListener(() {
       _seekingFlatmateProfile.workSchedule = _workScheduleController.text;
+    });
+    _sleepingScheduleController.addListener(() { // Listener
+      _seekingFlatmateProfile.sleepingSchedule = _sleepingScheduleController.text;
     });
   }
 
@@ -313,9 +381,13 @@ class _FlatWithFlatmateProfileScreenState
     _ageController.dispose();
     _occupationController.dispose();
     _currentLocationController.dispose();
-    _budgetController.dispose();
+    _desiredCityController.dispose(); // Dispose
+    _budgetMinController.dispose(); // Dispose
+    _budgetMaxController.dispose(); // Dispose
+    _areaPreferenceController.dispose(); // Dispose
     _bioController.dispose();
     _workScheduleController.dispose();
+    _sleepingScheduleController.dispose(); // Dispose
     _pageController.dispose();
     super.dispose();
   }
@@ -540,16 +612,7 @@ class _FlatWithFlatmateProfileScreenState
 
   List<Widget> _buildPages() {
     return [
-      // Page 1: Welcome Screen
-
-
-      // Page 2: Name
-      _buildTextQuestion(
-        title: "What's your name?",
-        subtitle: "This will be visible to potential flatmates.",
-        hintText: "Enter your name",
-        controller: _nameController, // Use the controller
-      ),
+      // Page 1: Welcome Screen (Placeholder, usually the first visible screen)
       Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
@@ -582,7 +645,7 @@ class _FlatWithFlatmateProfileScreenState
             ),
             TextButton(
               onPressed: () {
-                _pageController.jumpToPage(1);
+                _pageController.jumpToPage(1); // Jump to name input if needed
               },
               child: const Text('Edit name',
                   style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
@@ -592,6 +655,16 @@ class _FlatWithFlatmateProfileScreenState
         ),
       ),
 
+      // --- Basic Info Subsection ---
+
+      // Page 2: Name
+      _buildTextQuestion(
+        title: "What's your name?",
+        subtitle: "This will be visible to potential flatmates.",
+        hintText: "Enter your name",
+        controller: _nameController,
+      ),
+
       // Page 3: Age
       _buildTextQuestion(
         title: "How old are you?",
@@ -599,7 +672,7 @@ class _FlatWithFlatmateProfileScreenState
         hintText: "Enter your age",
         keyboardType: TextInputType.number,
         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-        controller: _ageController, // Use the controller
+        controller: _ageController,
       ),
 
       // Page 4: Gender
@@ -620,18 +693,26 @@ class _FlatWithFlatmateProfileScreenState
         title: "What do you do for a living?",
         subtitle: "Share your profession or student status.",
         hintText: "e.g., Software Engineer, Student, Freelancer",
-        controller: _occupationController, // Use the controller
+        controller: _occupationController,
       ),
 
       // Page 6: Current Location
       _buildTextQuestion(
         title: "Where are you currently located?",
-        subtitle: "This helps us find flats near you.",
+        subtitle: "This helps us understand your current proximity.",
         hintText: "Enter your current city/locality",
-        controller: _currentLocationController, // Use the controller
+        controller: _currentLocationController,
       ),
 
-      // Page 7: Move-in Date
+      // Page 7: Desired City (New)
+      _buildTextQuestion(
+        title: "Which city are you looking for a flat in?",
+        subtitle: "Specify your desired city for flat-hunting.",
+        hintText: "e.g., Pune, Mumbai",
+        controller: _desiredCityController,
+      ),
+
+      // Page 8: Move-in Date
       _buildDateQuestion(
         title: "When are you looking to move in?",
         subtitle: "Approximate date works best.",
@@ -643,25 +724,45 @@ class _FlatWithFlatmateProfileScreenState
         initialDate: _seekingFlatmateProfile.moveInDate,
       ),
 
-      // Page 8: Budget
+      // Page 9: Budget Min
       _buildTextQuestion(
-        title: "What's your monthly budget for rent?",
-        subtitle: "Specify your comfortable budget range.",
-        hintText: "e.g., ₹10000 - ₹15000",
+        title: "What's your minimum monthly budget for rent?",
+        subtitle: "Enter the lowest rent you are comfortable paying (in ₹).",
+        hintText: "e.g., ₹10000",
         keyboardType: TextInputType.number,
         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-        controller: _budgetController, // Use the controller
+        controller: _budgetMinController,
       ),
 
-      // Page 9: Bio
+      // Page 10: Budget Max
+      _buildTextQuestion(
+        title: "What's your maximum monthly budget for rent?",
+        subtitle: "Enter the highest rent you are comfortable paying (in ₹).",
+        hintText: "e.g., ₹15000",
+        keyboardType: TextInputType.number,
+        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+        controller: _budgetMaxController,
+      ),
+
+      // Page 11: Area Preference (New)
+      _buildTextQuestion(
+        title: "Do you have any specific area preferences?",
+        subtitle: "e.g., Near IT Hubs, Quiet Neighborhoods, City Center.",
+        hintText: "Enter preferred areas or 'No preference'",
+        controller: _areaPreferenceController,
+      ),
+
+      // Page 12: Bio
       _buildTextQuestion(
         title: "Tell us a bit about yourself as a flatmate.",
         subtitle: "Share something interesting! This helps flatmates get to know you.",
         hintText: "e.g., I'm a quiet person who loves reading...",
-        controller: _bioController, // Use the controller
+        controller: _bioController,
       ),
 
-      // Page 10: Cleanliness
+      // --- Habits Subsection ---
+
+      // Page 13: Cleanliness
       SingleChoiceQuestionWidget(
         title: "How clean are you?",
         subtitle: "Your personal cleanliness habits.",
@@ -674,7 +775,7 @@ class _FlatWithFlatmateProfileScreenState
         initialValue: _seekingFlatmateProfile.cleanliness,
       ),
 
-      // Page 11: Social Habits
+      // Page 14: Social Habits
       SingleChoiceQuestionWidget(
         title: "What are your social habits?",
         subtitle: "Do you enjoy social gatherings or prefer quiet?",
@@ -687,15 +788,15 @@ class _FlatWithFlatmateProfileScreenState
         initialValue: _seekingFlatmateProfile.socialHabits,
       ),
 
-      // Page 12: Work Schedule
+      // Page 15: Work Schedule
       _buildTextQuestion(
         title: "What's your typical work/study schedule?",
         subtitle: "Day, night, or variable?",
         hintText: "e.g., 9-5 job, night shifts, student",
-        controller: _workScheduleController, // Use the controller
+        controller: _workScheduleController,
       ),
 
-      // Page 13: Noise Level
+      // Page 16: Noise Level
       SingleChoiceQuestionWidget(
         title: "What's your preferred noise level in a flat?",
         subtitle: "How quiet or lively do you like the home to be?",
@@ -708,59 +809,46 @@ class _FlatWithFlatmateProfileScreenState
         initialValue: _seekingFlatmateProfile.noiseLevel,
       ),
 
-      // Page 14: Is Smoker
+      // Page 17: Smoking Habits (Updated)
       SingleChoiceQuestionWidget(
-        title: "Are you a smoker?",
-        subtitle: "Indoors or outdoors only?",
-        options: ['Yes, indoors', 'Yes, outdoors only', 'No'],
+        title: "What are your smoking habits?",
+        subtitle: "Do you smoke, and if so, where?",
+        options: ['Non-smoker', 'Socially (outdoors)', 'Regularly (outdoors)', 'Indoors (rarely)', 'Indoors (regularly)'],
         onSelected: (value) {
           setState(() {
-            _seekingFlatmateProfile.isSmoker = value;
+            _seekingFlatmateProfile.smokingHabits = value;
           });
         },
-        initialValue: _seekingFlatmateProfile.isSmoker,
+        initialValue: _seekingFlatmateProfile.smokingHabits,
       ),
 
-      // Page 15: Drinking Habit
+      // Page 18: Drinking Habits (Updated)
       SingleChoiceQuestionWidget(
         title: "What are your drinking habits?",
         subtitle: "Socially, regularly, or not at all?",
-        options: ['Socially', 'Regularly', 'Never'],
+        options: ['Never', 'Socially', 'Regularly'],
         onSelected: (value) {
           setState(() {
-            _seekingFlatmateProfile.drinkingHabit = value;
+            _seekingFlatmateProfile.drinkingHabits = value;
           });
         },
-        initialValue: _seekingFlatmateProfile.drinkingHabit,
+        initialValue: _seekingFlatmateProfile.drinkingHabits,
       ),
 
-      // Page 16: Has Pets
+      // Page 19: Food Preference (Updated)
       SingleChoiceQuestionWidget(
-        title: "Do you have pets?",
-        subtitle: "Are you bringing any furry friends?",
-        options: ['Yes', 'No', 'Planning to get one'],
+        title: "What is your food preference?",
+        subtitle: "Any specific dietary habits or restrictions?",
+        options: ['Vegetarian', 'Non-Vegetarian', 'Vegan', 'Eggetarian', 'Jain', 'Other'],
         onSelected: (value) {
           setState(() {
-            _seekingFlatmateProfile.hasPets = value;
+            _seekingFlatmateProfile.foodPreference = value;
           });
         },
-        initialValue: _seekingFlatmateProfile.hasPets,
+        initialValue: _seekingFlatmateProfile.foodPreference,
       ),
 
-      // Page 17: Dietary Preference
-      SingleChoiceQuestionWidget(
-        title: "What is your dietary preference?",
-        subtitle: "Any specific food habits or restrictions?",
-        options: ['Vegetarian', 'Non-Vegetarian', 'Vegan', 'Other'],
-        onSelected: (value) {
-          setState(() {
-            _seekingFlatmateProfile.dietaryPreference = value;
-          });
-        },
-        initialValue: _seekingFlatmateProfile.dietaryPreference,
-      ),
-
-      // Page 18: Guests Frequency
+      // Page 20: Guests Frequency (Renamed for clarity)
       SingleChoiceQuestionWidget(
         title: "How often do you plan to have guests?",
         subtitle: "Occasional, frequent, or rarely?",
@@ -773,7 +861,95 @@ class _FlatWithFlatmateProfileScreenState
         initialValue: _seekingFlatmateProfile.guestsFrequency,
       ),
 
-      // Page 19: Interests (Multi-choice)
+      // Page 21: Visitors Policy (New)
+      SingleChoiceQuestionWidget(
+        title: "What's your policy on visitors?",
+        subtitle: "Are you comfortable with friends visiting, or do you prefer a private space?",
+        options: ['Open to visitors', 'Visitors occasionally', 'Prefer minimal visitors'],
+        onSelected: (value) {
+          setState(() {
+            _seekingFlatmateProfile.visitorsPolicy = value;
+          });
+        },
+        initialValue: _seekingFlatmateProfile.visitorsPolicy,
+      ),
+
+      // Page 22: Pet Ownership (Updated)
+      SingleChoiceQuestionWidget(
+        title: "Do you currently own pets?",
+        subtitle: "Are you bringing any furry friends?",
+        options: ['Yes', 'No', 'Planning to get one'],
+        onSelected: (value) {
+          setState(() {
+            _seekingFlatmateProfile.petOwnership = value;
+          });
+        },
+        initialValue: _seekingFlatmateProfile.petOwnership,
+      ),
+
+      // Page 23: Pet Tolerance (New)
+      SingleChoiceQuestionWidget(
+        title: "What's your tolerance for flatmates with pets?",
+        subtitle: "Are you comfortable living with pets?",
+        options: ['Comfortable with pets', 'Tolerant of pets', 'Prefer no pets', 'Allergic to pets'],
+        onSelected: (value) {
+          setState(() {
+            _seekingFlatmateProfile.petTolerance = value;
+          });
+        },
+        initialValue: _seekingFlatmateProfile.petTolerance,
+      ),
+
+      // Page 24: Sleeping Schedule (New)
+      _buildTextQuestion(
+        title: "What's your typical sleeping schedule?",
+        subtitle: "Are you an early bird or a night owl?",
+        hintText: "e.g., Early riser, Night owl, Variable",
+        controller: _sleepingScheduleController,
+      ),
+
+      // Page 25: Sharing Common Spaces (New)
+      SingleChoiceQuestionWidget(
+        title: "How do you prefer sharing common spaces?",
+        subtitle: "Cleanliness, usage, etc.",
+        options: ['Very organized', 'Shared responsibility', 'Flexible', 'Don\'t mind mess'],
+        onSelected: (value) {
+          setState(() {
+            _seekingFlatmateProfile.sharingCommonSpaces = value;
+          });
+        },
+        initialValue: _seekingFlatmateProfile.sharingCommonSpaces,
+      ),
+
+      // Page 26: Guests Policy for Overnight Stays (New)
+      SingleChoiceQuestionWidget(
+        title: "What's your policy on overnight guests?",
+        subtitle: "Are you comfortable with flatmates having overnight guests?",
+        options: ['Comfortable', 'Occasionally', 'Rarely', 'Not comfortable'],
+        onSelected: (value) {
+          setState(() {
+            _seekingFlatmateProfile.guestsPolicyOvernight = value;
+          });
+        },
+        initialValue: _seekingFlatmateProfile.guestsPolicyOvernight,
+      ),
+
+      // Page 27: Personal Space vs. Socialization (New)
+      SingleChoiceQuestionWidget(
+        title: "How do you balance personal space and socialization?",
+        subtitle: "Do you prefer more alone time or communal activities?",
+        options: ['Need lots of personal space', 'Balance of both', 'Enjoy communal activities'],
+        onSelected: (value) {
+          setState(() {
+            _seekingFlatmateProfile.personalSpaceVsSocialization = value;
+          });
+        },
+        initialValue: _seekingFlatmateProfile.personalSpaceVsSocialization,
+      ),
+
+      // --- Looking For Preferences Subsection ---
+
+      // Page 28: Interests (Multi-choice)
       _buildMultiChoiceQuestion(
         title: "What are your interests or hobbies?",
         subtitle: "Select all that apply.",
@@ -787,7 +963,10 @@ class _FlatWithFlatmateProfileScreenState
           'Travel',
           'Sports',
           'Art',
-          'Outdoors'
+          'Outdoors',
+          'Technology',
+          'Fashion',
+          'Volunteering'
         ],
         onSelected: (selected) {
           setState(() {
@@ -797,10 +976,10 @@ class _FlatWithFlatmateProfileScreenState
         initialValues: _seekingFlatmateProfile.interests,
       ),
 
-      // Page 20: Personality
+      // Page 29: Personality
       SingleChoiceQuestionWidget(
         title: "Describe your personality.",
-        subtitle: "Are you an introvert or extrovert?",
+        subtitle: "Are you an introvert, extrovert, or ambivert?",
         options: ['Introvert', 'Extrovert', 'Ambivert'],
         onSelected: (value) {
           setState(() {
@@ -810,9 +989,48 @@ class _FlatWithFlatmateProfileScreenState
         initialValue: _seekingFlatmateProfile.personality,
       ),
 
-      // Page 21: Ideal Qualities in a Flatmate (Multi-choice)
+      // Page 30: Preferred Flatmate Gender (New)
+      SingleChoiceQuestionWidget(
+        title: "What's your preferred flatmate gender?",
+        subtitle: "Do you have a preference?",
+        options: ['Male', 'Female', 'No preference', 'Other'],
+        onSelected: (value) {
+          setState(() {
+            _seekingFlatmateProfile.flatmateGenderPreference = value;
+          });
+        },
+        initialValue: _seekingFlatmateProfile.flatmateGenderPreference,
+      ),
+
+      // Page 31: Preferred Flatmate Age (New)
+      SingleChoiceQuestionWidget(
+        title: "What's your preferred flatmate age group?",
+        subtitle: "Do you have an age preference for your flatmate?",
+        options: ['18-24', '25-34', '35-44', '45+', 'No preference'],
+        onSelected: (value) {
+          setState(() {
+            _seekingFlatmateProfile.flatmateAgePreference = value;
+          });
+        },
+        initialValue: _seekingFlatmateProfile.flatmateAgePreference,
+      ),
+
+      // Page 32: Preferred Flatmate Occupation (New)
+      SingleChoiceQuestionWidget(
+        title: "What's your preferred flatmate occupation type?",
+        subtitle: "Student, working professional, or no preference?",
+        options: ['Student', 'Working Professional', 'No preference', 'Other'],
+        onSelected: (value) {
+          setState(() {
+            _seekingFlatmateProfile.flatmateOccupationPreference = value;
+          });
+        },
+        initialValue: _seekingFlatmateProfile.flatmateOccupationPreference,
+      ),
+
+      // Page 33: Ideal Qualities in a Flatmate (Multi-choice - Renamed)
       _buildMultiChoiceQuestion(
-        title: "What are ideal qualities in a flatmate for you?",
+        title: "What are your ideal qualities in a flatmate?",
         subtitle: "Select all that apply.",
         options: [
           'Respectful',
@@ -822,7 +1040,9 @@ class _FlatWithFlatmateProfileScreenState
           'Responsible',
           'Quiet',
           'Social',
-          'Independent'
+          'Independent',
+          'Honest',
+          'Empathetic'
         ],
         onSelected: (selected) {
           setState(() {
@@ -832,9 +1052,9 @@ class _FlatWithFlatmateProfileScreenState
         initialValues: _seekingFlatmateProfile.idealQualities,
       ),
 
-      // Page 22: Deal Breakers (Multi-choice)
+      // Page 34: Deal Breakers (Multi-choice - Renamed)
       _buildMultiChoiceQuestion(
-        title: "Any deal breakers for a flatmate?",
+        title: "Any deal breakers for a potential flatmate?",
         subtitle: "Things you absolutely cannot tolerate.",
         options: [
           'Excessive Noise',
@@ -844,7 +1064,9 @@ class _FlatWithFlatmateProfileScreenState
           'Unpaid Bills',
           'Lack of Communication',
           'Pets (if allergic/dislike)',
-          'Late Night Guests'
+          'Late Night Guests',
+          'Disrespectful Behavior',
+          'Substance Abuse'
         ],
         onSelected: (selected) {
           setState(() {
@@ -854,9 +1076,24 @@ class _FlatWithFlatmateProfileScreenState
         initialValues: _seekingFlatmateProfile.dealBreakers,
       ),
 
-      // Page 23: Location Preference
+      // Page 35: Relationship Goal
       SingleChoiceQuestionWidget(
-        title: "What's your preferred flat location?",
+        title: "What kind of flatmate relationship are you seeking?",
+        subtitle: "Strictly roommates, friendly, or best friends?",
+        options: ['Strictly roommates', 'Friendly but independent', 'Good friends', 'Flexible'],
+        onSelected: (value) {
+          setState(() {
+            _seekingFlatmateProfile.relationshipGoal = value;
+          });
+        },
+        initialValue: _seekingFlatmateProfile.relationshipGoal,
+      ),
+
+      // --- Flat Requirements Subsection ---
+
+      // Page 36: Location Preference (Kept, but consider redundancy with areaPreference)
+      SingleChoiceQuestionWidget(
+        title: "What's your preferred flat location type?",
         subtitle: "City area, suburban, or near specific landmarks?",
         options: ['City Center', 'Suburban', 'Near University', 'Near Business Park', 'Flexible'],
         onSelected: (value) {
@@ -867,7 +1104,7 @@ class _FlatWithFlatmateProfileScreenState
         initialValue: _seekingFlatmateProfile.locationPreference,
       ),
 
-      // Page 24: Flat Type Preference
+      // Page 37: Flat Type Preference
       SingleChoiceQuestionWidget(
         title: "What type of flat are you looking for?",
         subtitle: "Studio, 1BHK, 2BHK, etc.",
@@ -880,17 +1117,69 @@ class _FlatWithFlatmateProfileScreenState
         initialValue: _seekingFlatmateProfile.flatPreference,
       ),
 
-      // Page 25: Relationship Goal
+      // Page 38: Furnished/Unfurnished Preference (New)
       SingleChoiceQuestionWidget(
-        title: "What kind of flatmate relationship are you seeking?",
-        subtitle: "Strictly roommates, friendly, or best friends?",
-        options: ['Strictly roommates', 'Friendly but independent', 'Good friends', 'Flexible'],
+        title: "Do you prefer a furnished or unfurnished flat?",
+        subtitle: "Furnished means it comes with furniture.",
+        options: ['Furnished', 'Unfurnished', 'Semi-furnished', 'No preference'],
         onSelected: (value) {
           setState(() {
-            _seekingFlatmateProfile.relationshipGoal = value;
+            _seekingFlatmateProfile.furnishedUnfurnished = value;
           });
         },
-        initialValue: _seekingFlatmateProfile.relationshipGoal,
+        initialValue: _seekingFlatmateProfile.furnishedUnfurnished,
+      ),
+
+      // Page 39: Attached Bathroom Preference (New)
+      SingleChoiceQuestionWidget(
+        title: "Do you prefer an attached bathroom?",
+        subtitle: "Having a private bathroom connected to your room.",
+        options: ['Yes, attached bathroom', 'No, shared is fine'],
+        onSelected: (value) {
+          setState(() {
+            _seekingFlatmateProfile.attachedBathroom = value;
+          });
+        },
+        initialValue: _seekingFlatmateProfile.attachedBathroom,
+      ),
+
+      // Page 40: Balcony Preference (New)
+      SingleChoiceQuestionWidget(
+        title: "Is a balcony important to you?",
+        subtitle: "Do you want a flat with a balcony?",
+        options: ['Yes, a balcony is a must', 'Nice to have, but not essential', 'Not important'],
+        onSelected: (value) {
+          setState(() {
+            _seekingFlatmateProfile.balcony = value;
+          });
+        },
+        initialValue: _seekingFlatmateProfile.balcony,
+      ),
+
+      // Page 41: Parking Preference (New)
+      SingleChoiceQuestionWidget(
+        title: "Do you require parking space?",
+        subtitle: "For a car or a two-wheeler.",
+        options: ['Yes, for car', 'Yes, for two-wheeler', 'No, not required', 'Both car and two-wheeler'],
+        onSelected: (value) {
+          setState(() {
+            _seekingFlatmateProfile.parking = value;
+          });
+        },
+        initialValue: _seekingFlatmateProfile.parking,
+      ),
+
+      // Page 42: Wi-Fi Preference (New)
+      SingleChoiceQuestionWidget(
+        title: "Is in-built Wi-Fi a necessity?",
+        subtitle: "Do you need the flat to come with Wi-Fi already set up?",
+        options: ['Yes, essential', 'Nice to have', 'Not essential, I can arrange'],
+        onSelected: (value) {
+          setState(() {
+            _seekingFlatmateProfile.wifi = value;
+          });
+        },
+        initialValue: _seekingFlatmateProfile.wifi,
       ),
 
       // Final Page: Completion Screen
@@ -958,8 +1247,8 @@ class _FlatWithFlatmateProfileScreenState
   void _submitProfile() {
     // This is where you would typically send the _seekingFlatmateProfile data to a backend
     // or save it locally.
-    // print('Submitting Seeking Flatmate Profile:');
-    // print(_seekingFlatmateProfile.toString());
+    print('Submitting Seeking Flatmate Profile:');
+    print(_seekingFlatmateProfile.toString());
 
     // For demonstration, navigate away or show a success message
     ScaffoldMessenger.of(context).showSnackBar(
