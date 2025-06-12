@@ -1,6 +1,9 @@
 // flatmate_profile_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // Add this
+import 'package:cloud_firestore/cloud_firestore.dart'; // Add this
+import 'package:intl/intl.dart'; // Add this
 
 // Data model to hold all the answers for the user listing a flat
 class FlatListingProfile {
@@ -308,11 +311,11 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
   final PageController _pageController = PageController();
   final FlatListingProfile _profile = FlatListingProfile();
   int _currentPage = 0;
-
+  bool _isSubmitting = false; // Add this line
   // Changed _pages from late final to a getter
-  List<Widget> get _pages => _buildPages();
+// lib/flatmate_profile_screen.dart
 
-  // Declare controllers for text fields
+  late final List<Widget> _pages;  // Declare controllers for text fields
   late TextEditingController _ownerNameController;
   late TextEditingController _ownerAgeController;
   late TextEditingController _ownerOccupationController;
@@ -388,7 +391,9 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
     });
     _numExistingFlatmatesController.addListener(() {
       _profile.numExistingFlatmates = _numExistingFlatmatesController.text;
+      _profile.numExistingFlatmates = _numExistingFlatmatesController.text;
     });
+    _pages = _buildPages();
   }
 
   @override
@@ -663,18 +668,20 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
               child: const Text("Let's go",
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             ),
-            TextButton(
-              onPressed: () {
-                // Allows jumping back to edit name if already filled
-                if (_profile.ownerName.isNotEmpty) {
-                  _pageController.jumpToPage(1);
-                } else {
-                  _nextPage(); // Go to name page if not filled
-                }
-              },
-              child: Text(
-                  _profile.ownerName.isNotEmpty ? 'Edit name' : 'Start with your name',
-                  style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+            ElevatedButton(
+              onPressed: _isSubmitting ? null : _submitProfile, // Disable button when submitting
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.redAccent,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(double.infinity, 50),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30))),
+              child: _isSubmitting
+                  ? const CircularProgressIndicator( // Show loader
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              )
+                  : const Text("Find my Flatmate",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             ),
             const SizedBox(height: 20),
           ],
@@ -1297,15 +1304,21 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
             style: TextStyle(fontSize: 16, color: Colors.grey),
           ),
           const Spacer(),
+          // inside _buildCompletionScreen()
+
           ElevatedButton(
-            onPressed: _submitProfile,
+            onPressed: _isSubmitting ? null : _submitProfile, // Disable button when submitting
             style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.redAccent,
                 foregroundColor: Colors.white,
                 minimumSize: const Size(double.infinity, 50),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(30))),
-            child: const Text("Find my Flatmate",
+            child: _isSubmitting
+                ? const CircularProgressIndicator( // Show loader
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+            )
+                : const Text("Find my Flatmate",
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           ),
           const SizedBox(height: 20),
@@ -1315,12 +1328,16 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
   }
 
   void _nextPage() {
+    // If we are on the last page of questions (before the completion screen)
+    // or if we are on the welcome screen and there are more pages
     if (_currentPage < _pages.length - 1) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeIn,
       );
-    } else {
+    } else if (_currentPage == _pages.length - 1) {
+      // If we are already on the completion screen, pressing next (or finish)
+      // should trigger submission. This case handles the "Find my Flatmate" button.
       _submitProfile();
     }
   }
@@ -1334,21 +1351,156 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
     }
   }
 
-  void _submitProfile() {
-    // This is where you would typically send the _profile data to a backend
-    // or save it locally.
-    print('Submitting Flat Listing Profile:');
-    print(_profile.toString());
+// Inside _FlatmateProfileScreenState class
 
-    // For demonstration, navigate away or show a success message
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-          content: Text('Flat Listing Submitted Successfully! Check console for data.')),
-    );
-    // You might navigate to a different screen here, e.g.:
-    // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => HomeScreen()));
+  // Helper function to safely parse string to int
+  int? _parseInt(String? value) {
+    if (value == null || value.isEmpty) return null;
+    // Removes any non-digit characters before parsing
+    return int.tryParse(value.replaceAll(RegExp(r'[^0-9]'), ''));
   }
 
+  // Helper to parse age range string like "25-30" or "40+"
+  List<int?> _parseAgeRange(String ageRange) {
+    if (ageRange.isEmpty) return [null, null];
+    if (ageRange.contains('+')) {
+      final minAge = _parseInt(ageRange.replaceAll('+', ''));
+      return [minAge, null]; // No max age
+    }
+    final parts = ageRange.split('-');
+    if (parts.length == 2) {
+      return [_parseInt(parts[0].trim()), _parseInt(parts[1].trim())];
+    }
+    return [null, null];
+  }
+
+  void _submitProfile() async {
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            backgroundColor: Colors.red,
+            content: Text('No user logged in. Please log in again.')),
+      );
+      setState(() {
+        _isSubmitting = false;
+      });
+      // Optionally, navigate to login screen
+      // Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (context) => LoginScreen()), (route) => false);
+      return;
+    }
+
+    try {
+      final ageRange = _parseAgeRange(_profile.preferredFlatmateAge);
+
+      // 1. Transform data from _profile into the desired nested map structure
+      final Map<String, dynamic> userProfileData = {
+        'uid': user.uid,
+        'displayName': _profile.ownerName,
+        'age': _parseInt(_profile.ownerAge),
+        'gender': _profile.ownerGender,
+        'occupation': _profile.ownerOccupation,
+        'currentCity': _profile.currentCity,
+        'desiredCity': _profile.desiredCity,
+        'moveInDate': _profile.availabilityDate != null
+            ? DateFormat('yyyy-MM-dd').format(_profile.availabilityDate!)
+            : null,
+        'budgetMin': _parseInt(_profile.budgetMin),
+        'budgetMax': _parseInt(_profile.budgetMax),
+        'preferredAreas': _profile.areaPreference.isNotEmpty
+            ? _profile.areaPreference.split(',').map((e) => e.trim()).toList()
+            : [],
+        'userType': 'offering_flat_room', // Static value for this user flow
+        'bio': _profile.ownerBio,
+        'isProfileComplete': true,
+        'createdAt': FieldValue.serverTimestamp(),
+        'lastUpdated': FieldValue.serverTimestamp(),
+
+        'habits': {
+          'smoking': _profile.smokingHabit,
+          'drinking': _profile.drinkingHabit,
+          'food': _profile.foodPreference,
+          'cleanliness': _profile.cleanlinessLevel,
+          'noiseTolerance': _profile.noiseLevel,
+          'socialPreferences': _profile.socialPreferences,
+          'visitorsPolicy': _profile.visitorsPolicy,
+          'petOwnership': _profile.petOwnership.toLowerCase() == 'yes',
+          'petTolerance': _profile.petTolerance.toLowerCase() != 'cannot tolerate pets',
+          'sleepingSchedule': _profile.sleepingSchedule,
+          'workSchedule': _profile.workSchedule,
+          'sharingCommonSpaces': _profile.sharingCommonSpaces,
+          'guestOvernightStays': _profile.guestsOvernightPolicy,
+          'personalSpaceVsSocializing': _profile.personalSpaceVsSocialization,
+        },
+
+        'lookingFor': {
+          'flatmateGender': _profile.preferredFlatmateGender,
+          'flatmateAgeRangeMin': ageRange[0],
+          'flatmateAgeRangeMax': ageRange[1],
+          'flatmateOccupation': _profile.preferredFlatmateOccupation.isNotEmpty
+              ? [_profile.preferredFlatmateOccupation]
+              : [],
+          'importantQualities': _profile.desiredQualities,
+          'dealBreakers': _profile.dealBreakers,
+        },
+
+        'flatDetails': {
+          'type': _profile.flatType,
+          'rent': _parseInt(_profile.rent),
+          'securityDeposit': _parseInt(_profile.deposit),
+          'existingFlatmatesCount': _parseInt(_profile.numExistingFlatmates),
+          'existingFlatmatesGender': _profile.genderExistingFlatmates,
+          'petsAllowedInFlat': _profile.petsAllowedFlat,
+          'smokingAllowedInFlat': _profile.smokingAllowedFlat,
+          'drinkingAllowedInFlat': _profile.drinkingAllowedFlat,
+          'guestsAllowedInFlat': _profile.guestsAllowedFlat,
+          'furnishedStatus': _profile.furnishedStatus,
+          'amenities': _profile.amenities,
+          'locality': _profile.address,
+          'availabilityDate': _profile.availabilityDate != null
+              ? DateFormat('yyyy-MM-dd').format(_profile.availabilityDate!)
+              : null,
+          'flatVibe': _profile.flatVibe,
+          'flatCleanliness': _profile.flatCleanliness,
+          'flatSocialVibe': _profile.flatSocialVibe,
+          'flatNoiseLevel': _profile.flatNoiseLevel,
+          // 'pictures' can be added here once you implement image uploads
+        },
+      };
+
+      // 2. Save the data to Firestore
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .set(userProfileData, SetOptions(merge: true));
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            backgroundColor: Colors.green,
+            content: Text('Profile saved successfully!')),
+      );
+      print("E");
+
+      // 3. Navigate to a home screen or dashboard after submission
+      // Example: Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => HomeScreen()));
+
+    } catch (e) {
+      print("Error submitting profile: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            backgroundColor: Colors.red,
+            content: Text('An error occurred. Please try again. Error: $e')),
+      );
+    } finally {
+      setState(() {
+        _isSubmitting = false;
+      });
+    }
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -1364,9 +1516,16 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
         actions: [
           if (_currentPage < _pages.length - 1 && _currentPage != 0) // Hide 'Skip' on welcome and final screen
             TextButton(
-              onPressed: _nextPage,
+              onPressed: () {
+                if (_currentPage == _pages.length - 2) { // If on the second to last page (i.e., the last question)
+                  _nextPage(); // This will navigate to the completion screen
+                } else {
+                  // For other pages, 'Skip' button acts as 'Next'
+                  _nextPage();
+                }
+              },
               child: Text(
-                _currentPage == _pages.length - 2 ? 'Finish' : 'Skip',
+                _currentPage == _pages.length - 2 ? 'Finish' : 'Skip', // 'Finish' on the last question
                 style: const TextStyle(color: Colors.redAccent, fontSize: 16),
               ),
             ),
