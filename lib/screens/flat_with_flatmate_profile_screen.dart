@@ -3,25 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart'; // Added Firebase Import
 import 'package:firebase_auth/firebase_auth.dart'; // Added Firebase Auth Import for UID and Email
+import 'package:mytennat/screens/home_page.dart';
 
 
-// Dummy HomePage for navigation. Replace with your actual HomePage.
-class HomePage extends StatelessWidget {
-  const HomePage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Home Page'),
-        automaticallyImplyLeading: false, // Remove back button
-      ),
-      body: const Center(
-        child: Text('Welcome to your Home Page!'),
-      ),
-    );
-  }
-}
 
 // Data model to hold all the answers for the user seeking a flat
 class SeekingFlatmateProfile {

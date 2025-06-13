@@ -4,24 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart'; // Add this
 import 'package:cloud_firestore/cloud_firestore.dart'; // Add this
 import 'package:intl/intl.dart'; // Add this
+import 'package:mytennat/screens/home_page.dart';
 
-// Dummy HomePage for navigation. Replace with your actual HomePage.
-class HomePage extends StatelessWidget {
-  const HomePage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Home Page'),
-        automaticallyImplyLeading: false, // Remove back button
-      ),
-      body: const Center(
-        child: Text('Welcome to your Home Page!'),
-      ),
-    );
-  }
-}
 
 // Data model to hold all the answers for the user listing a flat
 class FlatListingProfile {
@@ -733,12 +717,12 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
       ),
 
       // Page 6: Current City
-      _buildTextQuestion(
-        title: "In which city is your current flat located?",
-        subtitle: "This helps us identify the location of your flat.",
-        hintText: "Enter current city/locality",
-        controller: _currentCityController,
-      ),
+      // _buildTextQuestion(
+      //   title: "In which city is your current flat located?",
+      //   subtitle: "This helps us identify the location of your flat.",
+      //   hintText: "Enter current city/locality",
+      //   controller: _currentCityController,
+      // ),
 
       // Page 7: Desired City (This seems redundant for a flat listing. Assuming it means the city the flat is *in*)
       _buildTextQuestion(
@@ -749,24 +733,24 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
       ),
 
       // Page 8: Minimum Budget Expected (This is for the flatmate you're looking for, or rent you want)
-      _buildTextQuestion(
-        title: "What's the minimum budget you expect from a flatmate?",
-        subtitle: "Enter the lowest rent you are comfortable with (in ₹).",
-        hintText: "e.g., ₹10000",
-        keyboardType: TextInputType.number,
-        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-        controller: _budgetMinController,
-      ),
+      // _buildTextQuestion(
+      //   title: "What's the minimum budget you expect from a flatmate?",
+      //   subtitle: "Enter the lowest rent you are comfortable with (in ₹).",
+      //   hintText: "e.g., ₹10000",
+      //   keyboardType: TextInputType.number,
+      //   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+      //   controller: _budgetMinController,
+      // ),
 
       // Page 9: Maximum Budget Expected
-      _buildTextQuestion(
-        title: "What's the maximum budget you expect from a flatmate?",
-        subtitle: "Enter the highest rent you expect (in ₹).",
-        hintText: "e.g., ₹15000",
-        keyboardType: TextInputType.number,
-        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-        controller: _budgetMaxController,
-      ),
+      // _buildTextQuestion(
+      //   title: "What's the maximum budget you expect from a flatmate?",
+      //   subtitle: "Enter the highest rent you expect (in ₹).",
+      //   hintText: "e.g., ₹15000",
+      //   keyboardType: TextInputType.number,
+      //   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+      //   controller: _budgetMaxController,
+      // ),
 
       // Page 10: Area Preference (This is for the flat's area)
       _buildTextQuestion(
