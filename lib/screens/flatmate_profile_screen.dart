@@ -1,65 +1,60 @@
-
 // flatmate_profile_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // Add this
-import 'package:cloud_firestore/cloud_firestore.dart'; // Add this
-import 'package:intl/intl.dart'; // Add this
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 import 'package:mytennat/screens/home_page.dart';
-
 
 // Data model to hold all the answers for the user listing a flat
 class FlatListingProfile {
   // Basic Info
   String ownerName = '';
-  String ownerAge = '';
+  int? ownerAge; // Changed to nullable int
   String ownerGender = '';
   String ownerOccupation = '';
   String ownerBio = '';
-  String currentCity = '';
-  String desiredCity = ''; // New field
-  String budgetMin = ''; // New field
-  String budgetMax = ''; // New field
-  String areaPreference = ''; // New field
+  String desiredCity = '';
+  String areaPreference = '';
 
   // Habits
-  String smokingHabit = ''; // New field
-  String drinkingHabit = ''; // New field
-  String foodPreference = ''; // New field
-  String cleanlinessLevel = ''; // New field
-  String noiseLevel = ''; // New field
-  String socialPreferences = ''; // New field
-  String visitorsPolicy = ''; // New field
-  String petOwnership = ''; // New field
-  String petTolerance = ''; // New field
-  String sleepingSchedule = ''; // New field
-  String workSchedule = ''; // New field
-  String sharingCommonSpaces = ''; // New field
-  String guestsOvernightPolicy = ''; // New field
-  String personalSpaceVsSocialization = ''; // New field
+  String smokingHabit = '';
+  String drinkingHabit = '';
+  String foodPreference = '';
+  String cleanlinessLevel = '';
+  String noiseLevel = '';
+  String socialPreferences = '';
+  String visitorsPolicy = '';
+  String petOwnership = '';
+  String petTolerance = '';
+  String sleepingSchedule = '';
+  String workSchedule = '';
+  String sharingCommonSpaces = '';
+  String guestsOvernightPolicy = '';
+  String personalSpaceVsSocialization = '';
 
   // Flat Details
-  String flatType = ''; // New field (e.g., Studio, 1BHK)
-  String furnishedStatus = ''; // New field (Furnished, Unfurnished)
-  String availableFor = ''; // New field (e.g., Boys, Girls, Couple)
-  DateTime? availabilityDate; // New field
-  String rentPrice = ''; // New field
-  String depositAmount = ''; // New field
-  String bathroomType = ''; // New field (Attached, Shared)
-  String balconyAvailability = ''; // New field
-  String parkingAvailability = ''; // New field
-  List<String> amenities = []; // New field (e.g., Wi-Fi, AC, Geyser)
-  String address = ''; // New field
-  String landmark = ''; // New field
-  String flatDescription = ''; // New field
+  String flatType = '';
+  String furnishedStatus = '';
+  String availableFor = '';
+  DateTime? availabilityDate;
+  int? rentPrice; // Changed to nullable int
+  int? depositAmount; // Changed to nullable int
+  String bathroomType = '';
+  String balconyAvailability = '';
+  String parkingAvailability = '';
+  List<String> amenities = [];
+  String address = '';
+  String landmark = '';
+  String flatDescription = '';
 
   // Flatmate Preferences
-  String preferredGender = ''; // New field
-  String preferredAgeGroup = ''; // New field
-  String preferredOccupation = ''; // New field
-  List<String> preferredHabits = []; // New field (e.g., non-smoker)
-  List<String> flatmateIdealQualities = []; // New field
-  List<String> flatmateDealBreakers = []; // New field
+  String preferredGender = '';
+  String preferredAgeGroup = '';
+  String preferredOccupation = '';
+  List<String> preferredHabits = [];
+  List<String> flatmateIdealQualities = [];
+  List<String> flatmateDealBreakers = [];
 
   @override
   String toString() {
@@ -69,10 +64,7 @@ class FlatListingProfile {
         '  ownerGender: $ownerGender,\n'
         '  ownerOccupation: $ownerOccupation,\n'
         '  ownerBio: $ownerBio,\n'
-        '  currentCity: $currentCity,\n'
         '  desiredCity: $desiredCity,\n'
-        '  budgetMin: $budgetMin,\n'
-        '  budgetMax: $budgetMax,\n'
         '  areaPreference: $areaPreference,\n'
         '  smokingHabit: $smokingHabit,\n'
         '  drinkingHabit: $drinkingHabit,\n'
@@ -106,7 +98,7 @@ class FlatListingProfile {
         '  preferredOccupation: $preferredOccupation,\n'
         '  preferredHabits: $preferredHabits,\n'
         '  flatmateIdealQualities: $flatmateIdealQualities,\n'
-        '  flatmateDealBreakers: $flatmateDealBreakers,\n'
+        '  dealBreakers: $flatmateDealBreakers,\n'
         ')';
   }
 }
@@ -118,7 +110,7 @@ class SingleChoiceQuestionWidget extends StatefulWidget {
   final List<String> options;
   final Function(String) onSelected;
   final bool isCard;
-  final String? initialValue; // New parameter for initial value
+  final String? initialValue;
 
   const SingleChoiceQuestionWidget({
     super.key,
@@ -147,14 +139,12 @@ class _SingleChoiceQuestionWidgetState extends State<SingleChoiceQuestionWidget>
   @override
   void didUpdateWidget(covariant SingleChoiceQuestionWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Update selected option if initialValue changes from parent
     if (widget.initialValue != oldWidget.initialValue && widget.initialValue != _selectedOption) {
       setState(() {
         _selectedOption = widget.initialValue;
       });
     }
   }
-
 
   Widget _buildChipOptions(List<String> options) {
     return Padding(
@@ -173,7 +163,7 @@ class _SingleChoiceQuestionWidgetState extends State<SingleChoiceQuestionWidget>
                 setState(() {
                   _selectedOption = option;
                 });
-                widget.onSelected(option); // Notify the parent
+                widget.onSelected(option);
               }
             },
             selectedColor: Colors.red[700],
@@ -217,7 +207,7 @@ class _SingleChoiceQuestionWidgetState extends State<SingleChoiceQuestionWidget>
             setState(() {
               _selectedOption = option;
             });
-            widget.onSelected(option); // Notify the parent
+            widget.onSelected(option);
           },
           child: Container(
             decoration: BoxDecoration(
@@ -302,7 +292,7 @@ class MultiChoiceQuestionWidget extends StatefulWidget {
   final String subtitle;
   final List<String> options;
   final Function(List<String>) onSelected;
-  final List<String> initialValues; // New parameter for initial values
+  final List<String> initialValues;
 
   const MultiChoiceQuestionWidget({
     super.key,
@@ -330,7 +320,6 @@ class _MultiChoiceQuestionWidgetState extends State<MultiChoiceQuestionWidget> {
   @override
   void didUpdateWidget(covariant MultiChoiceQuestionWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Update selected options if initialValues change from parent
     if (widget.initialValues != oldWidget.initialValues) {
       setState(() {
         _selectedOptions = List.from(widget.initialValues);
@@ -421,6 +410,7 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
   final PageController _pageController = PageController();
   final FlatListingProfile _flatListingProfile = FlatListingProfile();
   int _currentPage = 0;
+  bool _isSubmitting = false; // Added for loading indicator
 
   // Change _pages from late final to a getter
   List<Widget> get _pages => _buildPages();
@@ -430,10 +420,7 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
   late TextEditingController _ownerAgeController;
   late TextEditingController _ownerOccupationController;
   late TextEditingController _ownerBioController;
-  late TextEditingController _currentCityController;
   late TextEditingController _desiredCityController;
-  late TextEditingController _budgetMinController;
-  late TextEditingController _budgetMaxController;
   late TextEditingController _areaPreferenceController;
   late TextEditingController _rentPriceController;
   late TextEditingController _depositAmountController;
@@ -441,22 +428,136 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
   late TextEditingController _landmarkController;
   late TextEditingController _flatDescriptionController;
 
+  // Define your sections - UPDATED
+  final List<Map<String, dynamic>> _sections = [
+    {'title': 'About You', 'startPage': 0, 'endPage': 6}, // Pages 0-6
+    {'title': 'Your Habits', 'startPage': 7, 'endPage': 20}, // Pages 7-20
+    {'title': 'Flat Details', 'startPage': 21, 'endPage': 33}, // Pages 21-33
+    {'title': 'Flatmate Preferences', 'startPage': 34, 'endPage': 39}, // Pages 34-39
+  ];
+
+  String _getCurrentSectionTitle() {
+    for (var section in _sections) {
+      if (_currentPage >= section['startPage'] && _currentPage <= section['endPage']) {
+        return section['title'];
+      }
+    }
+    return '';
+  }
+
+  double _getCurrentSectionProgress() {
+    for (var section in _sections) {
+      if (_currentPage >= section['startPage'] && _currentPage <= section['endPage']) {
+        final int pagesInSection = (section['endPage'] as int) - (section['startPage'] as int) + 1; // Explicit cast to int
+        final int currentPageInSection = _currentPage - (section['startPage'] as int); // Explicit cast to int
+        return (currentPageInSection + 1) / pagesInSection;
+      }
+    }
+    return 0.0;
+  }
+
+  // Method to check if the current page's input is valid
+  bool _isCurrentPageValid() {
+    switch (_currentPage) {
+      case 0: // Owner Name
+        return _ownerNameController.text.isNotEmpty;
+      case 1: // Owner Age
+        final age = int.tryParse(_ownerAgeController.text);
+        return age != null && age >= 18 && age <= 99;
+      case 2: // Owner Gender
+        return _flatListingProfile.ownerGender.isNotEmpty;
+      case 3: // Owner Occupation
+        return _ownerOccupationController.text.isNotEmpty;
+      case 4: // Owner Bio
+        return _ownerBioController.text.isNotEmpty;
+      case 5: // Desired City (Flat Location)
+        return _desiredCityController.text.isNotEmpty;
+      case 6: // Area Preference
+        return _areaPreferenceController.text.isNotEmpty;
+      case 7: // Smoking Habits
+        return _flatListingProfile.smokingHabit.isNotEmpty;
+      case 8: // Drinking Habits
+        return _flatListingProfile.drinkingHabit.isNotEmpty;
+      case 9: // Food Preference
+        return _flatListingProfile.foodPreference.isNotEmpty;
+      case 10: // Cleanliness Level
+        return _flatListingProfile.cleanlinessLevel.isNotEmpty;
+      case 11: // Noise Level
+        return _flatListingProfile.noiseLevel.isNotEmpty;
+      case 12: // Social Habits
+        return _flatListingProfile.socialPreferences.isNotEmpty;
+      case 13: // Visitors policy
+        return _flatListingProfile.visitorsPolicy.isNotEmpty;
+      case 14: // Pet ownership
+        return _flatListingProfile.petOwnership.isNotEmpty;
+      case 15: // Pet tolerance
+        return _flatListingProfile.petTolerance.isNotEmpty;
+      case 16: // Sleeping schedule
+        return _flatListingProfile.sleepingSchedule.isNotEmpty;
+      case 17: // Work schedule
+        return _flatListingProfile.workSchedule.isNotEmpty;
+      case 18: // Sharing Common Spaces
+        return _flatListingProfile.sharingCommonSpaces.isNotEmpty;
+      case 19: // Guests Policy for Overnight Stays
+        return _flatListingProfile.guestsOvernightPolicy.isNotEmpty;
+      case 20: // Personal Space
+        return _flatListingProfile.personalSpaceVsSocialization.isNotEmpty;
+      case 21: // Flat Type
+        return _flatListingProfile.flatType.isNotEmpty;
+      case 22: // Furnished Status
+        return _flatListingProfile.furnishedStatus.isNotEmpty;
+      case 23: // Available For
+        return _flatListingProfile.availableFor.isNotEmpty;
+      case 24: // Availability Date
+        return _flatListingProfile.availabilityDate != null;
+      case 25: // Rent Price
+        return _flatListingProfile.rentPrice != null && _flatListingProfile.rentPrice! > 0;
+      case 26: // Deposit Amount
+        return _flatListingProfile.depositAmount != null && _flatListingProfile.depositAmount! >= 0;
+      case 27: // Bathroom Type
+        return _flatListingProfile.bathroomType.isNotEmpty;
+      case 28: // Balcony Availability
+        return _flatListingProfile.balconyAvailability.isNotEmpty;
+      case 29: // Parking Availability
+        return _flatListingProfile.parkingAvailability.isNotEmpty;
+      case 30: // Amenities
+        return _flatListingProfile.amenities.isNotEmpty; // At least one amenity selected
+      case 31: // Address
+        return _addressController.text.isNotEmpty;
+      case 32: // Landmark (optional, so always valid if we don't enforce it)
+        return true;
+      case 33: // Flat Description
+        return _flatDescriptionController.text.isNotEmpty;
+      case 34: // Preferred Flatmate Gender
+        return _flatListingProfile.preferredGender.isNotEmpty;
+      case 35: // Preferred Flatmate Age Group
+        return _flatListingProfile.preferredAgeGroup.isNotEmpty;
+      case 36: // Preferred Flatmate Occupation
+        return _flatListingProfile.preferredOccupation.isNotEmpty;
+      case 37: // Preferred Flatmate Habits
+        return _flatListingProfile.preferredHabits.isNotEmpty;
+      case 38: // Ideal Qualities in a Flatmate
+        return _flatListingProfile.flatmateIdealQualities.isNotEmpty;
+      case 39: // Deal Breakers
+        return _flatListingProfile.flatmateDealBreakers.isNotEmpty;
+      default:
+        return true; // Fallback for pages not explicitly handled
+    }
+  }
+
 
   @override
   void initState() {
     super.initState();
     // Initialize controllers with current profile values
     _ownerNameController = TextEditingController(text: _flatListingProfile.ownerName);
-    _ownerAgeController = TextEditingController(text: _flatListingProfile.ownerAge);
+    _ownerAgeController = TextEditingController(text: _flatListingProfile.ownerAge?.toString() ?? '');
     _ownerOccupationController = TextEditingController(text: _flatListingProfile.ownerOccupation);
     _ownerBioController = TextEditingController(text: _flatListingProfile.ownerBio);
-    _currentCityController = TextEditingController(text: _flatListingProfile.currentCity);
     _desiredCityController = TextEditingController(text: _flatListingProfile.desiredCity);
-    _budgetMinController = TextEditingController(text: _flatListingProfile.budgetMin);
-    _budgetMaxController = TextEditingController(text: _flatListingProfile.budgetMax);
     _areaPreferenceController = TextEditingController(text: _flatListingProfile.areaPreference);
-    _rentPriceController = TextEditingController(text: _flatListingProfile.rentPrice);
-    _depositAmountController = TextEditingController(text: _flatListingProfile.depositAmount);
+    _rentPriceController = TextEditingController(text: _flatListingProfile.rentPrice?.toString() ?? '');
+    _depositAmountController = TextEditingController(text: _flatListingProfile.depositAmount?.toString() ?? '');
     _addressController = TextEditingController(text: _flatListingProfile.address);
     _landmarkController = TextEditingController(text: _flatListingProfile.landmark);
     _flatDescriptionController = TextEditingController(text: _flatListingProfile.flatDescription);
@@ -465,45 +566,47 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
     // Add listeners to update the profile model as text changes
     _ownerNameController.addListener(() {
       _flatListingProfile.ownerName = _ownerNameController.text;
+      setState(() {}); // Trigger rebuild to update button state
     });
     _ownerAgeController.addListener(() {
-      _flatListingProfile.ownerAge = _ownerAgeController.text;
+      _flatListingProfile.ownerAge = int.tryParse(_ownerAgeController.text);
+      setState(() {}); // Trigger rebuild to update button state
     });
     _ownerOccupationController.addListener(() {
       _flatListingProfile.ownerOccupation = _ownerOccupationController.text;
+      setState(() {});
     });
     _ownerBioController.addListener(() {
       _flatListingProfile.ownerBio = _ownerBioController.text;
-    });
-    _currentCityController.addListener(() {
-      _flatListingProfile.currentCity = _currentCityController.text;
+      setState(() {});
     });
     _desiredCityController.addListener(() {
       _flatListingProfile.desiredCity = _desiredCityController.text;
-    });
-    _budgetMinController.addListener(() {
-      _flatListingProfile.budgetMin = _budgetMinController.text;
-    });
-    _budgetMaxController.addListener(() {
-      _flatListingProfile.budgetMax = _budgetMaxController.text;
+      setState(() {});
     });
     _areaPreferenceController.addListener(() {
       _flatListingProfile.areaPreference = _areaPreferenceController.text;
+      setState(() {});
     });
     _rentPriceController.addListener(() {
-      _flatListingProfile.rentPrice = _rentPriceController.text;
+      _flatListingProfile.rentPrice = int.tryParse(_rentPriceController.text);
+      setState(() {});
     });
     _depositAmountController.addListener(() {
-      _flatListingProfile.depositAmount = _depositAmountController.text;
+      _flatListingProfile.depositAmount = int.tryParse(_depositAmountController.text);
+      setState(() {});
     });
     _addressController.addListener(() {
       _flatListingProfile.address = _addressController.text;
+      setState(() {});
     });
     _landmarkController.addListener(() {
       _flatListingProfile.landmark = _landmarkController.text;
+      setState(() {});
     });
     _flatDescriptionController.addListener(() {
       _flatListingProfile.flatDescription = _flatDescriptionController.text;
+      setState(() {});
     });
   }
 
@@ -514,10 +617,7 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
     _ownerAgeController.dispose();
     _ownerOccupationController.dispose();
     _ownerBioController.dispose();
-    _currentCityController.dispose();
     _desiredCityController.dispose();
-    _budgetMinController.dispose();
-    _budgetMaxController.dispose();
     _areaPreferenceController.dispose();
     _rentPriceController.dispose();
     _depositAmountController.dispose();
@@ -538,6 +638,8 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
     TextInputType keyboardType = TextInputType.text,
     List<TextInputFormatter>? inputFormatters,
     int? maxLines = 1,
+    Widget? prefixIcon, // New parameter
+    Widget? suffixIcon, // New parameter
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -567,6 +669,8 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
               ),
               filled: true,
               fillColor: Colors.grey[200],
+              prefixIcon: prefixIcon,
+              suffixIcon: suffixIcon,
             ),
           ),
         ],
@@ -617,7 +721,7 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
                           textButtonTheme: TextButtonThemeData(
                             style: TextButton.styleFrom(
                               foregroundColor:
-                              Colors.redAccent, // color of button's text
+                              Colors.redAccent,
                             ),
                           ),
                         ),
@@ -668,8 +772,8 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
 
   List<Widget> _buildPages() {
     return [
-      // --- Owner Info Subsection ---
-      // Page 1: Owner Name
+      // --- Section 1: About You (Pages 0-6) ---
+      // Page 0: Owner Name
       _buildTextQuestion(
         title: "What's your name?",
         subtitle: "This will be visible to potential flatmates.",
@@ -677,17 +781,17 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
         controller: _ownerNameController,
       ),
 
-      // Page 2: Owner Age
+      // Page 1: Owner Age
       _buildTextQuestion(
         title: "How old are you?",
         subtitle: "This helps flatmates understand your age group.",
-        hintText: "Enter your age",
+        hintText: "e.g., 25",
         keyboardType: TextInputType.number,
         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
         controller: _ownerAgeController,
       ),
 
-      // Page 3: Owner Gender
+      // Page 2: Owner Gender
       SingleChoiceQuestionWidget(
         title: "What's your gender?",
         subtitle: "This helps potential flatmates relate to you.",
@@ -700,7 +804,7 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
         initialValue: _flatListingProfile.ownerGender,
       ),
 
-      // Page 4: Owner Occupation
+      // Page 3: Owner Occupation
       _buildTextQuestion(
         title: "What do you do for a living?",
         subtitle: "Share your profession or student status.",
@@ -708,7 +812,7 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
         controller: _ownerOccupationController,
       ),
 
-      // Page 5: Owner Bio
+      // Page 4: Owner Bio
       _buildTextQuestion(
         title: "Tell us a bit about yourself as a flat owner/current flatmate.",
         subtitle: "Share something interesting! This helps others get to know you.",
@@ -717,15 +821,7 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
         maxLines: 5,
       ),
 
-      // Page 6: Current City
-      // _buildTextQuestion(
-      //   title: "In which city is your current flat located?",
-      //   subtitle: "This helps us identify the location of your flat.",
-      //   hintText: "Enter current city/locality",
-      //   controller: _currentCityController,
-      // ),
-
-      // Page 7: Desired City (This seems redundant for a flat listing. Assuming it means the city the flat is *in*)
+      // Page 5: Desired City (This is the city the flat is *in*)
       _buildTextQuestion(
         title: "Which city is the flat available in?",
         subtitle: "Confirm the city where your flat is located.",
@@ -733,27 +829,7 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
         controller: _desiredCityController,
       ),
 
-      // Page 8: Minimum Budget Expected (This is for the flatmate you're looking for, or rent you want)
-      // _buildTextQuestion(
-      //   title: "What's the minimum budget you expect from a flatmate?",
-      //   subtitle: "Enter the lowest rent you are comfortable with (in ₹).",
-      //   hintText: "e.g., ₹10000",
-      //   keyboardType: TextInputType.number,
-      //   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-      //   controller: _budgetMinController,
-      // ),
-
-      // Page 9: Maximum Budget Expected
-      // _buildTextQuestion(
-      //   title: "What's the maximum budget you expect from a flatmate?",
-      //   subtitle: "Enter the highest rent you expect (in ₹).",
-      //   hintText: "e.g., ₹15000",
-      //   keyboardType: TextInputType.number,
-      //   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-      //   controller: _budgetMaxController,
-      // ),
-
-      // Page 10: Area Preference (This is for the flat's area)
+      // Page 6: Area Preference (This is for the flat's area)
       _buildTextQuestion(
         title: "What's the area/locality of your flat?",
         subtitle: "e.g., Koregaon Park, Viman Nagar, Hinjewadi.",
@@ -761,8 +837,8 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
         controller: _areaPreferenceController,
       ),
 
-      // --- Habits Subsection (Owner's Habits) ---
-      // Page 11: Smoking Habits (Owner's)
+      // --- Section 2: Your Habits (Owner's Habits) (Pages 7-20) ---
+      // Page 7: Smoking Habits (Owner's)
       SingleChoiceQuestionWidget(
         title: "What are your smoking habits?",
         subtitle: "This helps in matching with compatible flatmates.",
@@ -774,7 +850,7 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
         },
         initialValue: _flatListingProfile.smokingHabit,
       ),
-      // Page 12: Drinking Habits (Owner's)
+      // Page 8: Drinking Habits (Owner's)
       SingleChoiceQuestionWidget(
         title: "What are your drinking habits?",
         subtitle: "Are you a non-drinker, social drinker, or regular drinker?",
@@ -786,7 +862,7 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
         },
         initialValue: _flatListingProfile.drinkingHabit,
       ),
-      // Page 13: Food Preference (Owner's)
+      // Page 9: Food Preference (Owner's)
       SingleChoiceQuestionWidget(
         title: "What is your food preference?",
         subtitle: "Any specific dietary habits or restrictions?",
@@ -799,7 +875,7 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
         initialValue: _flatListingProfile.foodPreference,
       ),
 
-      // Page 14: Cleanliness Level (Owner's)
+      // Page 10: Cleanliness Level (Owner's)
       SingleChoiceQuestionWidget(
         title: "How clean are you?",
         subtitle: "Be honest! This helps manage expectations.",
@@ -812,7 +888,7 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
         initialValue: _flatListingProfile.cleanlinessLevel,
       ),
 
-      // Page 15: Noise level (Owner's preference)
+      // Page 11: Noise level (Owner's preference)
       SingleChoiceQuestionWidget(
         title: "What's your preferred noise level in a flat?",
         subtitle: "How quiet or lively do you like the home to be?",
@@ -825,7 +901,7 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
         initialValue: _flatListingProfile.noiseLevel,
       ),
 
-      // Page 16: Social Habits (Owner's)
+      // Page 12: Social Habits (Owner's)
       SingleChoiceQuestionWidget(
         title: "What are your social habits?",
         subtitle: "Do you enjoy social gatherings or prefer quiet?",
@@ -838,7 +914,7 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
         initialValue: _flatListingProfile.socialPreferences,
       ),
 
-      // Page 17: Visitors policy (Owner's)
+      // Page 13: Visitors policy (Owner's)
       SingleChoiceQuestionWidget(
         title: "What's your policy on visitors?",
         subtitle: "How often do you plan to have guests over?",
@@ -851,7 +927,7 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
         initialValue: _flatListingProfile.visitorsPolicy,
       ),
 
-      // Page 18: Pet ownership (Owner's)
+      // Page 14: Pet ownership (Owner's)
       SingleChoiceQuestionWidget(
         title: "Do you currently own pets?",
         subtitle: "Are you bringing any furry friends?",
@@ -863,7 +939,7 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
         },
         initialValue: _flatListingProfile.petOwnership,
       ),
-      // Page 19: Pet tolerance (Owner's)
+      // Page 15: Pet tolerance (Owner's)
       SingleChoiceQuestionWidget(
         title: "What's your tolerance for flatmates with pets?",
         subtitle: "Are you comfortable living with pets?",
@@ -875,7 +951,7 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
         },
         initialValue: _flatListingProfile.petTolerance,
       ),
-      // Page 20: Sleeping schedule (Owner's)
+      // Page 16: Sleeping schedule (Owner's)
       SingleChoiceQuestionWidget(
         title: "What's your typical sleeping schedule?",
         subtitle: "Are you an early bird or a night owl?",
@@ -887,7 +963,7 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
         },
         initialValue: _flatListingProfile.sleepingSchedule,
       ),
-      // Page 21: Work schedule (Owner's)
+      // Page 17: Work schedule (Owner's)
       SingleChoiceQuestionWidget(
         title: "What's your typical work/study schedule?",
         subtitle: "This helps in understanding common space usage.",
@@ -900,7 +976,7 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
         initialValue: _flatListingProfile.workSchedule,
       ),
 
-      // Page 22: Sharing Common Spaces (Owner's)
+      // Page 18: Sharing Common Spaces (Owner's)
       SingleChoiceQuestionWidget(
         title: "How do you prefer sharing common spaces?",
         subtitle: "Do you like to share everything or prefer separate items?",
@@ -912,7 +988,7 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
         },
         initialValue: _flatListingProfile.sharingCommonSpaces,
       ),
-      // Page 23: Guests Policy for Overnight Stays (Owner's)
+      // Page 19: Guests Policy for Overnight Stays (Owner's)
       SingleChoiceQuestionWidget(
         title: "What's your policy on overnight guests?",
         subtitle: "How often do you expect to have guests stay overnight?",
@@ -924,7 +1000,7 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
         },
         initialValue: _flatListingProfile.guestsOvernightPolicy,
       ),
-      // Page 24: Personal Space (Owner's)
+      // Page 20: Personal Space (Owner's)
       SingleChoiceQuestionWidget(
         title: "How do you balance personal space and socialization?",
         subtitle: "Do you value quiet personal time or enjoy interactive common spaces?",
@@ -937,8 +1013,9 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
         initialValue: _flatListingProfile.personalSpaceVsSocialization,
       ),
 
-      // --- Flat Details Subsection ---
-      // Page 25: Flat Type
+
+      // --- Section 3: Flat Details (Pages 21-33) ---
+      // Page 21: Flat Type
       SingleChoiceQuestionWidget(
         title: "What type of flat are you listing?",
         subtitle: "Studio, 1BHK, 2BHK, etc.",
@@ -951,7 +1028,7 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
         initialValue: _flatListingProfile.flatType,
       ),
 
-      // Page 26: Furnished Status
+      // Page 22: Furnished Status
       SingleChoiceQuestionWidget(
         title: "Is the flat furnished, semi-furnished, or unfurnished?",
         subtitle: "Specify what's included in the flat.",
@@ -964,7 +1041,7 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
         initialValue: _flatListingProfile.furnishedStatus,
       ),
 
-      // Page 27: Available For
+      // Page 23: Available For
       SingleChoiceQuestionWidget(
         title: "Who is the flat available for?",
         subtitle: "Select the preferred gender/group.",
@@ -977,7 +1054,7 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
         initialValue: _flatListingProfile.availableFor,
       ),
 
-      // Page 28: Availability Date
+      // Page 24: Availability Date
       _buildDateQuestion(
         title: "When is the flat available from?",
         subtitle: "Approximate date works best.",
@@ -989,27 +1066,35 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
         initialDate: _flatListingProfile.availabilityDate,
       ),
 
-      // Page 29: Rent Price
+      // Page 25: Rent Price
       _buildTextQuestion(
         title: "What is the monthly rent for the flat/room?",
         subtitle: "Enter the rent amount in ₹.",
-        hintText: "e.g., ₹12000",
+        hintText: "e.g., 12000",
         keyboardType: TextInputType.number,
         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
         controller: _rentPriceController,
+        prefixIcon: const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16.0),
+          child: Text('₹', style: TextStyle(fontSize: 16, color: Colors.grey)),
+        ),
       ),
 
-      // Page 30: Deposit Amount
+      // Page 26: Deposit Amount
       _buildTextQuestion(
         title: "What is the security deposit amount?",
         subtitle: "Enter the deposit amount in ₹.",
-        hintText: "e.g., ₹24000",
+        hintText: "e.g., 24000",
         keyboardType: TextInputType.number,
         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
         controller: _depositAmountController,
+        prefixIcon: const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16.0),
+          child: Text('₹', style: TextStyle(fontSize: 16, color: Colors.grey)),
+        ),
       ),
 
-      // Page 31: Bathroom Type
+      // Page 27: Bathroom Type
       SingleChoiceQuestionWidget(
         title: "What kind of bathroom is available?",
         subtitle: "Attached to the room or shared?",
@@ -1022,7 +1107,7 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
         initialValue: _flatListingProfile.bathroomType,
       ),
 
-      // Page 32: Balcony Availability
+      // Page 28: Balcony Availability
       SingleChoiceQuestionWidget(
         title: "Does the flat have a balcony?",
         subtitle: "Yes, No, or Specific Room.",
@@ -1035,7 +1120,7 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
         initialValue: _flatListingProfile.balconyAvailability,
       ),
 
-      // Page 33: Parking Availability
+      // Page 29: Parking Availability
       SingleChoiceQuestionWidget(
         title: "Is parking available?",
         subtitle: "For car, two-wheeler, or both.",
@@ -1048,7 +1133,7 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
         initialValue: _flatListingProfile.parkingAvailability,
       ),
 
-      // Page 34: Amenities (Multi-choice)
+      // Page 30: Amenities (Multi-choice)
       MultiChoiceQuestionWidget(
         title: "What amenities are available in the flat?",
         subtitle: "Select all that apply.",
@@ -1074,7 +1159,7 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
         initialValues: _flatListingProfile.amenities,
       ),
 
-      // Page 35: Address
+      // Page 31: Address
       _buildTextQuestion(
         title: "What is the full address of the flat?",
         subtitle: "Include Building/Society Name, Street, Locality.",
@@ -1083,7 +1168,7 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
         maxLines: 3,
       ),
 
-      // Page 36: Landmark
+      // Page 32: Landmark
       _buildTextQuestion(
         title: "Add a nearby landmark (optional).",
         subtitle: "Helps in easy navigation.",
@@ -1091,7 +1176,7 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
         controller: _landmarkController,
       ),
 
-      // Page 37: Flat Description
+      // Page 33: Flat Description
       _buildTextQuestion(
         title: "Describe your flat.",
         subtitle: "Highlight key features, vibe, and what makes it a great place.",
@@ -1100,8 +1185,8 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
         maxLines: 5,
       ),
 
-      // --- Flatmate Preferences Subsection ---
-      // Page 38: Preferred Flatmate Gender
+      // --- Section 4: Flatmate Preferences (Pages 34-39) ---
+      // Page 34: Preferred Flatmate Gender
       SingleChoiceQuestionWidget(
         title: "What's your preferred flatmate gender?",
         subtitle: "This helps in finding a compatible match.",
@@ -1114,7 +1199,7 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
         initialValue: _flatListingProfile.preferredGender,
       ),
 
-      // Page 39: Preferred Flatmate Age Group
+      // Page 35: Preferred Flatmate Age Group
       SingleChoiceQuestionWidget(
         title: "What's your preferred flatmate age group?",
         subtitle: "This helps in finding a compatible match.",
@@ -1127,7 +1212,7 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
         initialValue: _flatListingProfile.preferredAgeGroup,
       ),
 
-      // Page 40: Preferred Flatmate Occupation
+      // Page 36: Preferred Flatmate Occupation
       SingleChoiceQuestionWidget(
         title: "What's your preferred flatmate occupation type?",
         subtitle: "Student, working professional, or no preference?",
@@ -1140,7 +1225,7 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
         initialValue: _flatListingProfile.preferredOccupation,
       ),
 
-      // Page 41: Preferred Flatmate Habits (Multi-choice)
+      // Page 37: Preferred Flatmate Habits (Multi-choice)
       MultiChoiceQuestionWidget(
         title: "What habits do you prefer in a flatmate?",
         subtitle: "Select all that apply.",
@@ -1163,7 +1248,7 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
         initialValues: _flatListingProfile.preferredHabits,
       ),
 
-      // Page 42: Ideal Qualities in a Flatmate (Multi-choice)
+      // Page 38: Ideal Qualities in a Flatmate (Multi-choice)
       MultiChoiceQuestionWidget(
         title: "What qualities do you desire in a flatmate?",
         subtitle: "Select qualities you look for.",
@@ -1187,7 +1272,7 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
         initialValues: _flatListingProfile.flatmateIdealQualities,
       ),
 
-      // Page 43: Deal Breakers (Multi-choice)
+      // Page 39: Deal Breakers (Multi-choice)
       MultiChoiceQuestionWidget(
         title: "Any deal breakers for a flatmate?",
         subtitle: "Things you absolutely cannot tolerate.",
@@ -1214,6 +1299,9 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
   }
 
   void _nextPage() {
+    // Removed the _isCurrentPageValid() check and SnackBar for
+    // allowing progression without strict validation at each step,
+    // as per the user's request "do not make anything compulsory".
     if (_currentPage < _pages.length - 1) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
@@ -1233,13 +1321,75 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
     }
   }
 
+  // --- Method to show sections bottom sheet ---
+  void _showSectionsBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext context) {
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text(
+                'Jump to Section',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+            ),
+            const Divider(height: 1, thickness: 1, color: Colors.grey),
+            Expanded(
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: _sections.length,
+                itemBuilder: (context, index) {
+                  final section = _sections[index];
+                  final bool isCurrentSection = _currentPage >= section['startPage'] && _currentPage <= section['endPage'];
+                  return ListTile(
+                    title: Text(
+                      section['title'],
+                      style: TextStyle(
+                        fontWeight: isCurrentSection ? FontWeight.bold : FontWeight.normal,
+                        color: isCurrentSection ? Colors.redAccent : Colors.black,
+                      ),
+                    ),
+                    trailing: isCurrentSection
+                        ? const Icon(Icons.arrow_forward_ios, color: Colors.redAccent, size: 18)
+                        : null,
+                    onTap: () {
+                      Navigator.pop(context); // Close the bottom sheet
+                      _pageController.jumpToPage(section['startPage'] as int); // Jump to the start of the selected section
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+
   // --- Firebase Integration Method ---
   Future<void> _submitProfileToFirebase() async {
+    setState(() {
+      _isSubmitting = true; // Show loading
+    });
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please log in to submit your profile.')),
       );
+      setState(() {
+        _isSubmitting = false; // Hide loading
+      });
       return;
     }
 
@@ -1248,14 +1398,11 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
       "uid": user.uid,
       "email": user.email,
       "displayName": _flatListingProfile.ownerName,
-      "age": int.tryParse(_flatListingProfile.ownerAge) ?? 0,
+      "age": _flatListingProfile.ownerAge ?? 0,
       "gender": _flatListingProfile.ownerGender,
       "occupation": _flatListingProfile.ownerOccupation,
       "bio": _flatListingProfile.ownerBio,
-      "currentCity": _flatListingProfile.currentCity,
       "desiredCity": _flatListingProfile.desiredCity,
-      "budgetMinExpected": int.tryParse(_flatListingProfile.budgetMin) ?? 0,
-      "budgetMaxExpected": int.tryParse(_flatListingProfile.budgetMax) ?? 0,
       "areaPreference": _flatListingProfile.areaPreference,
       "userType": "flat_listing",
       "habits": {
@@ -1281,8 +1428,8 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
         "availabilityDate": _flatListingProfile.availabilityDate != null
             ? Timestamp.fromDate(_flatListingProfile.availabilityDate!)
             : null,
-        "rentPrice": int.tryParse(_flatListingProfile.rentPrice) ?? 0,
-        "depositAmount": int.tryParse(_flatListingProfile.depositAmount) ?? 0,
+        "rentPrice": _flatListingProfile.rentPrice ?? 0,
+        "depositAmount": _flatListingProfile.depositAmount ?? 0,
         "bathroomType": _flatListingProfile.bathroomType,
         "balconyAvailability": _flatListingProfile.balconyAvailability,
         "parkingAvailability": _flatListingProfile.parkingAvailability,
@@ -1307,13 +1454,12 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
     try {
       await FirebaseFirestore.instance
           .collection('users')
-          .doc(user.uid) // Use user's UID as document ID
-          .set(profileData, SetOptions(merge: true)); // Merge to avoid overwriting other fields
+          .doc(user.uid)
+          .set(profileData, SetOptions(merge: true));
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Flat Listing Profile Submitted Successfully!')),
       );
-      // Navigate to HomePage after successful submission
       if (mounted) {
         Navigator.pushReplacement(
           context,
@@ -1325,14 +1471,17 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to submit profile: $e')),
       );
+    } finally {
+      setState(() {
+        _isSubmitting = false; // Hide loading
+      });
     }
   }
 
   void _submitProfile() {
     print('Submitting Flat Listing Profile:');
     print(_flatListingProfile.toString());
-
-    _submitProfileToFirebase(); // Call the Firebase submission method
+    _submitProfileToFirebase();
   }
 
   @override
@@ -1348,132 +1497,100 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
         )
             : null,
         actions: [
-          // The "Skip" button is now removed. "Finish" button is handled by the main button.
+          TextButton(
+            onPressed: _showSectionsBottomSheet,
+            child: const Text(
+              'Sections',
+              style: TextStyle(color: Colors.redAccent, fontSize: 16),
+            ),
+          ),
         ],
       ),
-      body: Column(
+      body: Stack(
         children: [
-          // Progress indicator should be visible on all question pages
-          Padding(
-            padding:
-            const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
-            child: LinearProgressIndicator(
-              value: (_currentPage + 1) / _pages.length,
-              backgroundColor: Colors.grey[300],
-              color: Colors.redAccent,
-            ),
-          ),
-          Expanded(
-            child: PageView.builder(
-              controller: _pageController,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: _pages.length,
-              onPageChanged: (int page) {
-                setState(() {
-                  _currentPage = page;
-                });
-              },
-              itemBuilder: (context, index) {
-                return _pages[index];
-              },
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: _previousPage,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.redAccent,
-                      side: const BorderSide(color: Colors.redAccent),
-                      minimumSize: const Size(double.infinity, 50),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30)),
+          Column(
+            children: [
+              // Section Title and Progress Indicator
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
+                child: Column(
+                  children: [
+                    Text(
+                      'Section ${_sections.indexOf(_sections.firstWhere((s) => _currentPage >= s['startPage'] && _currentPage <= s['endPage'])) + 1} of ${_sections.length}: ${_getCurrentSectionTitle()}',
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      textAlign: TextAlign.center,
                     ),
-                    child:
-                    const Text('Back', style: TextStyle(fontSize: 18)),
-                  ),
+                    const SizedBox(height: 8),
+                    LinearProgressIndicator(
+                      value: _getCurrentSectionProgress(),
+                      backgroundColor: Colors.grey[300],
+                      color: Colors.redAccent,
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: _nextPage,
-                    style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.redAccent,
-                        foregroundColor: Colors.white,
-                        minimumSize: const Size(double.infinity, 50),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30))),
-                    child: Text(
-                        _currentPage == _pages.length - 1 ? 'Finish' : 'Next',
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  ),
+              ),
+              Expanded(
+                child: PageView.builder(
+                  controller: _pageController,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: _pages.length,
+                  onPageChanged: (int page) {
+                    setState(() {
+                      _currentPage = page;
+                    });
+                  },
+                  itemBuilder: (context, index) {
+                    return _pages[index];
+                  },
                 ),
-              ],
-            ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: _currentPage > 0 ? _previousPage : null,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.redAccent,
+                          side: BorderSide(color: _currentPage > 0 ? Colors.redAccent : Colors.grey),
+                          minimumSize: const Size(double.infinity, 50),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30)),
+                        ),
+                        child:
+                        const Text('Back', style: TextStyle(fontSize: 18)),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: _nextPage, // Always enabled
+                        style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.redAccent, // Always red
+                            foregroundColor: Colors.white,
+                            minimumSize: const Size(double.infinity, 50),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30))),
+                        child: Text(
+                            _currentPage == _pages.length - 1 ? 'Finish' : 'Next',
+                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
+          if (_isSubmitting) // Loading overlay
+            Container(
+              color: Colors.black.withOpacity(0.5),
+              child: const Center(
+                child: CircularProgressIndicator(color: Colors.redAccent),
+              ),
+            ),
         ],
       ),
     );
   }
 }
-
-// final profileData = {
-//   "uid": user.uid,
-//   "email": user.email,
-//   "displayName": _flatListingProfile.ownerName,
-//   "age": int.tryParse(_flatListingProfile.ownerAge) ?? 0,
-//   "gender": _flatListingProfile.ownerGender,
-//   "occupation": _flatListingProfile.ownerOccupation,
-//   "bio": _flatListingProfile.ownerBio,
-//   "currentCity": _flatListingProfile.currentCity,
-//   "desiredCity": _flatListingProfile.desiredCity,
-//   "budgetMinExpected": int.tryParse(_flatListingProfile.budgetMin) ?? 0,
-//   "budgetMaxExpected": int.tryParse(_flatListingProfile.budgetMax) ?? 0,
-//   "areaPreference": _flatListingProfile.areaPreference,
-//   "userType": "flat_listing", // Explicitly set user type for flat lister
-//   "habits": {
-//     "smoking": _flatListingProfile.smokingHabit,
-//     "drinking": _flatListingProfile.drinkingHabit,
-//     "food": _flatListingProfile.foodPreference,
-//     "cleanliness": _flatListingProfile.cleanlinessLevel,
-//     "noiseTolerance": _flatListingProfile.noiseLevel,
-//     "socialPreferences": _flatListingProfile.socialPreferences,
-//     "visitorsPolicy": _flatListingProfile.visitorsPolicy,
-//     "petOwnership": _flatListingProfile.petOwnership,
-//     "petTolerance": _flatListingProfile.petTolerance,
-//     "sleepingSchedule": _flatListingProfile.sleepingSchedule,
-//     "workSchedule": _flatListingProfile.workSchedule,
-//     "sharingCommonSpaces": _flatListingProfile.sharingCommonSpaces,
-//     "guestOvernightStay": _flatListingProfile.guestsOvernightPolicy,
-//     "personalSpaceVsSocializing": _flatListingProfile.personalSpaceVsSocialization,
-//   },
-//   "flatDetails": {
-//     "flatType": _flatListingProfile.flatType,
-//     "furnishedStatus": _flatListingProfile.furnishedStatus,
-//     "availableFor": _flatListingProfile.availableFor,
-//     "availabilityDate": _flatListingProfile.availabilityDate,
-//     "rentPrice": _flatListingProfile.rentPrice,
-//     "depositAmount": _flatListingProfile.depositAmount,
-//     "bathroomType": _flatListingProfile.bathroomType,
-//     "balconyAvailability": _flatListingProfile.balconyAvailability,
-//     "parkingAvailability": _flatListingProfile.parkingAvailability,
-//     "amenities": _flatListingProfile.amenities,
-//     "address": _flatListingProfile.address,
-//     "landmark": _flatListingProfile.landmark,
-//     "description": _flatListingProfile.flatDescription,
-//   },
-//   "flatmatePreferences": {
-//     "preferredFlatmateGender": _flatListingProfile.preferredGender,
-//     "preferredFlatmateAge": _flatListingProfile.preferredAgeGroup,
-//     "preferredOccupation": _flatListingProfile.preferredOccupation,
-//     "preferredHabits": _flatListingProfile.preferredHabits,
-//     "idealQualities": _flatListingProfile.flatmateIdealQualities,
-//     "dealBreakers": _flatListingProfile.flatmateDealBreakers,
-//   },
-//   "isProfileComplete": true,
-//   "createdAt": FieldValue.serverTimestamp(),
-//   "lastUpdated": FieldValue.serverTimestamp(),
-// };
