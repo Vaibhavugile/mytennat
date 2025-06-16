@@ -692,12 +692,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 _moveInDate = null;
               }
 
-              _budgetMin = (data['budgetMin'] ?? '').toString();
-              _budgetMax = (data['budgetMax'] ?? '').toString();
+              _budgetMin = (data['budgetMinExpected'] ?? '').toString();
+              _budgetMax = (data['budgetMaxExpected'] ?? '').toString();
 
               // areaPreference is an array in user's data, but string in state.
               // Taking the first element, or empty if null/empty.
-              List<String> preferredAreasList = List<String>.from(data['preferredAreas'] ?? []);
+              List<String> preferredAreasList = List<String>.from(data['areaPreference'] ?? []);
               _areaPreference = preferredAreasList.isNotEmpty ? preferredAreasList.first : '';
 
               _bio = data['bio'] ?? '';
@@ -726,8 +726,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
 
               // Looking For Preferences
-              Map<String, dynamic> lookingFor = Map<String, dynamic>.from(data['lookingFor'] ?? {});
-              _flatmateGenderPreference = lookingFor['flatmateGender'] ?? '';
+              Map<String, dynamic> lookingFor = Map<String, dynamic>.from(data['flatmatePreferences'] ?? {});
+              _flatmateGenderPreference = lookingFor['preferredFlatmateGender'] ?? '';
 
               // Handle flatmateAgeRangeMin and Max
               int? minAge = lookingFor['flatmateAgeRangeMin'];
@@ -739,10 +739,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               }
 
               // flatmateOccupation is an array in user's data, but string in state.
-              List<String> flatmateOccupationList = List<String>.from(lookingFor['flatmateOccupation'] ?? []);
+              List<String> flatmateOccupationList = List<String>.from(lookingFor['preferredOccupation'] ?? []);
               _flatmateOccupationPreference = flatmateOccupationList.isNotEmpty ? flatmateOccupationList.first : '';
 
-              _idealQualities = List<String>.from(lookingFor['importantQualities'] ?? []); // Map importantQualities to idealQualities
+              _idealQualities = List<String>.from(lookingFor['idealQualities'] ?? []); // Map importantQualities to idealQualities
               _dealBreakers = List<String>.from(lookingFor['dealBreakers'] ?? []);
               // relationshipGoal is not directly available in provided 'seeking_flat' data, keep as is
               _relationshipGoal = data['relationshipGoal'] ?? '';
@@ -751,8 +751,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               // Flat Requirements
               Map<String, dynamic> flatRequirements = Map<String, dynamic>.from(data['flatRequirements'] ?? {});
               _locationPreference = data['locationPreference'] ?? ''; // Assuming direct access for now, adjust if nested
-              _flatPreference = data['flatPreference'] ?? ''; // Assuming direct access for now, adjust if nested
-              _furnishedUnfurnished = flatRequirements['furnished'] ?? ''; // Map furnished to furnishedUnfurnished
+              _flatPreference = data['flatRequirements'] ?? ''; // Assuming direct access for now, adjust if nested
+              _furnishedUnfurnished = flatRequirements['preferredFurnishedStatus'] ?? ''; // Map furnished to furnishedUnfurnished
               _attachedBathroom = flatRequirements['attachedBathroom'] ?? '';
               _balcony = flatRequirements['balcony'] ?? '';
               _parking = flatRequirements['parking'] ?? '';
@@ -771,7 +771,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               _ownerBudgetMax = (data['budgetMaxExpected'] ?? '').toString(); // Map budgetMaxExpected
               _ownerAreaPreference = data['areaPreference'] ?? '';
 
-              Map<String, dynamic> ownerHabits = Map<String, dynamic>.from(data['ownerHabits'] ?? {});
+              Map<String, dynamic> ownerHabits = Map<String, dynamic>.from(data['habits'] ?? {});
               _ownerSmokingHabit = ownerHabits['smoking'] ?? '';
               _ownerDrinkingHabit = ownerHabits['drinking'] ?? '';
               _ownerFoodPreference = ownerHabits['food'] ?? '';
@@ -800,10 +800,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               _flatAmenities = List<String>.from(flatDetails['amenities'] ?? []);
               _address = flatDetails['address'] ?? '';
               _landmark = flatDetails['landmark'] ?? '';
-              _flatDescription = flatDetails['description'] ?? '';
+              _flatDescription = flatDetails['flatDescription'] ?? '';
 
               Map<String, dynamic> flatmatePreferences = Map<String, dynamic>.from(data['flatmatePreferences'] ?? {});
-              _preferredGender = flatmatePreferences['preferredGender'] ?? '';
+              _preferredGender = flatmatePreferences['preferredFlatmateAge'] ?? '';
               _preferredAgeGroup = flatmatePreferences['preferredAgeGroup'] ?? '';
               _preferredOccupation = flatmatePreferences['preferredOccupation'] ?? '';
               _preferredHabits = List<String>.from(flatmatePreferences['preferredHabits'] ?? []);
@@ -858,9 +858,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             'currentCity': _currentLocation,
             'desiredCity': _desiredCity,
             'moveInDate': _moveInDate != null ? Timestamp.fromDate(_moveInDate!) : null,
-            'budgetMin': int.tryParse(_budgetMin) ?? 0,
-            'budgetMax': int.tryParse(_budgetMax) ?? 0,
-            'preferredAreas': _areaPreference.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList(),
+            'budgetMinExpected': int.tryParse(_budgetMin) ?? 0,
+            'budgetMaxExpected': int.tryParse(_budgetMax) ?? 0,
+            'areaPreference': _areaPreference.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList(),
             'bio': _bio,
             'habits': {
               'smoking': _smokingHabits,
@@ -878,14 +878,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               'guestOvernightStays': _guestsPolicyOvernight,
               'personalSpaceVsSocializing': _personalSpaceVsSocialization,
             },
-            'lookingFor': {
-              'flatmateGender': _flatmateGenderPreference,
+            'flatmatePreferences': {
+              'preferredFlatmateGender': _flatmateGenderPreference,
               'flatmateAgeRangeMin': _flatmateAgePreference.contains('No preference') ? null : (int.tryParse(_flatmateAgePreference.split('-')[0]) ?? 0),
               'flatmateAgeRangeMax': _flatmateAgePreference.contains('No preference') ? null : (int.tryParse(_flatmateAgePreference.split('-').last) ?? 0),
-              'flatmateOccupation': _flatmateOccupationPreference.isNotEmpty ? [_flatmateOccupationPreference] : [],
-              'importantQualities': _idealQualities,
+              'preferredOccupation': _flatmateOccupationPreference.isNotEmpty ? [_flatmateOccupationPreference] : [],
+              'idealQualities': _idealQualities,
               'dealBreakers': _dealBreakers,
               'flatRequirements': {
+                "preferredFlatType": _flatPreference,
                 'furnished': _furnishedUnfurnished,
                 'attachedBathroom': _attachedBathroom,
                 'balcony': _balcony,
@@ -910,7 +911,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             'budgetMinExpected': int.tryParse(_ownerBudgetMin) ?? 0, // Changed key
             'budgetMaxExpected': int.tryParse(_ownerBudgetMax) ?? 0, // Changed key
             'areaPreference': _ownerAreaPreference,
-            'ownerHabits': {
+            'habits': {
               'smoking': _ownerSmokingHabit,
               'drinking': _ownerDrinkingHabit,
               'food': _ownerFoodPreference,
@@ -942,8 +943,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               'description': _flatDescription, // Changed key
             },
             'flatmatePreferences': {
-              'preferredGender': _preferredGender,
-              'preferredAgeGroup': _preferredAgeGroup,
+              'preferredFlatmateGender': _preferredGender,
+              'preferredFlatmateAge': _preferredAgeGroup,
               'preferredOccupation': _preferredOccupation,
               'preferredHabits': _preferredHabits,
               'idealQualities': _flatmateIdealQualities, // Changed key
