@@ -8,57 +8,162 @@ import 'package:mytennat/screens/home_page.dart';
 
 // Data model to hold all the answers for the user listing a flat
 class FlatListingProfile {
+  String documentId; // Added: To store the Firestore document ID
+
   // Basic Info
-  String ownerName = '';
+  String ownerName;
   int? ownerAge; // Changed to nullable int
-  String ownerGender = '';
-  String ownerOccupation = '';
-  String ownerBio = '';
-  String desiredCity = '';
-  String areaPreference = '';
+  String ownerGender;
+  String ownerOccupation;
+  String ownerBio;
+  String desiredCity;
+  String areaPreference;
 
   // Habits
-  String smokingHabit = '';
-  String drinkingHabit = '';
-  String foodPreference = '';
-  String cleanlinessLevel = '';
-  String noiseLevel = '';
-  String socialPreferences = '';
-  String visitorsPolicy = '';
-  String petOwnership = '';
-  String petTolerance = '';
-  String sleepingSchedule = '';
-  String workSchedule = '';
-  String sharingCommonSpaces = '';
-  String guestsOvernightPolicy = '';
-  String personalSpaceVsSocialization = '';
+  String smokingHabit;
+  String drinkingHabit;
+  String foodPreference;
+  String cleanlinessLevel;
+  String noiseLevel;
+  String socialPreferences;
+  String visitorsPolicy; // Mapped from Firestore 'visitorsPolicy'
+  String petOwnership;
+  String petTolerance;
+  String sleepingSchedule;
+  String workSchedule;
+  String sharingCommonSpaces;
+  String guestsOvernightPolicy; // Mapped from Firestore 'guestOvernightStays'
+  String personalSpaceVsSocialization;
 
   // Flat Details
-  String flatType = '';
-  String furnishedStatus = '';
-  String availableFor = '';
+  String flatType;
+  String furnishedStatus;
+  String availableFor;
   DateTime? availabilityDate;
   int? rentPrice; // Changed to nullable int
   int? depositAmount; // Changed to nullable int
-  String bathroomType = '';
-  String balconyAvailability = '';
-  String parkingAvailability = '';
-  List<String> amenities = [];
-  String address = '';
-  String landmark = '';
-  String flatDescription = '';
+  String bathroomType;
+  String balconyAvailability;
+  String parkingAvailability;
+  List<String> amenities;
+  String address;
+  String landmark;
+  String flatDescription; // Mapped from Firestore 'description'
 
   // Flatmate Preferences
-  String preferredGender = '';
-  String preferredAgeGroup = '';
-  String preferredOccupation = '';
-  List<String> preferredHabits = [];
-  List<String> flatmateIdealQualities = [];
-  List<String> flatmateDealBreakers = [];
+  String preferredGender; // Mapped from Firestore 'preferredFlatmateGender'
+  String preferredAgeGroup; // Mapped from Firestore 'preferredFlatmateAge'
+  String preferredOccupation;
+  List<String> preferredHabits;
+  List<String> flatmateIdealQualities; // Mapped from Firestore 'idealQualities'
+  List<String> flatmateDealBreakers; // Mapped from Firestore 'dealBreakers'
+
+  FlatListingProfile({
+    this.documentId = '',
+    this.ownerName = '',
+    this.ownerAge,
+    this.ownerGender = '',
+    this.ownerOccupation = '',
+    this.ownerBio = '',
+    this.desiredCity = '',
+    this.areaPreference = '',
+    this.smokingHabit = '',
+    this.drinkingHabit = '',
+    this.foodPreference = '',
+    this.cleanlinessLevel = '',
+    this.noiseLevel = '',
+    this.socialPreferences = '',
+    this.visitorsPolicy = '',
+    this.petOwnership = '',
+    this.petTolerance = '',
+    this.sleepingSchedule = '',
+    this.workSchedule = '',
+    this.sharingCommonSpaces = '',
+    this.guestsOvernightPolicy = '',
+    this.personalSpaceVsSocialization = '',
+    this.flatType = '',
+    this.furnishedStatus = '',
+    this.availableFor = '',
+    this.availabilityDate,
+    this.rentPrice,
+    this.depositAmount,
+    this.bathroomType = '',
+    this.balconyAvailability = '',
+    this.parkingAvailability = '',
+    this.amenities = const [],
+    this.address = '',
+    this.landmark = '',
+    this.flatDescription = '',
+    this.preferredGender = '',
+    this.preferredAgeGroup = '',
+    this.preferredOccupation = '',
+    this.preferredHabits = const [],
+    this.flatmateIdealQualities = const [],
+    this.flatmateDealBreakers = const [],
+  });
+
+  factory FlatListingProfile.fromMap(Map<String, dynamic> data, String documentId) {
+    Map<String, dynamic> habits = data['habits'] ?? {};
+    Map<String, dynamic> flatDetails = data['flatDetails'] ?? {};
+    Map<String, dynamic> flatmatePreferences = data['flatmatePreferences'] ?? {};
+
+    return FlatListingProfile(
+      documentId: documentId,
+      ownerName: data['displayName'] ?? '', // Assuming ownerName is 'displayName' at root level
+      ownerAge: data['age'] is int ? data['age'] : (data['age'] is String ? int.tryParse(data['age']) : null), // Assuming age is at root level
+      ownerGender: data['gender'] ?? '', // Assuming gender is at root level
+      ownerOccupation: data['occupation'] ?? '', // Assuming occupation is at root level
+      ownerBio: data['bio'] ?? '', // Assuming bio is at root level
+      desiredCity: data['desiredCity'] ?? '', // Assuming desiredCity is at root level
+      areaPreference: data['areaPreference'] ?? '', // Assuming areaPreference is at root level
+
+      // Habits
+      smokingHabit: habits['smoking'] ?? '',
+      drinkingHabit: habits['drinking'] ?? '',
+      foodPreference: habits['food'] ?? '',
+      cleanlinessLevel: habits['cleanliness'] ?? '',
+      noiseLevel: habits['noiseTolerance'] ?? '',
+      socialPreferences: habits['socialPreferences'] ?? '',
+      visitorsPolicy: habits['visitorsPolicy'] ?? '',
+      petOwnership: habits['petOwnership'] ?? '',
+      petTolerance: habits['petTolerance'] ?? '',
+      sleepingSchedule: habits['sleepingSchedule'] ?? '',
+      workSchedule: habits['workSchedule'] ?? '',
+      sharingCommonSpaces: habits['sharingCommonSpaces'] ?? '',
+      guestsOvernightPolicy: habits['guestOvernightStays'] ?? '',
+      personalSpaceVsSocialization: habits['personalSpaceVsSocializing'] ?? '',
+
+      // Flat Details
+      flatType: flatDetails['flatType'] ?? '',
+      furnishedStatus: flatDetails['furnishedStatus'] ?? '',
+      availableFor: flatDetails['availableFor'] ?? '',
+      availabilityDate: (flatDetails['availabilityDate'] is Timestamp)
+          ? (flatDetails['availabilityDate'] as Timestamp).toDate()
+          : null,
+      rentPrice: flatDetails['rentPrice'] is int ? flatDetails['rentPrice'] : (flatDetails['rentPrice'] is String ? int.tryParse(flatDetails['rentPrice']) : null),
+      depositAmount: flatDetails['depositAmount'] is int ? flatDetails['depositAmount'] : (flatDetails['depositAmount'] is String ? int.tryParse(flatDetails['depositAmount']) : null),
+      bathroomType: flatDetails['bathroomType'] ?? '',
+      balconyAvailability: flatDetails['balconyAvailability'] ?? '',
+      parkingAvailability: flatDetails['parkingAvailability'] ?? '',
+      amenities: List<String>.from(flatDetails['amenities'] ?? []),
+      address: flatDetails['address'] ?? '',
+      landmark: flatDetails['landmark'] ?? '',
+      flatDescription: flatDetails['description'] ?? '', // Firestore has 'description'
+
+      // Flatmate Preferences
+      preferredGender: flatmatePreferences['preferredFlatmateGender'] ?? '',
+      preferredAgeGroup: flatmatePreferences['preferredFlatmateAge'] ?? '',
+      preferredOccupation: flatmatePreferences['preferredOccupation'] ?? '',
+      preferredHabits: List<String>.from(flatmatePreferences['preferredHabits'] ?? []),
+      flatmateIdealQualities: List<String>.from(flatmatePreferences['idealQualities'] ?? []),
+      flatmateDealBreakers: List<String>.from(flatmatePreferences['dealBreakers'] ?? []),
+    );
+  }
 
   @override
   String toString() {
     return 'FlatListingProfile(\n'
+        '  documentId: $documentId,\n'
         '  ownerName: $ownerName,\n'
         '  ownerAge: $ownerAge,\n'
         '  ownerGender: $ownerGender,\n'
@@ -304,8 +409,7 @@ class MultiChoiceQuestionWidget extends StatefulWidget {
   });
 
   @override
-  State<MultiChoiceQuestionWidget> createState() =>
-      _MultiChoiceQuestionWidgetState();
+  State<MultiChoiceQuestionWidget> createState() => _MultiChoiceQuestionWidgetState();
 }
 
 class _MultiChoiceQuestionWidgetState extends State<MultiChoiceQuestionWidget> {
@@ -357,9 +461,7 @@ class _MultiChoiceQuestionWidgetState extends State<MultiChoiceQuestionWidget> {
                       children: [
                         Text(option),
                         if (isSelected) const SizedBox(width: 8),
-                        if (isSelected)
-                          const Icon(Icons.check,
-                              size: 18, color: Colors.redAccent),
+                        if (isSelected) const Icon(Icons.check, size: 18, color: Colors.redAccent),
                       ],
                     ),
                     selected: isSelected,
@@ -373,15 +475,14 @@ class _MultiChoiceQuestionWidgetState extends State<MultiChoiceQuestionWidget> {
                         widget.onSelected(_selectedOptions);
                       });
                     },
-                    labelPadding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    labelPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30)),
+                      borderRadius: BorderRadius.circular(30),
+                    ),
                     side: BorderSide(
-                        color: isSelected
-                            ? Colors.redAccent
-                            : Colors.grey.shade300,
-                        width: 1.5),
+                      color: isSelected ? Colors.redAccent : Colors.grey.shade300,
+                      width: 1.5,
+                    ),
                     backgroundColor: Colors.grey.shade50,
                     selectedColor: Colors.red.withOpacity(0.1),
                     labelStyle: TextStyle(
@@ -430,11 +531,11 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
 
   // Define your sections - UPDATED
   final List<Map<String, dynamic>> _sections = [
-    {'title': 'About You', 'startPage': 0, 'endPage': 6}, // Pages 0-6
+  {'title': 'About You', 'startPage': 0, 'endPage': 6}, // Pages 0-6
     {'title': 'Your Habits', 'startPage': 7, 'endPage': 20}, // Pages 7-20
     {'title': 'Flat Details', 'startPage': 21, 'endPage': 33}, // Pages 21-33
-    {'title': 'Flatmate Preferences', 'startPage': 34, 'endPage': 39}, // Pages 34-39
-  ];
+    {'title': 'Flatmate Preferences', 'startPage': 34, 'endPage': 39}, // Pages...
+];
 
   String _getCurrentSectionTitle() {
     for (var section in _sections) {

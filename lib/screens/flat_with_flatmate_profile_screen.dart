@@ -1,59 +1,204 @@
-// flat_with_flatmate_profile_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart'; // Added Firebase Import
-import 'package:firebase_auth/firebase_auth.dart'; // Added Firebase Auth Import for UID and Email
+import 'package:firebase_auth/firebase_auth.dart';// Added Firebase Auth Import for UID and Email
 import 'package:mytennat/screens/home_page.dart';
 import 'package:intl/intl.dart'; // For date formatting
 
 // Data model to hold all the answers for the user seeking a flat
 class SeekingFlatmateProfile {
   // Basic Info
-  String name = '';
+  String documentId; // Added for Firestore document ID
+  String name;
   int? age; // Changed to nullable int
-  String gender = '';
-  String occupation = '';
-  String currentLocation = '';
-  String desiredCity = ''; // New field
+  String gender;
+  String occupation;
+  String currentLocation;
+  String desiredCity; // New field
   DateTime? moveInDate;
   int? budgetMin; // Changed to nullable int
   int? budgetMax; // Changed to nullable int
-  String areaPreference = ''; // New field
-  String bio = '';
+  String areaPreference; // New field
+  String bio;
 
   // Habits
-  String cleanliness = '';
-  String socialHabits = '';
-  String workSchedule = '';
-  String noiseLevel = '';
-  String smokingHabits = ''; // Updated from isSmoker
-  String drinkingHabits = ''; // Updated from drinkingHabit
-  String foodPreference = ''; // Updated from dietaryPreference
-  String guestsFrequency = '';
-  String visitorsPolicy = ''; // New field
-  String petOwnership = ''; // Updated from hasPets
-  String petTolerance = ''; // New field
-  String sleepingSchedule = ''; // New field
-  String sharingCommonSpaces = ''; // New field
-  String guestsOvernightPolicy = ''; // New field
-  String personalSpaceVsSocialization = ''; // New field
+  String cleanliness;
+  String socialHabits;
+  String workSchedule;
+  String noiseLevel;
+  String smokingHabits; // Updated from isSmoker
+  String drinkingHabits; // Updated from drinkingHabit
+  String foodPreference; // Updated from dietaryPreference
+  String guestsFrequency;
+  String visitorsPolicy; // New field
+  String petOwnership; // Updated from hasPets
+  String petTolerance; // New field
+  String sleepingSchedule; // New field
+  String sharingCommonSpaces; // New field
+  String guestsOvernightPolicy; // New field
+  String personalSpaceVsSocialization; // New field
 
   // Flat Requirements
-  String preferredFlatType = '';
-  String preferredFurnishedStatus = '';
-  List<String> amenitiesDesired = [];
+  String preferredFlatType;
+  String preferredFurnishedStatus;
+  List<String> amenitiesDesired;
 
   // Flatmate Preferences
-  String preferredFlatmateGender = '';
-  String preferredFlatmateAge = '';
-  String preferredOccupation = '';
-  List<String> preferredHabits = [];
-  List<String> idealQualities = [];
-  List<String> dealBreakers = [];
+  String preferredFlatmateGender;
+  String preferredFlatmateAge;
+  String preferredOccupation;
+  List<String> preferredHabits;
+  List<String> idealQualities;
+  List<String> dealBreakers;
+
+  SeekingFlatmateProfile({
+    this.documentId = '', // Initialize documentId
+    this.name = '',
+    this.age,
+    this.gender = '',
+    this.occupation = '',
+    this.currentLocation = '',
+    this.desiredCity = '',
+    this.moveInDate,
+    this.budgetMin,
+    this.budgetMax,
+    this.areaPreference = '',
+    this.bio = '',
+    this.cleanliness = '',
+    this.socialHabits = '',
+    this.workSchedule = '',
+    this.noiseLevel = '',
+    this.smokingHabits = '',
+    this.drinkingHabits = '',
+    this.foodPreference = '',
+    this.guestsFrequency = '',
+    this.visitorsPolicy = '',
+    this.petOwnership = '',
+    this.petTolerance = '',
+    this.sleepingSchedule = '',
+    this.sharingCommonSpaces = '',
+    this.guestsOvernightPolicy = '',
+    this.personalSpaceVsSocialization = '',
+    this.preferredFlatType = '',
+    this.preferredFurnishedStatus = '',
+    List<String>? amenitiesDesired,
+    this.preferredFlatmateGender = '',
+    this.preferredFlatmateAge = '',
+    this.preferredOccupation = '',
+    List<String>? preferredHabits,
+    List<String>? idealQualities,
+    List<String>? dealBreakers,
+  })  : amenitiesDesired = amenitiesDesired ?? [],
+        preferredHabits = preferredHabits ?? [],
+        idealQualities = idealQualities ?? [],
+        dealBreakers = dealBreakers ?? [];
+
+  // Factory constructor to create a SeekingFlatmateProfile from a map (Firestore data)
+  factory SeekingFlatmateProfile.fromMap(Map<String, dynamic> data, String documentId) {
+    Map<String, dynamic> habitsData = data['habits'] ?? {};
+    Map<String, dynamic> flatRequirementsData = data['flatRequirements'] ?? {};
+    Map<String, dynamic> flatmatePreferencesData = data['flatmatePreferences'] ?? {};
+
+    return SeekingFlatmateProfile(
+      documentId: documentId,
+      name: data['displayName'] as String? ?? '', // Assuming 'displayName' at root level
+      age: data['age'] is int ? data['age'] : (data['age'] is String ? int.tryParse(data['age']) : null),
+      gender: data['gender'] as String? ?? '',
+      occupation: data['occupation'] as String? ?? '',
+      currentLocation: data['currentLocation'] as String? ?? '',
+      desiredCity: data['desiredCity'] as String? ?? '',
+      moveInDate: (data['moveInDate'] as Timestamp?)?.toDate(),
+      budgetMin: data['budgetMin'] is int ? data['budgetMin'] : (data['budgetMin'] is String ? int.tryParse(data['budgetMin']) : null),
+      budgetMax: data['budgetMax'] is int ? data['budgetMax'] : (data['budgetMax'] is String ? int.tryParse(data['budgetMax']) : null),
+      areaPreference: data['areaPreference'] as String? ?? '',
+      bio: data['bio'] as String? ?? '',
+
+      // Habits
+      cleanliness: habitsData['cleanliness'] as String? ?? '',
+      socialHabits: habitsData['socialPreferences'] as String? ?? '', // Mapped from 'socialPreferences'
+      workSchedule: habitsData['workSchedule'] as String? ?? '',
+      noiseLevel: habitsData['noiseTolerance'] as String? ?? '', // Mapped from 'noiseTolerance'
+      smokingHabits: habitsData['smoking'] as String? ?? '', // Mapped from 'smoking'
+      drinkingHabits: habitsData['drinking'] as String? ?? '', // Mapped from 'drinking'
+      foodPreference: habitsData['food'] as String? ?? '', // Mapped from 'food'
+      guestsFrequency: habitsData['guestsFrequency'] as String? ?? '',
+      visitorsPolicy: habitsData['visitorsPolicy'] as String? ?? '',
+      petOwnership: habitsData['petOwnership'] as String? ?? '',
+      petTolerance: habitsData['petTolerance'] as String? ?? '',
+      sleepingSchedule: habitsData['sleepingSchedule'] as String? ?? '',
+      sharingCommonSpaces: habitsData['sharingCommonSpaces'] as String? ?? '',
+      guestsOvernightPolicy: habitsData['guestOvernightStays'] as String? ?? '', // Mapped from 'guestOvernightStays'
+      personalSpaceVsSocialization: habitsData['personalSpaceVsSocializing'] as String? ?? '',
+
+      // Flat Requirements
+      preferredFlatType: flatRequirementsData['preferredFlatType'] as String? ?? '',
+      preferredFurnishedStatus: flatRequirementsData['preferredFurnishedStatus'] as String? ?? '',
+      amenitiesDesired: List<String>.from(flatRequirementsData['amenitiesDesired'] as List? ?? []),
+
+      // Flatmate Preferences
+      preferredFlatmateGender: flatmatePreferencesData['preferredFlatmateGender'] as String? ?? '',
+      preferredFlatmateAge: flatmatePreferencesData['preferredFlatmateAge'] as String? ?? '',
+      preferredOccupation: flatmatePreferencesData['preferredOccupation'] as String? ?? '',
+      preferredHabits: List<String>.from(flatmatePreferencesData['preferredHabits'] as List? ?? []),
+      idealQualities: List<String>.from(flatmatePreferencesData['idealQualities'] as List? ?? []),
+      dealBreakers: List<String>.from(flatmatePreferencesData['dealBreakers'] as List? ?? []),
+    );
+  }
+
+  // Method to convert the object to a map for Firestore
+  Map<String, dynamic> toMap() {
+    return {
+      'name': name, // This might need to be 'displayName' if that's how it's stored at root
+      'age': age,
+      'gender': gender,
+      'occupation': occupation,
+      'currentLocation': currentLocation,
+      'desiredCity': desiredCity,
+      'moveInDate': moveInDate != null ? Timestamp.fromDate(moveInDate!) : null,
+      'budgetMin': budgetMin,
+      'budgetMax': budgetMax,
+      'areaPreference': areaPreference,
+      'bio': bio,
+      'habits': {
+        'cleanliness': cleanliness,
+        'socialPreferences': socialHabits, // Mapped to 'socialPreferences'
+        'workSchedule': workSchedule,
+        'noiseTolerance': noiseLevel, // Mapped to 'noiseTolerance'
+        'smoking': smokingHabits, // Mapped to 'smoking'
+        'drinking': drinkingHabits, // Mapped to 'drinking'
+        'food': foodPreference, // Mapped to 'food'
+        'guestsFrequency': guestsFrequency,
+        'visitorsPolicy': visitorsPolicy,
+        'petOwnership': petOwnership,
+        'petTolerance': petTolerance,
+        'sleepingSchedule': sleepingSchedule,
+        'sharingCommonSpaces': sharingCommonSpaces,
+        'guestOvernightStays': guestsOvernightPolicy, // Mapped to 'guestOvernightStays'
+        'personalSpaceVsSocializing': personalSpaceVsSocialization,
+      },
+      'flatRequirements': {
+        'preferredFlatType': preferredFlatType,
+        'preferredFurnishedStatus': preferredFurnishedStatus,
+        'amenitiesDesired': amenitiesDesired,
+      },
+      'flatmatePreferences': {
+        'preferredFlatmateGender': preferredFlatmateGender,
+        'preferredFlatmateAge': preferredFlatmateAge,
+        'preferredOccupation': preferredOccupation,
+        'preferredHabits': preferredHabits,
+        'idealQualities': idealQualities,
+        'dealBreakers': dealBreakers,
+      },
+      // Fields like 'createdAt', 'lastUpdated', 'isProfileComplete', 'uid', 'userType', 'email'
+      // are typically handled outside this toMap method or added at the point of saving
+      // the document to Firestore, as they might not be part of the profile data model directly.
+    };
+  }
 
   @override
   String toString() {
     return 'SeekingFlatmateProfile(\n'
+        '  documentId: $documentId,\n'
         '  name: $name,\n'
         '  age: $age,\n'
         '  gender: $gender,\n'
@@ -612,8 +757,7 @@ class _FlatWithFlatmateProfileScreenState
                           ),
                           textButtonTheme: TextButtonThemeData(
                             style: TextButton.styleFrom(
-                              foregroundColor:
-                              Colors.redAccent, // For the "OK" and "CANCEL" buttons
+                              foregroundColor: Colors.redAccent, // For the "OK" and "CANCEL" buttons
                             ),
                           ),
                         ),
@@ -629,8 +773,7 @@ class _FlatWithFlatmateProfileScreenState
                   }
                 },
                 child: Container(
-                  padding:
-                  const EdgeInsets.symmetric(vertical: 15, horizontal: 15),
+                  padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 15),
                   decoration: BoxDecoration(
                     color: Colors.grey[200],
                     borderRadius: BorderRadius.circular(15),
@@ -640,14 +783,10 @@ class _FlatWithFlatmateProfileScreenState
                       const Icon(Icons.calendar_today, color: Colors.grey),
                       const SizedBox(width: 10),
                       Text(
-                        selectedDate == null
-                            ? 'Select a date'
-                            : DateFormat('dd/MM/yyyy').format(selectedDate!),
+                        selectedDate == null ? 'Select a date' : DateFormat('dd/MM/yyyy').format(selectedDate!),
                         style: TextStyle(
                             fontSize: 16,
-                            color: selectedDate == null
-                                ? Colors.grey[700]
-                                : Colors.black),
+                            color: selectedDate == null ? Colors.grey[700] : Colors.black),
                       ),
                     ],
                   ),
@@ -801,12 +940,7 @@ class _FlatWithFlatmateProfileScreenState
       SingleChoiceQuestionWidget(
         title: "What are your social habits?",
         subtitle: "Do you enjoy social gatherings or prefer quiet?",
-        options: [
-          'Social & outgoing',
-          'Occasional gatherings',
-          'Quiet & private',
-          'Flexible'
-        ],
+        options: ['Social & outgoing', 'Occasional gatherings', 'Quiet & private', 'Flexible'],
         onSelected: (value) {
           setState(() {
             _seekingFlatmateProfile.socialHabits = value;
@@ -1282,13 +1416,12 @@ class _FlatWithFlatmateProfileScreenState
       "userType": "seeking_flatmate",
       "habits": {
         "cleanliness": _seekingFlatmateProfile.cleanliness,
-        "socialHabits": _seekingFlatmateProfile.socialHabits,
+        "socialPreferences": _seekingFlatmateProfile.socialHabits,
         "workSchedule": _seekingFlatmateProfile.workSchedule,
-        "noiseLevel": _seekingFlatmateProfile.noiseLevel,
-        "smokingHabits": _seekingFlatmateProfile.smokingHabits,
-        "drinkingHabits": _seekingFlatmateProfile.drinkingHabits,
-        "foodPreference": _seekingFlatmateProfile.foodPreference,
-        "guestsFrequency": _seekingFlatmateProfile.guestsFrequency,
+        "noiseTolerance": _seekingFlatmateProfile.noiseLevel,
+        "smoking": _seekingFlatmateProfile.smokingHabits,
+        "drinking": _seekingFlatmateProfile.drinkingHabits,
+        "food": _seekingFlatmateProfile.foodPreference,
         "visitorsPolicy": _seekingFlatmateProfile.visitorsPolicy,
         "petOwnership": _seekingFlatmateProfile.petOwnership,
         "petTolerance": _seekingFlatmateProfile.petTolerance,
