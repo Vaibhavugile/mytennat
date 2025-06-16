@@ -1,4 +1,4 @@
-// flatmate_profile_screen.dart
+// lib/screens/flatmate_profile_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -58,6 +58,9 @@ class FlatListingProfile {
   List<String> flatmateIdealQualities; // Mapped from Firestore 'idealQualities'
   List<String> flatmateDealBreakers; // Mapped from Firestore 'dealBreakers'
 
+  // Added: List of image URLs for the flat
+  List<String>? imageUrls;
+
   FlatListingProfile({
     this.documentId = '',
     this.ownerName = '',
@@ -90,17 +93,22 @@ class FlatListingProfile {
     this.bathroomType = '',
     this.balconyAvailability = '',
     this.parkingAvailability = '',
-    this.amenities = const [],
+    List<String>? amenities, // Make nullable for constructor init
     this.address = '',
     this.landmark = '',
     this.flatDescription = '',
     this.preferredGender = '',
     this.preferredAgeGroup = '',
     this.preferredOccupation = '',
-    this.preferredHabits = const [],
-    this.flatmateIdealQualities = const [],
-    this.flatmateDealBreakers = const [],
-  });
+    List<String>? preferredHabits, // Make nullable for constructor init
+    List<String>? flatmateIdealQualities, // Make nullable for constructor init
+    List<String>? flatmateDealBreakers, // Make nullable for constructor init
+    List<String>? imageUrls, // Added to constructor
+  })  : amenities = amenities ?? const [], // Initialize amenities list
+        preferredHabits = preferredHabits ?? const [], // Initialize preferredHabits list
+        flatmateIdealQualities = flatmateIdealQualities ?? const [], // Initialize flatmateIdealQualities list
+        flatmateDealBreakers = flatmateDealBreakers ?? const [], // Initialize flatmateDealBreakers list
+        imageUrls = imageUrls; // Initialize imageUrls
 
   factory FlatListingProfile.fromMap(Map<String, dynamic> data, String documentId) {
     Map<String, dynamic> habits = data['habits'] ?? {};
@@ -157,7 +165,62 @@ class FlatListingProfile {
       preferredHabits: List<String>.from(flatmatePreferences['preferredHabits'] ?? []),
       flatmateIdealQualities: List<String>.from(flatmatePreferences['idealQualities'] ?? []),
       flatmateDealBreakers: List<String>.from(flatmatePreferences['dealBreakers'] ?? []),
+      // Parse imageUrls from Firestore map
+      imageUrls: (data['imageUrls'] as List<dynamic>?)?.map((e) => e.toString()).toList(),
     );
+  }
+
+  // Method to convert the object to a map for Firestore
+  Map<String, dynamic> toMap() {
+    return {
+      'ownerName': ownerName,
+      'ownerAge': ownerAge,
+      'ownerGender': ownerGender,
+      'ownerOccupation': ownerOccupation,
+      'ownerBio': ownerBio,
+      'desiredCity': desiredCity,
+      'areaPreference': areaPreference,
+      'habits': {
+        'smoking': smokingHabit,
+        'drinking': drinkingHabit,
+        'food': foodPreference,
+        'cleanliness': cleanlinessLevel,
+        'noiseTolerance': noiseLevel,
+        'socialPreferences': socialPreferences,
+        'visitorsPolicy': visitorsPolicy,
+        'petOwnership': petOwnership,
+        'petTolerance': petTolerance,
+        'sleepingSchedule': sleepingSchedule,
+        'workSchedule': workSchedule,
+        'sharingCommonSpaces': sharingCommonSpaces,
+        'guestOvernightStays': guestsOvernightPolicy,
+        'personalSpaceVsSocializing': personalSpaceVsSocialization,
+      },
+      'flatDetails': {
+        'flatType': flatType,
+        'furnishedStatus': furnishedStatus,
+        'availableFor': availableFor,
+        'availabilityDate': availabilityDate != null ? Timestamp.fromDate(availabilityDate!) : null,
+        'rentPrice': rentPrice,
+        'depositAmount': depositAmount,
+        'bathroomType': bathroomType,
+        'balconyAvailability': balconyAvailability,
+        'parkingAvailability': parkingAvailability,
+        'amenities': amenities,
+        'address': address,
+        'landmark': landmark,
+        'description': flatDescription, // Map to 'description' for Firestore
+      },
+      'flatmatePreferences': {
+        'preferredFlatmateGender': preferredGender,
+        'preferredFlatmateAge': preferredAgeGroup,
+        'preferredOccupation': preferredOccupation,
+        'preferredHabits': preferredHabits,
+        'idealQualities': flatmateIdealQualities,
+        'dealBreakers': flatmateDealBreakers,
+      },
+      'imageUrls': imageUrls, // Include imageUrls when converting to map
+    };
   }
 
   @override
@@ -204,10 +267,10 @@ class FlatListingProfile {
         '  preferredHabits: $preferredHabits,\n'
         '  flatmateIdealQualities: $flatmateIdealQualities,\n'
         '  dealBreakers: $flatmateDealBreakers,\n'
+        '  imageUrls: $imageUrls,\n' // Include imageUrls in toString
         ')';
   }
 }
-
 // Stateful Widget for Single Choice Questions
 class SingleChoiceQuestionWidget extends StatefulWidget {
   final String title;

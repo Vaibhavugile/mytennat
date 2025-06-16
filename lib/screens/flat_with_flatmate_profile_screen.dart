@@ -1,3 +1,4 @@
+// lib/screens/flat_with_flatmate_profile_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart'; // Added Firebase Import
@@ -51,6 +52,9 @@ class SeekingFlatmateProfile {
   List<String> idealQualities;
   List<String> dealBreakers;
 
+  // Added: List of image URLs for the profile
+  List<String>? imageUrls;
+
   SeekingFlatmateProfile({
     this.documentId = '', // Initialize documentId
     this.name = '',
@@ -88,10 +92,12 @@ class SeekingFlatmateProfile {
     List<String>? preferredHabits,
     List<String>? idealQualities,
     List<String>? dealBreakers,
+    List<String>? imageUrls, // Added to constructor
   })  : amenitiesDesired = amenitiesDesired ?? [],
         preferredHabits = preferredHabits ?? [],
         idealQualities = idealQualities ?? [],
-        dealBreakers = dealBreakers ?? [];
+        dealBreakers = dealBreakers ?? [],
+        imageUrls = imageUrls; // Initialize imageUrls
 
   // Factory constructor to create a SeekingFlatmateProfile from a map (Firestore data)
   factory SeekingFlatmateProfile.fromMap(Map<String, dynamic> data, String documentId) {
@@ -142,6 +148,8 @@ class SeekingFlatmateProfile {
       preferredHabits: List<String>.from(flatmatePreferencesData['preferredHabits'] as List? ?? []),
       idealQualities: List<String>.from(flatmatePreferencesData['idealQualities'] as List? ?? []),
       dealBreakers: List<String>.from(flatmatePreferencesData['dealBreakers'] as List? ?? []),
+      // Parse imageUrls from Firestore map
+      imageUrls: (data['imageUrls'] as List<dynamic>?)?.map((e) => e.toString()).toList(),
     );
   }
 
@@ -189,54 +197,14 @@ class SeekingFlatmateProfile {
         'idealQualities': idealQualities,
         'dealBreakers': dealBreakers,
       },
+      'imageUrls': imageUrls, // Include imageUrls when converting to map
       // Fields like 'createdAt', 'lastUpdated', 'isProfileComplete', 'uid', 'userType', 'email'
       // are typically handled outside this toMap method or added at the point of saving
       // the document to Firestore, as they might not be part of the profile data model directly.
     };
   }
-
-  @override
-  String toString() {
-    return 'SeekingFlatmateProfile(\n'
-        '  documentId: $documentId,\n'
-        '  name: $name,\n'
-        '  age: $age,\n'
-        '  gender: $gender,\n'
-        '  occupation: $occupation,\n'
-        '  currentLocation: $currentLocation,\n'
-        '  desiredCity: $desiredCity,\n'
-        '  moveInDate: $moveInDate,\n'
-        '  budgetMin: $budgetMin,\n'
-        '  budgetMax: $budgetMax,\n'
-        '  areaPreference: $areaPreference,\n'
-        '  bio: $bio,\n'
-        '  cleanliness: $cleanliness,\n'
-        '  socialHabits: $socialHabits,\n'
-        '  workSchedule: $workSchedule,\n'
-        '  noiseLevel: $noiseLevel,\n'
-        '  smokingHabits: $smokingHabits,\n'
-        '  drinkingHabits: $drinkingHabits,\n'
-        '  foodPreference: $foodPreference,\n'
-        '  guestsFrequency: $guestsFrequency,\n'
-        '  visitorsPolicy: $visitorsPolicy,\n'
-        '  petOwnership: $petOwnership,\n'
-        '  petTolerance: $petTolerance,\n'
-        '  sleepingSchedule: $sleepingSchedule,\n'
-        '  sharingCommonSpaces: $sharingCommonSpaces,\n'
-        '  guestsOvernightPolicy: $guestsOvernightPolicy,\n'
-        '  personalSpaceVsSocialization: $personalSpaceVsSocialization,\n'
-        '  preferredFlatType: $preferredFlatType,\n'
-        '  preferredFurnishedStatus: $preferredFurnishedStatus,\n'
-        '  amenitiesDesired: $amenitiesDesired,\n'
-        '  preferredFlatmateGender: $preferredFlatmateGender,\n'
-        '  preferredFlatmateAge: $preferredFlatmateAge,\n'
-        '  preferredOccupation: $preferredOccupation,\n'
-        '  preferredHabits: $preferredHabits,\n'
-        '  idealQualities: $idealQualities,\n'
-        '  dealBreakers: $dealBreakers,\n'
-        ')';
-  }
 }
+
 
 // Stateful Widget for Single Choice Questions
 class SingleChoiceQuestionWidget extends StatefulWidget {

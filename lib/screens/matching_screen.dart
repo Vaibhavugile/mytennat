@@ -22,6 +22,10 @@ class _MatchingScreenState extends State<MatchingScreen> {
   bool _isLoading = true;
   String? _userProfileType; // 'flat_listing' or 'seeking_flatmate'
 
+  // For image carousel
+  final PageController _pageController = PageController();
+  int _currentImageIndex = 0;
+
   @override
   void initState() {
     super.initState();
@@ -35,6 +39,12 @@ class _MatchingScreenState extends State<MatchingScreen> {
     } else {
       _fetchUserProfile();
     }
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
   }
 
   Future<void> _fetchUserProfile() async {
@@ -116,6 +126,43 @@ class _MatchingScreenState extends State<MatchingScreen> {
     );
   }
 
+  void _handleProfileDismissed(DismissDirection direction) {
+    setState(() {
+      if (_profiles.isNotEmpty) {
+        // Remove the dismissed profile from the list
+        _profiles.removeAt(_currentIndex);
+        // The list automatically shifts, so _currentIndex remains valid for the "new" current element,
+        // or becomes out of bounds if the list is now empty.
+
+        // Optional: Show snackbar based on swipe direction
+        if (direction == DismissDirection.endToStart) { // Swiped left (Pass)
+          ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Profile Passed'))
+          );
+        } else if (direction == DismissDirection.startToEnd) { // Swiped right (Like)
+          ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Profile Liked!'))
+          );
+          // TODO: Implement logic to store the 'like' in Firestore here
+        }
+      }
+
+      // If no more profiles after removal, show the empty state
+      if (_profiles.isEmpty) {
+        _showAlertDialog('No More Profiles', 'You\'ve viewed all available profiles for now.', () {
+          // Optionally, navigate to homepage or show a different state
+        });
+      }
+      // Reset image index for the new card
+      _currentImageIndex = 0;
+      // Ensure page controller is attached before jumping
+      if (_pageController.hasClients) {
+        _pageController.jumpToPage(0);
+      }
+    });
+  }
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -141,18 +188,40 @@ class _MatchingScreenState extends State<MatchingScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.person_off, size: 80, color: Colors.grey[400]),
-            const SizedBox(height: 20),
-            const Text(
-              'No matching profiles found yet.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Colors.grey),
+            // Custom Placeholder Image (add to your assets folder and pubspec.yaml)
+            // Example: assets/no_profiles.png
+            Image.asset(
+              'assets/no_profiles.png', // <--- IMPORTANT: Replace with your image asset or remove if you don't have one
+              height: 150,
+              width: 150,
+              color: Colors.grey[400], // Adjust color if it's a vector image
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 30),
             const Text(
-              'Try adjusting your preferences or check back later!',
+              'Oops! No matching profiles found yet.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: Colors.black87),
+            ),
+            const SizedBox(height: 15),
+            const Text(
+              'Try broadening your search preferences or come back later. More matches are on their way!',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 16, color: Colors.grey),
+            ),
+            const SizedBox(height: 30),
+            ElevatedButton.icon(
+              onPressed: () {
+                // Action: e.g., navigate to edit preferences, or refresh
+                // Navigator.push(context, MaterialPageRoute(builder: (context) => EditPreferencesScreen()));
+                _fetchUserProfile(); // To refresh if user changed preferences externally
+              },
+              icon: const Icon(Icons.refresh, color: Colors.white),
+              label: const Text('Refresh / Adjust Preferences', style: TextStyle(color: Colors.white)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.redAccent,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+              ),
             ),
           ],
         ),
@@ -162,39 +231,202 @@ class _MatchingScreenState extends State<MatchingScreen> {
         child: Column(
           children: [
             Expanded(
-              child: Card(
-                elevation: 8,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: SingleChildScrollView(
-                    child: Column( // Use a Column here to stack image and content
-                      children: [
-                        // Large Image Placeholder at the top
-                        Container(
-                          height: 250, // Increased height for a prominent image
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            color: Colors.grey[200],
+              child: Dismissible(
+                // Use a ValueKey with a unique identifier from the profile
+                key: ValueKey(_profiles[_currentIndex].documentId),
+                direction: DismissDirection.horizontal,
+                onDismissed: _handleProfileDismissed, // Call the new handler
+                // Enhanced Dismissible Backgrounds
+                background: Container(
+                  color: Colors.green.withOpacity(0.7), // Slightly transparent green
+                  alignment: Alignment.centerLeft,
+                  padding: const EdgeInsets.only(left: 30.0),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.favorite, color: Colors.white, size: 50),
+                      SizedBox(width: 10),
+                      Text('LIKE', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ),
+                secondaryBackground: Container(
+                  color: Colors.red.withOpacity(0.7), // Slightly transparent red
+                  alignment: Alignment.centerRight,
+                  padding: const EdgeInsets.only(right: 30.0),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Text('PASS', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                      SizedBox(width: 10),
+                      Icon(Icons.close, color: Colors.white, size: 50),
+                    ],
+                  ),
+                ),
+                child: Card(
+                  elevation: 8,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          // Image carousel with Name/Age/Gender overlay
+                          ClipRRect(
                             borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                            child: Stack(
+                              children: [
+                                SizedBox(
+                                  height: 250,
+                                  width: double.infinity,
+                                  child: PageView.builder(
+                                    controller: _pageController,
+                                    // Safely access imageUrls and determine itemCount
+                                    itemCount: (_profiles[_currentIndex] is FlatListingProfile && (_profiles[_currentIndex] as FlatListingProfile).imageUrls != null && (_profiles[_currentIndex] as FlatListingProfile).imageUrls!.isNotEmpty)
+                                        ? (_profiles[_currentIndex] as FlatListingProfile).imageUrls!.length
+                                        : (_profiles[_currentIndex] is SeekingFlatmateProfile && (_profiles[_currentIndex] as SeekingFlatmateProfile).imageUrls != null && (_profiles[_currentIndex] as SeekingFlatmateProfile).imageUrls!.isNotEmpty)
+                                        ? (_profiles[_currentIndex] as SeekingFlatmateProfile).imageUrls!.length
+                                        : 1, // Default to 1 if no images
+                                    onPageChanged: (index) {
+                                      setState(() {
+                                        _currentImageIndex = index;
+                                      });
+                                    },
+                                    itemBuilder: (context, index) {
+                                      String? imageUrl;
+                                      // Safely get imageUrl from the current profile
+                                      if (_profiles[_currentIndex] is FlatListingProfile) {
+                                        final profile = _profiles[_currentIndex] as FlatListingProfile;
+                                        if (profile.imageUrls != null && index < profile.imageUrls!.length) {
+                                          imageUrl = profile.imageUrls![index];
+                                        }
+                                      } else if (_profiles[_currentIndex] is SeekingFlatmateProfile) {
+                                        final profile = _profiles[_currentIndex] as SeekingFlatmateProfile;
+                                        if (profile.imageUrls != null && index < profile.imageUrls!.length) {
+                                          imageUrl = profile.imageUrls![index];
+                                        }
+                                      }
+
+                                      // Placeholder if no image URL or an error occurs
+                                      return imageUrl != null && imageUrl.isNotEmpty
+                                          ? Image.network(
+                                        imageUrl,
+                                        fit: BoxFit.cover,
+                                        width: double.infinity,
+                                        loadingBuilder: (context, child, loadingProgress) {
+                                          if (loadingProgress == null) return child;
+                                          return Center(
+                                            child: CircularProgressIndicator(
+                                              // Fix: Correctly access expectedTotalBytes
+                                              value: loadingProgress.expectedTotalBytes != null
+                                                  ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                                  : null,
+                                              color: Colors.redAccent,
+                                            ),
+                                          );
+                                        },
+                                        errorBuilder: (context, error, stackTrace) => Container(
+                                          color: Colors.grey[200],
+                                          child: const Icon(
+                                            Icons.image_not_supported,
+                                            size: 100,
+                                            color: Colors.grey, // Adjusted color for visibility
+                                          ),
+                                        ),
+                                      )
+                                          : Container(
+                                        color: Colors.grey[200],
+                                        child: const Icon(
+                                          Icons.person_outline,
+                                          size: 100,
+                                          color: Colors.grey, // Adjusted color for visibility
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                                // Image indicators (dots)
+                                Positioned(
+                                  bottom: 10,
+                                  left: 0,
+                                  right: 0,
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: List.generate(
+                                      // Safely determine the number of dots
+                                      (_profiles[_currentIndex] is FlatListingProfile && (_profiles[_currentIndex] as FlatListingProfile).imageUrls != null && (_profiles[_currentIndex] as FlatListingProfile).imageUrls!.isNotEmpty)
+                                          ? (_profiles[_currentIndex] as FlatListingProfile).imageUrls!.length
+                                          : (_profiles[_currentIndex] is SeekingFlatmateProfile && (_profiles[_currentIndex] as SeekingFlatmateProfile).imageUrls != null && (_profiles[_currentIndex] as SeekingFlatmateProfile).imageUrls!.isNotEmpty)
+                                          ? (_profiles[_currentIndex] as SeekingFlatmateProfile).imageUrls!.length
+                                          : 1, // Default to 1 dot for placeholder
+                                          (index) => Container(
+                                        width: 8.0,
+                                        height: 8.0,
+                                        margin: const EdgeInsets.symmetric(horizontal: 4.0),
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: _currentImageIndex == index
+                                              ? Colors.white
+                                              : Colors.white.withOpacity(0.5),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                // Gradient overlay for text readability
+                                Positioned(
+                                  bottom: 0,
+                                  left: 0,
+                                  right: 0,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.bottomCenter,
+                                        end: Alignment.topCenter,
+                                        colors: [Colors.black.withOpacity(0.7), Colors.transparent],
+                                      ),
+                                    ),
+                                    padding: const EdgeInsets.all(20.0),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          _profiles[_currentIndex] is FlatListingProfile
+                                              ? (_profiles[_currentIndex] as FlatListingProfile).ownerName
+                                              : (_profiles[_currentIndex] as SeekingFlatmateProfile).name,
+                                          style: const TextStyle(
+                                            fontSize: 28,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                        Text(
+                                          _profiles[_currentIndex] is FlatListingProfile
+                                              ? '${(_profiles[_currentIndex] as FlatListingProfile).ownerAge ?? 'N/A'} • ${(_profiles[_currentIndex] as FlatListingProfile).ownerGender}'
+                                              : '${(_profiles[_currentIndex] as SeekingFlatmateProfile).age ?? 'N/A'} • ${(_profiles[_currentIndex] as SeekingFlatmateProfile).gender}',
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            color: Colors.white.withOpacity(0.9),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                          child: Icon(
-                            Icons.person_outline, // Or any other suitable icon
-                            size: 100, // Large icon for placeholder
-                            color: Colors.grey[400],
+                          Padding(
+                            padding: const EdgeInsets.all(20.0), // Padding for the rest of the content
+                            child: _buildProfileContent(_profiles[_currentIndex]),
                           ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(20.0), // Padding for the rest of the content
-                          child: _buildProfileContent(_profiles[_currentIndex]),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 30),
+            const SizedBox(height: 30), // This is the user's reported line 427
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
@@ -202,17 +434,22 @@ class _MatchingScreenState extends State<MatchingScreen> {
                   icon: Icons.close,
                   label: 'Pass',
                   color: Colors.red,
-                  onPressed: _showNextProfile,
+                  onPressed: () {
+                    // Simulate a swipe left (pass)
+                    if (_profiles.isNotEmpty) {
+                      _handleProfileDismissed(DismissDirection.endToStart);
+                    }
+                  },
                 ),
                 _buildActionButton(
                   icon: Icons.favorite,
                   label: 'Connect',
                   color: Colors.green,
                   onPressed: () {
-                    // Implement logic for "Connect" or "Like"
-                    _showAlertDialog('Connect', 'You connected with this profile!', () {
-                      _showNextProfile();
-                    });
+                    // Simulate a swipe right (like)
+                    if (_profiles.isNotEmpty) {
+                      _handleProfileDismissed(DismissDirection.startToEnd);
+                    }
                   },
                 ),
               ],
@@ -220,20 +457,7 @@ class _MatchingScreenState extends State<MatchingScreen> {
           ],
         ),
       ),
-    );
-  }
-
-  void _showNextProfile() {
-    setState(() {
-      if (_currentIndex < _profiles.length - 1) {
-        _currentIndex++;
-      } else {
-        _showAlertDialog('No More Profiles', 'You\'ve viewed all available profiles for now.', () {
-          // Optionally, navigate to homepage or show a different state
-          // Navigator.pop(context);
-        });
-      }
-    });
+    ); // Removed the extra closing brackets here
   }
 
   Widget _buildActionButton({required IconData icon, required String label, required Color color, required VoidCallback onPressed}) {
@@ -257,27 +481,39 @@ class _MatchingScreenState extends State<MatchingScreen> {
   }
 
   Widget _buildProfileContent(dynamic profile) {
+    //
+    // IMPORTANT: For image carousel to work correctly,
+    // FlatListingProfile and SeekingFlatmateProfile models MUST include:
+    // List<String>? imageUrls;
+    //
+    // And their fromMap/toMap methods should handle this field.
+    //
+    // Example for FlatListingProfile (in flatmate_profile_screen.dart):
+    // class FlatListingProfile {
+    //   ...
+    //   List<String>? imageUrls;
+    //
+    //   FlatListingProfile.fromMap(Map<String, dynamic> map, this.documentId)
+    //       : imageUrls = (map['imageUrls'] as List<dynamic>?)?.map((e) => e.toString()).toList(), // Parse imageUrls
+    //         ...;
+    //
+    //   Map<String, dynamic> toMap() {
+    //     return {
+    //       ...
+    //       'imageUrls': imageUrls, // Add this line
+    //       ...
+    //     };
+    //   }
+    // }
+    //
+    // Similar changes for SeekingFlatmateProfile in flat_with_flatmate_profile_screen.dart.
+    //
+
     if (profile is FlatListingProfile) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Name and basic info now below the large image
-          Text(
-            profile.ownerName,
-            style: const TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-          ),
-          Text(
-            '${profile.ownerAge ?? 'N/A'} • ${profile.ownerGender}',
-            style: TextStyle(
-              fontSize: 18,
-              color: Colors.grey[700],
-            ),
-          ),
-          const SizedBox(height: 20), // Spacing after name/age
+          // Name and basic info are now handled in the Stack above, removed from here
           _buildDetailCard('About Me', profile.ownerBio, Icons.info_outline),
           _buildCompactInfoRow(
             Icons.work, 'Occupation', profile.ownerOccupation,
@@ -296,9 +532,10 @@ class _MatchingScreenState extends State<MatchingScreen> {
                 Icons.home, 'Flat Type', profile.flatType,
                 Icons.chair, 'Furnished Status', profile.furnishedStatus,
               ),
+              // Formatted Rent Price
               _buildCompactInfoRow(
                 Icons.date_range, 'Availability Date', profile.availabilityDate != null ? DateFormat('dd/MM/yyyy').format(profile.availabilityDate!) : 'N/A',
-                Icons.attach_money, 'Rent Price', profile.rentPrice?.toString() ?? 'N/A',
+                Icons.attach_money, 'Rent Price', profile.rentPrice != null ? NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0).format(profile.rentPrice!) : 'N/A',
               ),
               _buildCompactInfoRow(
                 Icons.account_balance_wallet, 'Deposit Amount', profile.depositAmount?.toString() ?? 'N/A',
@@ -370,23 +607,7 @@ class _MatchingScreenState extends State<MatchingScreen> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Name and basic info now below the large image
-          Text(
-            profile.name,
-            style: const TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-          ),
-          Text(
-            '${profile.age ?? 'N/A'} • ${profile.gender}',
-            style: TextStyle(
-              fontSize: 18,
-              color: Colors.grey[700],
-            ),
-          ),
-          const SizedBox(height: 20), // Spacing after name/age
+          // Name and basic info are now handled in the Stack above, removed from here
           _buildDetailCard('About Me', profile.bio, Icons.info_outline),
           _buildCompactInfoRow(
             Icons.work, 'Occupation', profile.occupation,
@@ -396,7 +617,12 @@ class _MatchingScreenState extends State<MatchingScreen> {
             Icons.place, 'Area Preference', profile.areaPreference,
             Icons.calendar_today, 'Move-in Date', profile.moveInDate != null ? DateFormat('dd/MM/yyyy').format(profile.moveInDate!) : 'N/A',
           ),
-          _buildProfileDetailRow(Icons.money, 'Budget Range', '₹${profile.budgetMin?.toString() ?? 'N/A'} - ₹${profile.budgetMax?.toString() ?? 'N/A'}'),
+          // Formatted Budget Range
+          _buildProfileDetailRow(
+            Icons.money,
+            'Budget Range',
+            '₹${profile.budgetMin != null ? NumberFormat('#,##,###', 'en_IN').format(profile.budgetMin!) : 'N/A'} - ₹${profile.budgetMax != null ? NumberFormat('#,##,###', 'en_IN').format(profile.budgetMax!) : 'N/A'}',
+          ),
 
           _buildExpansionSection(
             title: 'Habits',
@@ -685,8 +911,11 @@ class _MatchingScreenState extends State<MatchingScreen> {
 
   // Helper for collapsible sections
   Widget _buildExpansionSection({required String title, required IconData icon, required List<Widget> children}) {
-    if (children.every((widget) => widget is SizedBox && widget.width == 0 && widget.height == 0)) {
-      return const SizedBox.shrink(); // Hide the section if all its children are hidden
+    // Filter out SizedBox.shrink from children to determine if section should be shown
+    final visibleChildren = children.where((widget) => !(widget is SizedBox && widget.width == 0 && widget.height == 0)).toList();
+
+    if (visibleChildren.isEmpty) {
+      return const SizedBox.shrink(); // Hide the section if no visible children
     }
     return Card(
       elevation: 2,
@@ -705,7 +934,7 @@ class _MatchingScreenState extends State<MatchingScreen> {
         ),
         childrenPadding: const EdgeInsets.all(16.0),
         expandedCrossAxisAlignment: CrossAxisAlignment.start,
-        children: children,
+        children: visibleChildren, // Pass only visible children
       ),
     );
   }
