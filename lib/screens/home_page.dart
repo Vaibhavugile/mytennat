@@ -1,8 +1,10 @@
+// home_page.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:mytennat/screens/edit_profile_screen.dart'; // Import the new edit profile screen
-import 'package:mytennat/screens/matching_screen.dart'; // Import the MatchingScreen
+import 'package:mytennat/screens/edit_profile_screen.dart';
+import 'package:mytennat/screens/matching_screen.dart';
+import 'package:mytennat/screens/matches_list_screen.dart'; // <--- NEW: Import your MatchesListScreen
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -12,8 +14,8 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  String? _userProfileType; // To store the fetched profile type
-  bool _isLoadingProfileType = true; // Added to manage loading state
+  String? _userProfileType;
+  bool _isLoadingProfileType = true;
 
   @override
   void initState() {
@@ -21,7 +23,6 @@ class _HomePageState extends State<HomePage> {
     _fetchUserProfileType();
   }
 
-  // Fetch the user's profile type from Firestore
   Future<void> _fetchUserProfileType() async {
     setState(() {
       _isLoadingProfileType = true;
@@ -30,24 +31,24 @@ class _HomePageState extends State<HomePage> {
     if (user != null) {
       try {
         final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-        if (doc.exists && doc.data()!.containsKey('userType')) { // Changed 'profileType' to 'userType'
+        if (doc.exists && doc.data()!.containsKey('userType')) {
           setState(() {
-            _userProfileType = doc.data()!['userType']; // Changed 'profileType' to 'userType'
+            _userProfileType = doc.data()!['userType'];
           });
         } else {
           setState(() {
-            _userProfileType = null; // Ensure it's null if userType is not found
+            _userProfileType = null;
           });
         }
       } catch (e) {
         print("Error fetching user profile type: $e");
         setState(() {
-          _userProfileType = null; // Set to null on error to prompt profile setup
+          _userProfileType = null;
         });
       }
     } else {
       setState(() {
-        _userProfileType = null; // No user logged in
+        _userProfileType = null;
       });
     }
     setState(() {
@@ -67,7 +68,7 @@ class _HomePageState extends State<HomePage> {
             icon: const Icon(Icons.logout),
             onPressed: () async {
               await FirebaseAuth.instance.signOut();
-              Navigator.of(context).pushReplacementNamed('/login'); // Navigate to login
+              Navigator.of(context).pushReplacementNamed('/login');
             },
           ),
         ],
@@ -76,24 +77,23 @@ class _HomePageState extends State<HomePage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            Text(
+            const Text(
               'Welcome!',
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             _isLoadingProfileType
                 ? const CircularProgressIndicator(color: Colors.redAccent)
-                : _userProfileType != null // Check if profile type is set
+                : _userProfileType != null
                 ? Column(
               children: [
                 Text(
-                  'Your profile type: ${_userProfileType == 'seekingFlatmate' ? 'Seeking a Flatmate' : 'Listing a Flat'}',
+                  'Your profile type: ${_userProfileType == 'seeking_flatmate' ? 'Seeking a Flatmate' : 'Listing a Flat'}',
                   style: const TextStyle(fontSize: 18, color: Colors.black87),
                 ),
                 const SizedBox(height: 30),
                 ElevatedButton.icon(
                   onPressed: () {
-                    // Navigate to matching screen based on profile type
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -114,6 +114,30 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
                 const SizedBox(height: 15),
+                // <--- NEW: Chat Button --->
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const MatchesListScreen(), // Navigate to MatchesListScreen
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.chat), // Chat icon
+                  label: const Text('My Chats'), // Button label
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.teal, // A different color for distinction
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    textStyle: const TextStyle(fontSize: 18),
+                  ),
+                ),
+                // <--- END NEW: Chat Button --->
+                const SizedBox(height: 15),
                 ElevatedButton.icon(
                   onPressed: () {
                     Navigator.push(
@@ -121,7 +145,7 @@ class _HomePageState extends State<HomePage> {
                       MaterialPageRoute(
                         builder: (context) => const EditProfileScreen(),
                       ),
-                    ).then((_) => _fetchUserProfileType()); // Refresh profile type after editing
+                    ).then((_) => _fetchUserProfileType());
                   },
                   icon: const Icon(Icons.edit),
                   label: const Text('Edit Profile'),
@@ -152,7 +176,7 @@ class _HomePageState extends State<HomePage> {
                       MaterialPageRoute(
                         builder: (context) => const EditProfileScreen(),
                       ),
-                    ).then((_) => _fetchUserProfileType()); // Refresh profile type after editing
+                    ).then((_) => _fetchUserProfileType());
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blueAccent,
@@ -164,7 +188,6 @@ class _HomePageState extends State<HomePage> {
                 ),
               ],
             ),
-            // Other homepage content can go here
           ],
         ),
       ),

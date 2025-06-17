@@ -2,9 +2,10 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:mytennat/screens/flatmate_profile_screen.dart'; // Import for FlatListingProfile
-import 'package:mytennat/screens/flat_with_flatmate_profile_screen.dart'; // Import for SeekingFlatmateProfile
-import 'package:intl/intl.dart'; // For date formatting
+import 'package:mytennat/screens/flatmate_profile_screen.dart';
+import 'package:mytennat/screens/flat_with_flatmate_profile_screen.dart';
+import 'package:intl/intl.dart';
+import 'package:mytennat/screens/chat_screen.dart'; // <--- NEW: Import your ChatScreen
 
 class MatchingScreen extends StatefulWidget {
   const MatchingScreen({super.key});
@@ -17,12 +18,11 @@ class _MatchingScreenState extends State<MatchingScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   User? _currentUser;
-  List<dynamic> _profiles = []; // Can hold FlatListingProfile or SeekingFlatmateProfile
+  List<dynamic> _profiles = [];
   int _currentIndex = 0;
   bool _isLoading = true;
-  String? _userProfileType; // 'flat_listing' or 'seeking_flatmate'
+  String? _userProfileType;
 
-  // For image carousel
   final PageController _pageController = PageController();
   int _currentImageIndex = 0;
 
@@ -55,10 +55,8 @@ class _MatchingScreenState extends State<MatchingScreen> {
       if (userDoc.exists) {
         _userProfileType = userDoc['userType'];
         if (_userProfileType == 'flat_listing') {
-          // If the current user is a flat lister, fetch seeking flatmate profiles
           await _fetchSeekingFlatmateProfiles();
         } else if (_userProfileType == 'seeking_flatmate') {
-          // If the current user is seeking a flatmate, fetch flat listing profiles
           await _fetchFlatListingProfiles();
         } else {
           _showAlertDialog('Profile Type Not Found', 'Your profile type could not be determined.', () {});
@@ -81,7 +79,7 @@ class _MatchingScreenState extends State<MatchingScreen> {
     try {
       QuerySnapshot querySnapshot = await _firestore.collection('users')
           .where('userType', isEqualTo: 'flat_listing')
-          .where('uid', isNotEqualTo: _currentUser!.uid) // Exclude current user's profile
+          .where('uid', isNotEqualTo: _currentUser!.uid)
           .get();
 
       _profiles = querySnapshot.docs.map((doc) => FlatListingProfile.fromMap(doc.data() as Map<String, dynamic>, doc.id)).toList();
@@ -95,7 +93,7 @@ class _MatchingScreenState extends State<MatchingScreen> {
     try {
       QuerySnapshot querySnapshot = await _firestore.collection('users')
           .where('userType', isEqualTo: 'seeking_flatmate')
-          .where('uid', isNotEqualTo: _currentUser!.uid) // Exclude current user's profile
+          .where('uid', isNotEqualTo: _currentUser!.uid)
           .get();
 
       _profiles = querySnapshot.docs.map((doc) => SeekingFlatmateProfile.fromMap(doc.data() as Map<String, dynamic>, doc.id)).toList();
@@ -126,24 +124,239 @@ class _MatchingScreenState extends State<MatchingScreen> {
     );
   }
 
+  // --- NEW: Function to handle a 'like' action ---
+// In matching_screen.dart, inside _MatchingScreenState class:
+  Future<void> _processLike(String likedUserId) async {
+    if (_currentUser == null) {
+      print("_processLike: Current user is null. Aborting like process.");
+      return;
+    }
+
+    final currentUserId = _currentUser!.uid;
+    print("_processLike: User $currentUserId attempting to like $likedUserId.");
+
+    try {
+      // --- OPERATION 1: Recording the current user's like (SET operation) ---
+      print("_processLike (Op1): Attempting to record like for $currentUserId on $likedUserId.");
+      try {
+        await _firestore.collection('user_likes').doc(currentUserId).collection('likes').doc(likedUserId).set({
+          'timestamp': FieldValue.serverTimestamp(),
+        });
+        print("_processLike (Op1): Successfully recorded like for $currentUserId on $likedUserId.");
+      } catch (e) {
+        print("_processLike (Op1) ERROR: Failed to SET like document: $e");
+        _showAlertDialog('Error', 'Failed to record your like: ${e.toString()}', () {});
+        return; // Stop execution if this critical step fails
+      }
+
+      // --- OPERATION 2: Checking if the other user has also liked the current user (GET operation) ---
+      print("_processLike (Op2): Checking if $likedUserId has liked $currentUserId.");
+      DocumentSnapshot otherUserLikesMe;
+      try {
+        otherUserLikesMe = await _firestore.collection('user_likes').doc(likedUserId).collection('likes').doc(currentUserId).get();
+        print("_processLike (Op2): Other user like check completed. Exists: ${otherUserLikesMe.exists}");
+      } catch (e) {
+        print("_processLike (Op2) ERROR: Failed to GET other user's like: $e");
+        _showAlertDialog('Error', 'Failed to check for mutual like: ${e.toString()}', () {});
+        return; // Stop execution if this critical step fails
+      }
+
+
+      if (otherUserLikesMe.exists) {
+        print("_processLike: Mutual like detected! IT'S A MATCH!");
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('It\'s a MATCH! 🎉'))
+        );
+
+        // --- OPERATION 3: Creating a match document and a chat room (calls _createMatchAndChatRoom) ---
+        print("_processLike (Op3): Calling _createMatchAndChatRoom...");
+        try {
+          await _createMatchAndChatRoom(currentUserId, likedUserId);
+          print("_processLike (Op3): _createMatchAndChatRoom call completed successfully.");
+        } catch (e) {
+          print("_processLike (Op3) ERROR: _createMatchAndChatRoom failed: $e");
+          _showAlertDialog('Error', 'Failed to create match/chat: ${e.toString()}', () {});
+          return; // Stop execution if this critical step fails
+        }
+
+
+        // Safely get matched profile name for the dialog
+        String chatPartnerNameForDialog = 'that user';
+        try {
+          final matchedProfile = _profiles.firstWhere((p) => p.documentId == likedUserId);
+          chatPartnerNameForDialog = matchedProfile is FlatListingProfile ? matchedProfile.ownerName : (matchedProfile as SeekingFlatmateProfile).name;
+        } catch (e) {
+          print("_processLike: Could not find matched profile in _profiles for dialog. Error: $e");
+        }
+
+        // Show match dialog and navigate to chat
+        if (mounted) { // Ensure widget is still mounted before showing dialog
+          _showMatchDialog(
+            'It\'s a Match!',
+            'You and $chatPartnerNameForDialog have liked each other! Start chatting now?',
+                () {
+              if (mounted) { // Ensure widget is still mounted before navigation
+                Navigator.of(context).pop(); // Dismiss alert dialog
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ChatScreen(
+                      chatPartnerId: likedUserId,
+                      chatPartnerName: chatPartnerNameForDialog,
+                    ),
+                  ),
+                );
+              }
+            },
+          );
+        }
+
+      } else {
+        print("_processLike: No mutual like yet. Liked profile, awaiting response.");
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Profile Liked! Awaiting their response.'))
+        );
+      }
+    } catch (e) {
+      // This outer catch should ideally not be hit if inner catches handle specific errors.
+      // It's a fallback for unexpected issues.
+      print("_processLike: UNEXPECTED GLOBAL ERROR: $e");
+      _showAlertDialog('Error', 'An unexpected error occurred: ${e.toString()}', () {});
+    }
+  }
+
+  // --- NEW: Function to create a match document and chat room ---
+  // In matching_screen.dart, inside _MatchingScreenState class:
+  Future<void> _createMatchAndChatRoom(String user1Id, String user2Id) async {
+    if (_currentUser == null) {
+      print("createMatchAndChatRoom: _currentUser is null.");
+      return;
+    }
+
+    List<String> sortedUids = [user1Id, user2Id]..sort();
+    String matchDocId = '${sortedUids[0]}_${sortedUids[1]}';
+    print("createMatchAndChatRoom: Attempting to check existence of match: $matchDocId");
+
+    try {
+      DocumentSnapshot matchDoc = await _firestore.collection('matches').doc(matchDocId).get();
+      print("createMatchAndChatRoom: Match document existence check result: ${matchDoc.exists}");
+
+      if (!matchDoc.exists) {
+        print("createMatchAndChatRoom: Match document does not exist. Proceeding to create chat and match.");
+
+        // Create new chat room
+        DocumentReference chatRef = await _firestore.collection('chats').add({
+          'participants': sortedUids,
+          'createdAt': FieldValue.serverTimestamp(),
+          'lastMessage': '',
+          'lastMessageSenderId': '',
+          'lastMessageTimestamp': null,
+        });
+        String chatRoomId = chatRef.id;
+        print("createMatchAndChatRoom: Chat room created with ID: $chatRoomId");
+
+        // Create a new match document in the 'matches' collection
+        await _firestore.collection('matches').doc(matchDocId).set({
+          'user1_id': sortedUids[0],
+          'user2_id': sortedUids[1],
+          'chatRoomId': chatRoomId,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+        print("createMatchAndChatRoom: Match document created successfully for $matchDocId");
+
+        // After creating match and chat, potentially navigate or update UI
+        // Example: Navigate to chat screen immediately
+        if (mounted) { // Check if the widget is still in the tree before navigating
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ChatScreen(
+                chatPartnerId: (user1Id == _currentUser!.uid) ? user2Id : user1Id,
+                chatPartnerName: "Match!", // You might fetch actual name here
+              ),
+            ),
+          );
+        }
+
+      } else {
+        print(
+            "createMatchAndChatRoom: Match document already exists for $matchDocId. Not creating.");
+        // Explicitly cast data to Map<String, dynamic>
+        final Map<String, dynamic>? matchData = matchDoc.data() as Map<
+            String,
+            dynamic>?;
+
+        if (matchData != null && matchData['chatRoomId'] != null) {
+          final existingChatRoomId = matchData['chatRoomId'] as String;
+          print(
+              "createMatchAndChatRoom: Existing chatRoomId: $existingChatRoomId"); // Added log
+          if (mounted) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) =>
+                    ChatScreen(
+                      chatPartnerId: (user1Id == _currentUser!.uid)
+                          ? user2Id
+                          : user1Id,
+                      chatPartnerName: "Match!", // You might fetch actual name here
+                      // chatRoomId: existingChatRoomId, // <-- You might need to pass this to ChatScreen if it uses it for existing chats
+                    ),
+              ),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      print("createMatchAndChatRoom: ERROR during match/chat creation process: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error creating match: $e')),
+      );
+    }
+  }
+
+  // --- NEW: Match Dialog ---
+  void _showMatchDialog(String title, String message, VoidCallback onChatPressed) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+          content: Text(message),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Just dismiss the dialog
+              },
+              child: const Text('Later'),
+            ),
+            ElevatedButton(
+              onPressed: onChatPressed,
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+              child: const Text('Chat Now!', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _handleProfileDismissed(DismissDirection direction) {
     setState(() {
       if (_profiles.isNotEmpty) {
+        final dismissedProfile = _profiles[_currentIndex];
+        final dismissedProfileId = dismissedProfile.documentId; // Assuming 'documentId' exists on your profile models
+
         // Remove the dismissed profile from the list
         _profiles.removeAt(_currentIndex);
-        // The list automatically shifts, so _currentIndex remains valid for the "new" current element,
-        // or becomes out of bounds if the list is now empty.
 
-        // Optional: Show snackbar based on swipe direction
         if (direction == DismissDirection.endToStart) { // Swiped left (Pass)
           ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Profile Passed'))
           );
+          // TODO: Optionally record the 'pass' in Firestore to avoid showing again
         } else if (direction == DismissDirection.startToEnd) { // Swiped right (Like)
-          ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Profile Liked!'))
-          );
-          // TODO: Implement logic to store the 'like' in Firestore here
+          _processLike(dismissedProfileId); // Call the new like processing function
         }
       }
 
@@ -162,9 +375,9 @@ class _MatchingScreenState extends State<MatchingScreen> {
     });
   }
 
-
   @override
   Widget build(BuildContext context) {
+    // ... (rest of your build method remains the same) ...
     return Scaffold(
       appBar: AppBar(
         title: const Text('Matching Profiles', style: TextStyle(color: Colors.white)),
@@ -457,8 +670,12 @@ class _MatchingScreenState extends State<MatchingScreen> {
           ],
         ),
       ),
-    ); // Removed the extra closing brackets here
+    );
   }
+
+  // ... (rest of your helper methods: _buildActionButton, _buildProfileContent,
+  // _buildProfileHeader, _buildProfileDetailRow, _buildCompactInfoRow,
+  // _buildDetailCard, _buildChipList, _buildExpansionSection) ...
 
   Widget _buildActionButton({required IconData icon, required String label, required Color color, required VoidCallback onPressed}) {
     return Expanded(
