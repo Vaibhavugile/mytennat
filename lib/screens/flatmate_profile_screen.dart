@@ -594,11 +594,11 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
 
   // Define your sections - UPDATED
   final List<Map<String, dynamic>> _sections = [
-  {'title': 'About You', 'startPage': 0, 'endPage': 6}, // Pages 0-6
+    {'title': 'About You', 'startPage': 0, 'endPage': 6}, // Pages 0-6
     {'title': 'Your Habits', 'startPage': 7, 'endPage': 20}, // Pages 7-20
     {'title': 'Flat Details', 'startPage': 21, 'endPage': 33}, // Pages 21-33
     {'title': 'Flatmate Preferences', 'startPage': 34, 'endPage': 39}, // Pages...
-];
+  ];
 
   String _getCurrentSectionTitle() {
     for (var section in _sections) {

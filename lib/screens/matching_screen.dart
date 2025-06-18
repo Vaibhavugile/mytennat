@@ -2,8 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:mytennat/screens/flatmate_profile_screen.dart';
-import 'package:mytennat/screens/flat_with_flatmate_profile_screen.dart';
+import 'package:mytennat/screens/flatmate_profile_screen.dart'; // Ensure these are imported
+import 'package:mytennat/screens/flat_with_flatmate_profile_screen.dart'; // Ensure these are imported
 import 'package:intl/intl.dart';
 import 'package:mytennat/screens/chat_screen.dart'; // <--- NEW: Import your ChatScreen
 
@@ -22,6 +22,7 @@ class _MatchingScreenState extends State<MatchingScreen> {
   int _currentIndex = 0;
   bool _isLoading = true;
   String? _userProfileType;
+  dynamic _currentUserParsedProfile; // NEW: Store the current user's parsed profile
 
   final PageController _pageController = PageController();
   int _currentImageIndex = 0;
@@ -54,9 +55,13 @@ class _MatchingScreenState extends State<MatchingScreen> {
       DocumentSnapshot userDoc = await _firestore.collection('users').doc(_currentUser!.uid).get();
       if (userDoc.exists) {
         _userProfileType = userDoc['userType'];
+
+        // NEW: Parse current user's profile based on their userType
         if (_userProfileType == 'flat_listing') {
+          _currentUserParsedProfile = FlatListingProfile.fromMap(userDoc.data() as Map<String, dynamic>, userDoc.id);
           await _fetchSeekingFlatmateProfiles();
         } else if (_userProfileType == 'seeking_flatmate') {
+          _currentUserParsedProfile = SeekingFlatmateProfile.fromMap(userDoc.data() as Map<String, dynamic>, userDoc.id);
           await _fetchFlatListingProfiles();
         } else {
           _showAlertDialog('Profile Type Not Found', 'Your profile type could not be determined.', () {});
@@ -347,9 +352,6 @@ class _MatchingScreenState extends State<MatchingScreen> {
         final dismissedProfile = _profiles[_currentIndex];
         final dismissedProfileId = dismissedProfile.documentId; // Assuming 'documentId' exists on your profile models
 
-        // Remove the dismissed profile from the list
-        _profiles.removeAt(_currentIndex);
-
         if (direction == DismissDirection.endToStart) { // Swiped left (Pass)
           ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Profile Passed'))
@@ -358,6 +360,12 @@ class _MatchingScreenState extends State<MatchingScreen> {
         } else if (direction == DismissDirection.startToEnd) { // Swiped right (Like)
           _processLike(dismissedProfileId); // Call the new like processing function
         }
+
+        // Remove the dismissed profile from the list AFTER processing
+        // This ensures _processLike has the correct context of the dismissed profile
+        _profiles.removeAt(_currentIndex);
+
+
       }
 
       // If no more profiles after removal, show the empty state
@@ -374,6 +382,306 @@ class _MatchingScreenState extends State<MatchingScreen> {
       }
     });
   }
+
+  // NEW: Function to calculate matching percentage
+  double _calculateMatchPercentage(dynamic userProfile, dynamic otherProfile) {
+    if (userProfile == null || otherProfile == null) return 0.0;
+
+    double score = 0;
+    double maxScore = 0;
+
+    // --- Weights for different categories (adjust as needed) ---
+    const double basicInfoWeight = 0.2;
+    const double habitsWeight = 0.4;
+    const double requirementsPreferencesWeight = 0.4;
+
+    // --- Basic Info Comparison ---
+    // Max score for basic info (e.g., 5 points per attribute)
+    maxScore += 5 * basicInfoWeight;
+
+    if (userProfile is SeekingFlatmateProfile && otherProfile is FlatListingProfile) {
+      // Basic Info
+      if (userProfile.desiredCity.toLowerCase() == otherProfile.desiredCity.toLowerCase()) {
+        score += 1 * basicInfoWeight;
+      }
+      if (userProfile.areaPreference.toLowerCase() == otherProfile.areaPreference.toLowerCase()) {
+        score += 1 * basicInfoWeight;
+      }
+      if (userProfile.gender.toLowerCase() == otherProfile.ownerGender.toLowerCase()) {
+        score += 1 * basicInfoWeight;
+      }
+
+      // Age compatibility (e.g., if other user's age is within preferred range)
+      if (userProfile.preferredFlatmateAge.isNotEmpty && otherProfile.ownerAge != null) {
+        // Simple age range parsing for demonstration, enhance as needed
+        if (userProfile.preferredFlatmateAge.contains('-')) {
+          final parts = userProfile.preferredFlatmateAge.split('-');
+          if (parts.length == 2) {
+            final minAge = int.tryParse(parts[0].trim());
+            final maxAge = int.tryParse(parts[1].trim());
+            if (minAge != null && maxAge != null && otherProfile.ownerAge! >= minAge && otherProfile.ownerAge! <= maxAge) {
+              score += 1 * basicInfoWeight;
+            }
+          }
+        } else if (userProfile.preferredFlatmateAge.toLowerCase() == 'any') {
+          score += 1 * basicInfoWeight; // Considered a match if 'any'
+        }
+      }
+
+      // Occupation Match (simple match for now)
+      if (userProfile.preferredOccupation.toLowerCase() == otherProfile.ownerOccupation.toLowerCase() && userProfile.preferredOccupation.isNotEmpty) {
+        score += 1 * basicInfoWeight;
+      }
+
+      // --- Habits Comparison (more nuanced) ---
+      // Max score for habits (e.g., 10 points per attribute)
+      maxScore += 10 * habitsWeight;
+
+      // Smoking
+      if ((userProfile.smokingHabits.toLowerCase() == 'non-smoker' && otherProfile.smokingHabit.toLowerCase() == 'non-smoker') ||
+          (userProfile.smokingHabits.toLowerCase() == 'occasional' && (otherProfile.smokingHabit.toLowerCase() == 'occasional' || otherProfile.smokingHabit.toLowerCase() == 'non-smoker')) ||
+          (userProfile.smokingHabits.toLowerCase() == 'tolerates' && (otherProfile.smokingHabit.toLowerCase() == 'occasional' || otherProfile.smokingHabit.toLowerCase() == 'smoker')) ||
+          (userProfile.smokingHabits.toLowerCase() == otherProfile.smokingHabit.toLowerCase())) {
+        score += 2 * habitsWeight;
+      }
+
+      // Drinking
+      if ((userProfile.drinkingHabits.toLowerCase() == 'non-drinker' && otherProfile.drinkingHabit.toLowerCase() == 'non-drinker') ||
+          (userProfile.drinkingHabits.toLowerCase() == 'social' && (otherProfile.drinkingHabit.toLowerCase() == 'social' || otherProfile.drinkingHabit.toLowerCase() == 'non-drinker')) ||
+          (userProfile.drinkingHabits.toLowerCase() == 'tolerates' && (otherProfile.drinkingHabit.toLowerCase() == 'social' || otherProfile.drinkingHabit.toLowerCase() == 'frequent')) ||
+          (userProfile.drinkingHabits.toLowerCase() == otherProfile.drinkingHabit.toLowerCase())) {
+        score += 2 * habitsWeight;
+      }
+
+      // Food Preference
+      if (userProfile.foodPreference.toLowerCase() == otherProfile.foodPreference.toLowerCase()) {
+        score += 1 * habitsWeight;
+      }
+
+      // Cleanliness
+      if (userProfile.cleanliness.toLowerCase() == otherProfile.cleanlinessLevel.toLowerCase()) {
+        score += 2 * habitsWeight;
+      }
+
+      // Noise Level (e.g., quiet matches quiet, tolerant matches anything)
+      if ((userProfile.noiseLevel.toLowerCase() == 'quiet' && otherProfile.noiseLevel.toLowerCase() == 'quiet') ||
+          (userProfile.noiseLevel.toLowerCase() == 'moderate' && (otherProfile.noiseLevel.toLowerCase() == 'moderate' || otherProfile.noiseLevel.toLowerCase() == 'quiet')) ||
+          (userProfile.noiseLevel.toLowerCase() == 'tolerant') ||
+          (userProfile.noiseLevel.toLowerCase() == otherProfile.noiseLevel.toLowerCase())) {
+        score += 2 * habitsWeight;
+      }
+
+      // Social Habits
+      if (userProfile.socialHabits.toLowerCase() == otherProfile.socialPreferences.toLowerCase()) {
+        score += 1 * habitsWeight;
+      }
+
+      // Pet Ownership/Tolerance
+      if ((userProfile.petOwnership.toLowerCase() == 'no pets' && otherProfile.petOwnership.toLowerCase() == 'no pets') ||
+          (userProfile.petOwnership.toLowerCase() == 'has pets' && otherProfile.petTolerance.toLowerCase() == 'tolerates pets') ||
+          (userProfile.petTolerance.toLowerCase() == 'tolerates pets' && otherProfile.petOwnership.toLowerCase() == 'has pets') ||
+          (userProfile.petOwnership.toLowerCase() == otherProfile.petOwnership.toLowerCase())) {
+        score += 2 * habitsWeight;
+      }
+
+      // Add more habit comparisons...
+
+
+      // --- Requirements/Preferences Comparison ---
+      // Max score for requirements/preferences (e.g., 5 points per attribute, 10 for lists)
+      maxScore += 5 * requirementsPreferencesWeight;
+
+      // Flat Type
+      if (userProfile.preferredFlatType.toLowerCase() == otherProfile.flatType.toLowerCase()) {
+        score += 1 * requirementsPreferencesWeight;
+      }
+
+      // Furnished Status
+      if (userProfile.preferredFurnishedStatus.toLowerCase() == otherProfile.furnishedStatus.toLowerCase()) {
+        score += 1 * requirementsPreferencesWeight;
+      }
+
+      // Budget (check if otherProfile's rent is within userProfile's budget range)
+      if (userProfile.budgetMin != null && userProfile.budgetMax != null && otherProfile.rentPrice != null) {
+        if (otherProfile.rentPrice! >= userProfile.budgetMin! && otherProfile.rentPrice! <= userProfile.budgetMax!) {
+          score += 2 * requirementsPreferencesWeight;
+        }
+      }
+
+
+      // Amenities Desired (overlap)
+      final amenityIntersection = userProfile.amenitiesDesired.toSet().intersection(otherProfile.amenities.toSet());
+      score += (amenityIntersection.length / (userProfile.amenitiesDesired.length > 0 ? userProfile.amenitiesDesired.length : 1)) * 2 * requirementsPreferencesWeight; // Scale by number of desired amenities
+
+      // Preferred Habits (other user's actual habits matching preferred habits)
+      final preferredHabitsIntersection = userProfile.preferredHabits.toSet().intersection([
+        otherProfile.smokingHabit,
+        otherProfile.drinkingHabit,
+        otherProfile.foodPreference,
+        otherProfile.cleanlinessLevel,
+        otherProfile.noiseLevel,
+        otherProfile.socialPreferences,
+        otherProfile.visitorsPolicy,
+        otherProfile.petOwnership,
+        otherProfile.petTolerance,
+        otherProfile.sleepingSchedule,
+        otherProfile.workSchedule,
+        otherProfile.sharingCommonSpaces,
+        otherProfile.guestsOvernightPolicy,
+        otherProfile.personalSpaceVsSocialization,
+      ].map((e) => e.toLowerCase()).toSet());
+      score += (preferredHabitsIntersection.length / (userProfile.preferredHabits.length > 0 ? userProfile.preferredHabits.length : 1)) * 2 * requirementsPreferencesWeight;
+
+      // Ideal Qualities (overlap)
+      // This part requires you to define how 'ideal qualities' map to actual profile traits.
+      // For now, a simple overlap with 'deal breakers' from the other profile could be a reverse match.
+      // Or you might need to infer ideal qualities from the other profile's general habits/bio.
+      // For a basic match, we can just check for direct overlap if 'idealQualities' are also tags.
+      final idealQualitiesIntersection = userProfile.idealQualities.toSet().intersection(otherProfile.flatmateIdealQualities.toSet());
+      score += (idealQualitiesIntersection.length / (userProfile.idealQualities.length > 0 ? userProfile.idealQualities.length : 1)) * 2 * requirementsPreferencesWeight;
+
+
+      // Deal Breakers (penalty for overlap)
+      final dealBreakersIntersection = userProfile.dealBreakers.toSet().intersection(otherProfile.flatmateDealBreakers.toSet());
+      score -= (dealBreakersIntersection.length * 5) * requirementsPreferencesWeight; // Penalize heavily
+
+    } else if (userProfile is FlatListingProfile && otherProfile is SeekingFlatmateProfile) {
+      // Basic Info
+      if (userProfile.desiredCity.toLowerCase() == otherProfile.desiredCity.toLowerCase()) {
+        score += 1 * basicInfoWeight;
+      }
+      if (userProfile.areaPreference.toLowerCase() == otherProfile.areaPreference.toLowerCase()) {
+        score += 1 * basicInfoWeight;
+      }
+      if (userProfile.ownerGender.toLowerCase() == otherProfile.gender.toLowerCase()) {
+        score += 1 * basicInfoWeight;
+      }
+
+      // Age compatibility (e.g., if other user's age is within preferred range of the flat lister)
+      if (userProfile.preferredAgeGroup.isNotEmpty && otherProfile.age != null) {
+        if (userProfile.preferredAgeGroup.contains('-')) {
+          final parts = userProfile.preferredAgeGroup.split('-');
+          if (parts.length == 2) {
+            final minAge = int.tryParse(parts[0].trim());
+            final maxAge = int.tryParse(parts[1].trim());
+            if (minAge != null && maxAge != null && otherProfile.age! >= minAge && otherProfile.age! <= maxAge) {
+              score += 1 * basicInfoWeight;
+            }
+          }
+        } else if (userProfile.preferredAgeGroup.toLowerCase() == 'any') {
+          score += 1 * basicInfoWeight;
+        }
+      }
+
+      // Occupation Match
+      if (userProfile.preferredOccupation.toLowerCase() == otherProfile.occupation.toLowerCase() && userProfile.preferredOccupation.isNotEmpty) {
+        score += 1 * basicInfoWeight;
+      }
+
+
+      // --- Habits Comparison (more nuanced) ---
+      maxScore += 10 * habitsWeight;
+
+      // Smoking
+      if ((userProfile.smokingHabit.toLowerCase() == 'non-smoker' && otherProfile.smokingHabits.toLowerCase() == 'non-smoker') ||
+          (userProfile.smokingHabit.toLowerCase() == 'occasional' && (otherProfile.smokingHabits.toLowerCase() == 'occasional' || otherProfile.smokingHabits.toLowerCase() == 'non-smoker')) ||
+          (userProfile.smokingHabit.toLowerCase() == 'tolerates' && (otherProfile.smokingHabits.toLowerCase() == 'occasional' || otherProfile.smokingHabits.toLowerCase() == 'smoker')) ||
+          (userProfile.smokingHabit.toLowerCase() == otherProfile.smokingHabits.toLowerCase())) {
+        score += 2 * habitsWeight;
+      }
+
+      // Drinking
+      if ((userProfile.drinkingHabit.toLowerCase() == 'non-drinker' && otherProfile.drinkingHabits.toLowerCase() == 'non-drinker') ||
+          (userProfile.drinkingHabit.toLowerCase() == 'social' && (otherProfile.drinkingHabits.toLowerCase() == 'social' || otherProfile.drinkingHabits.toLowerCase() == 'non-drinker')) ||
+          (userProfile.drinkingHabit.toLowerCase() == 'tolerates' && (otherProfile.drinkingHabits.toLowerCase() == 'social' || otherProfile.drinkingHabits.toLowerCase() == 'frequent')) ||
+          (userProfile.drinkingHabit.toLowerCase() == otherProfile.drinkingHabits.toLowerCase())) {
+        score += 2 * habitsWeight;
+      }
+
+      // Food Preference
+      if (userProfile.foodPreference.toLowerCase() == otherProfile.foodPreference.toLowerCase()) {
+        score += 1 * habitsWeight;
+      }
+
+      // Cleanliness
+      if (userProfile.cleanlinessLevel.toLowerCase() == otherProfile.cleanliness.toLowerCase()) {
+        score += 2 * habitsWeight;
+      }
+
+      // Noise Level (e.g., quiet matches quiet, tolerant matches anything)
+      if ((userProfile.noiseLevel.toLowerCase() == 'quiet' && otherProfile.noiseLevel.toLowerCase() == 'quiet') ||
+          (userProfile.noiseLevel.toLowerCase() == 'moderate' && (otherProfile.noiseLevel.toLowerCase() == 'moderate' || otherProfile.noiseLevel.toLowerCase() == 'quiet')) ||
+          (userProfile.noiseLevel.toLowerCase() == 'tolerates') ||
+          (userProfile.noiseLevel.toLowerCase() == otherProfile.noiseLevel.toLowerCase())) {
+        score += 2 * habitsWeight;
+      }
+
+      // Social Habits
+      if (userProfile.socialPreferences.toLowerCase() == otherProfile.socialHabits.toLowerCase()) {
+        score += 1 * habitsWeight;
+      }
+
+      // Pet Ownership/Tolerance
+      if ((userProfile.petOwnership.toLowerCase() == 'no pets' && otherProfile.petOwnership.toLowerCase() == 'no pets') ||
+          (userProfile.petOwnership.toLowerCase() == 'has pets' && otherProfile.petTolerance.toLowerCase() == 'tolerates pets') ||
+          (userProfile.petTolerance.toLowerCase() == 'tolerates pets' && otherProfile.petOwnership.toLowerCase() == 'has pets') ||
+          (userProfile.petOwnership.toLowerCase() == otherProfile.petOwnership.toLowerCase())) {
+        score += 2 * habitsWeight;
+      }
+      // Add more habit comparisons...
+
+      // --- Requirements/Preferences Comparison (from flat lister's perspective) ---
+      maxScore += 5 * requirementsPreferencesWeight;
+
+      // Preferred Flatmate Gender
+      if (userProfile.preferredGender.toLowerCase() == otherProfile.gender.toLowerCase() || userProfile.preferredGender.toLowerCase() == 'any') {
+        score += 1 * requirementsPreferencesWeight;
+      }
+
+      // Preferred Flatmate Age Group (already handled with basic info)
+
+      // Preferred Occupation (already handled with basic info)
+
+      // Preferred Habits (overlap with other user's actual habits)
+      final preferredHabitsIntersection = userProfile.preferredHabits.toSet().intersection([
+        otherProfile.smokingHabits,
+        otherProfile.drinkingHabits,
+        otherProfile.foodPreference,
+        otherProfile.cleanliness,
+        otherProfile.noiseLevel,
+        otherProfile.socialHabits,
+        otherProfile.guestsFrequency,
+        otherProfile.visitorsPolicy,
+        otherProfile.petOwnership,
+        otherProfile.petTolerance,
+        otherProfile.sleepingSchedule,
+        otherProfile.workSchedule,
+        otherProfile.sharingCommonSpaces,
+        otherProfile.guestsOvernightPolicy,
+        otherProfile.personalSpaceVsSocialization,
+      ].map((e) => e.toLowerCase()).toSet());
+      score += (preferredHabitsIntersection.length / (userProfile.preferredHabits.length > 0 ? userProfile.preferredHabits.length : 1)) * 2 * requirementsPreferencesWeight;
+
+      // Ideal Qualities (overlap)
+      final idealQualitiesIntersection = userProfile.flatmateIdealQualities.toSet().intersection(otherProfile.idealQualities.toSet());
+      score += (idealQualitiesIntersection.length / (userProfile.flatmateIdealQualities.length > 0 ? userProfile.flatmateIdealQualities.length : 1)) * 2 * requirementsPreferencesWeight;
+
+      // Deal Breakers (penalty for overlap)
+      final dealBreakersIntersection = userProfile.flatmateDealBreakers.toSet().intersection(otherProfile.dealBreakers.toSet());
+      score -= (dealBreakersIntersection.length * 5) * requirementsPreferencesWeight; // Penalize heavily
+
+    } else {
+      return 0.0; // Mismatch in profile types or unexpected scenario
+    }
+
+    // Ensure score doesn't go below zero
+    if (score < 0) score = 0;
+
+    // Calculate percentage, ensuring maxScore is not zero to avoid division by zero
+    double percentage = (maxScore > 0) ? (score / maxScore) * 100 : 0.0;
+    return percentage.clamp(0.0, 100.0); // Ensure it's between 0 and 100
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -625,6 +933,28 @@ class _MatchingScreenState extends State<MatchingScreen> {
                                     ),
                                   ),
                                 ),
+                                // NEW: Matching Percentage Display
+                                if (_currentUserParsedProfile != null)
+                                  Positioned(
+                                    top: 10,
+                                    right: 10,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                      decoration: BoxDecoration(
+                                        color: Colors.redAccent.withOpacity(0.8),
+                                        borderRadius: BorderRadius.circular(15),
+                                        border: Border.all(color: Colors.white, width: 1.5),
+                                      ),
+                                      child: Text(
+                                        '${_calculateMatchPercentage(_currentUserParsedProfile, _profiles[_currentIndex]).toInt()}% Match',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
                               ],
                             ),
                           ),
