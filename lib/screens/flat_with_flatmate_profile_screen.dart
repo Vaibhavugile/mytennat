@@ -1026,6 +1026,18 @@ class _FlatWithFlatmateProfileScreenState
         initialValue: _seekingFlatmateProfile.guestsOvernightPolicy,
       ),
 
+      SingleChoiceQuestionWidget(
+        title: "What's your policy on visitors?",
+        subtitle: "How often do you plan to have guests over?",
+        options: ['Frequent visitors', 'Occasional visitors', 'Rarely have visitors', 'No visitors'],
+        onSelected: (value) {
+          setState(() {
+            _seekingFlatmateProfile.visitorsPolicy = value;
+          });
+        },
+        initialValue: _seekingFlatmateProfile.visitorsPolicy,
+      ),
+
       // Page 20: Pet Ownership
       SingleChoiceQuestionWidget(
         title: "Do you currently own pets?",

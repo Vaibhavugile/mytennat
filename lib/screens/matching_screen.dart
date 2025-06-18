@@ -395,25 +395,26 @@ class _MatchingScreenState extends State<MatchingScreen> {
     const double habitsWeight = 0.4;
     const double requirementsPreferencesWeight = 0.4;
 
-    // --- Basic Info Comparison ---
-    // Max score for basic info (e.g., 5 points per attribute)
-    maxScore += 5 * basicInfoWeight;
-
     if (userProfile is SeekingFlatmateProfile && otherProfile is FlatListingProfile) {
-      // Basic Info
+      // --- Basic Info Comparison ---
+      // Max score for basic info (5 attributes * 1 point each)
+      maxScore += 5 * basicInfoWeight; // Total for basic info
+
+      // Desired City
       if (userProfile.desiredCity.toLowerCase() == otherProfile.desiredCity.toLowerCase()) {
         score += 1 * basicInfoWeight;
       }
+      // Area Preference
       if (userProfile.areaPreference.toLowerCase() == otherProfile.areaPreference.toLowerCase()) {
         score += 1 * basicInfoWeight;
       }
+      // Gender
       if (userProfile.gender.toLowerCase() == otherProfile.ownerGender.toLowerCase()) {
         score += 1 * basicInfoWeight;
       }
 
       // Age compatibility (e.g., if other user's age is within preferred range)
       if (userProfile.preferredFlatmateAge.isNotEmpty && otherProfile.ownerAge != null) {
-        // Simple age range parsing for demonstration, enhance as needed
         if (userProfile.preferredFlatmateAge.contains('-')) {
           final parts = userProfile.preferredFlatmateAge.split('-');
           if (parts.length == 2) {
@@ -434,86 +435,407 @@ class _MatchingScreenState extends State<MatchingScreen> {
       }
 
       // --- Habits Comparison (more nuanced) ---
-      // Max score for habits (e.g., 10 points per attribute)
-      maxScore += 10 * habitsWeight;
+      // NO fixed maxScore for habits here. Each habit adds its max potential.
 
       // Smoking
-      if ((userProfile.smokingHabits.toLowerCase() == 'non-smoker' && otherProfile.smokingHabit.toLowerCase() == 'non-smoker') ||
-          (userProfile.smokingHabits.toLowerCase() == 'occasional' && (otherProfile.smokingHabit.toLowerCase() == 'occasional' || otherProfile.smokingHabit.toLowerCase() == 'non-smoker')) ||
-          (userProfile.smokingHabits.toLowerCase() == 'tolerates' && (otherProfile.smokingHabit.toLowerCase() == 'occasional' || otherProfile.smokingHabit.toLowerCase() == 'smoker')) ||
-          (userProfile.smokingHabits.toLowerCase() == otherProfile.smokingHabit.toLowerCase())) {
+      maxScore += 2 * habitsWeight; // Max score for smoking
+      final userSmokes = userProfile.smokingHabits.toLowerCase();
+      final otherSmokes = otherProfile.smokingHabit.toLowerCase();
+
+      if (
+      (userSmokes == 'never' && otherSmokes == 'never') ||
+          (userSmokes == 'occasionally' && (otherSmokes == 'occasionally' || otherSmokes == 'never')) ||
+          (userSmokes == 'socially' && (otherSmokes == 'socially' || otherSmokes == 'occasionally' || otherSmokes == 'never')) ||
+          (userSmokes == 'regularly' && otherSmokes == 'regularly') ||
+          (userSmokes == 'tolerates' && (otherSmokes == 'occasionally' || otherSmokes == 'socially' || otherSmokes == 'regularly'))
+      ) {
         score += 2 * habitsWeight;
       }
 
       // Drinking
-      if ((userProfile.drinkingHabits.toLowerCase() == 'non-drinker' && otherProfile.drinkingHabit.toLowerCase() == 'non-drinker') ||
-          (userProfile.drinkingHabits.toLowerCase() == 'social' && (otherProfile.drinkingHabit.toLowerCase() == 'social' || otherProfile.drinkingHabit.toLowerCase() == 'non-drinker')) ||
-          (userProfile.drinkingHabits.toLowerCase() == 'tolerates' && (otherProfile.drinkingHabit.toLowerCase() == 'social' || otherProfile.drinkingHabit.toLowerCase() == 'frequent')) ||
-          (userProfile.drinkingHabits.toLowerCase() == otherProfile.drinkingHabit.toLowerCase())) {
+      maxScore += 2 * habitsWeight; // Max score for drinking
+      final userDrinksPref = userProfile.drinkingHabits.toLowerCase();
+      final otherDrinksActual = otherProfile.drinkingHabit.toLowerCase();
+
+      if (
+      (userDrinksPref == 'never' && otherDrinksActual == 'never') ||
+          (userDrinksPref == 'occasionally' && (otherDrinksActual == 'occasionally' || otherDrinksActual == 'never')) ||
+          (userDrinksPref == 'socially' && (otherDrinksActual == 'socially' || otherDrinksActual == 'occasionally' || otherDrinksActual == 'never')) ||
+          (userDrinksPref == 'regularly' && otherDrinksActual == 'regularly') ||
+          (userDrinksPref == 'tolerates' && (otherDrinksActual == 'occasionally' || otherDrinksActual == 'socially' || otherDrinksActual == 'regularly'))
+      ) {
         score += 2 * habitsWeight;
       }
 
       // Food Preference
-      if (userProfile.foodPreference.toLowerCase() == otherProfile.foodPreference.toLowerCase()) {
+      maxScore += 1 * habitsWeight; // Max score for food preference
+      final userFood = userProfile.foodPreference.toLowerCase();
+      final otherFood = otherProfile.foodPreference.toLowerCase();
+
+      if (userFood == otherFood) {
         score += 1 * habitsWeight;
+      } else if (
+      (userFood == 'vegan' && (otherFood == 'vegetarian' || otherFood == 'eggetarian' || otherFood == 'jain')) ||
+          (otherFood == 'vegan' && (userFood == 'vegetarian' || userFood == 'eggetarian' || userFood == 'jain'))
+      ) {
+        score += 0.75 * habitsWeight;
+      } else if (
+      (userFood == 'vegetarian' && (otherFood == 'eggetarian' || otherFood == 'jain')) ||
+          (otherFood == 'vegetarian' && (userFood == 'eggetarian' || userFood == 'jain'))
+      ) {
+        score += 0.75 * habitsWeight;
+      } else if (
+      (userFood == 'eggetarian' && (otherFood == 'vegetarian' || otherFood == 'jain')) ||
+          (otherFood == 'eggetarian' && (userFood == 'vegetarian' || userFood == 'jain'))
+      ) {
+        score += 0.5 * habitsWeight;
+      } else if (
+      (userFood == 'jain' && (otherFood == 'vegetarian' || otherFood == 'vegan' || otherFood == 'eggetarian')) ||
+          (otherFood == 'jain' && (userFood == 'vegetarian' || userFood == 'vegan' || userFood == 'eggetarian'))
+      ) {
+        score += 0.75 * habitsWeight;
+      } else if ((userFood == 'other' || otherFood == 'other')) {
+        score += 0.2 * habitsWeight;
       }
 
       // Cleanliness
-      if (userProfile.cleanliness.toLowerCase() == otherProfile.cleanlinessLevel.toLowerCase()) {
+      maxScore += 2 * habitsWeight; // Max score for cleanliness
+      final userCleanliness = userProfile.cleanliness.toLowerCase();
+      final otherCleanliness = otherProfile.cleanlinessLevel.toLowerCase();
+
+      if (userCleanliness == otherCleanliness) {
         score += 2 * habitsWeight;
+      } else if (
+      (userCleanliness == 'very tidy' && otherCleanliness == 'moderately tidy') ||
+          (otherCleanliness == 'very tidy' && userCleanliness == 'moderately tidy')
+      ) {
+        score += 1.5 * habitsWeight;
+      } else if (
+      (userCleanliness == 'moderately tidy' && otherCleanliness == 'flexible') ||
+          (otherCleanliness == 'moderately tidy' && userCleanliness == 'flexible')
+      ) {
+        score += 1.0 * habitsWeight;
+      } else if (
+      (userCleanliness == 'flexible' && otherCleanliness == 'can be messy at times') ||
+          (otherCleanliness == 'flexible' && userCleanliness == 'can be messy at times')
+      ) {
+        score += 0.5 * habitsWeight;
+      } else if (
+      (userCleanliness == 'very tidy' && (otherCleanliness == 'flexible' || otherCleanliness == 'can be messy at times')) ||
+          (otherCleanliness == 'very tidy' && (userCleanliness == 'flexible' || userCleanliness == 'can be messy at times'))
+      ) {
+        score += 0.2 * habitsWeight;
       }
 
-      // Noise Level (e.g., quiet matches quiet, tolerant matches anything)
-      if ((userProfile.noiseLevel.toLowerCase() == 'quiet' && otherProfile.noiseLevel.toLowerCase() == 'quiet') ||
-          (userProfile.noiseLevel.toLowerCase() == 'moderate' && (otherProfile.noiseLevel.toLowerCase() == 'moderate' || otherProfile.noiseLevel.toLowerCase() == 'quiet')) ||
-          (userProfile.noiseLevel.toLowerCase() == 'tolerant') ||
-          (userProfile.noiseLevel.toLowerCase() == otherProfile.noiseLevel.toLowerCase())) {
+      // Noise Level
+      maxScore += 2 * habitsWeight; // Max score for noise level
+      final userNoise = userProfile.noiseLevel.toLowerCase();
+      final otherNoise = otherProfile.noiseLevel.toLowerCase();
+
+      if (userNoise == otherNoise) {
         score += 2 * habitsWeight;
+      } else if (
+      (userNoise == 'very quiet' && otherNoise == 'moderate noise') ||
+          (otherNoise == 'very quiet' && userNoise == 'moderate noise')
+      ) {
+        score += 1.5 * habitsWeight;
+      } else if (
+      (userNoise == 'moderate noise' && (otherNoise == 'very quiet' || otherNoise == 'lively')) ||
+          (otherNoise == 'moderate noise' && (userNoise == 'very quiet' || userNoise == 'lively'))
+      ) {
+        score += 1.0 * habitsWeight;
+      } else if (
+      (userNoise == 'flexible' && (otherNoise == 'very quiet' || otherNoise == 'moderate noise' || otherNoise == 'lively')) ||
+          (otherNoise == 'flexible' && (userNoise == 'very quiet' || userNoise == 'moderate noise' || userNoise == 'lively'))
+      ) {
+        score += 1.8 * habitsWeight;
+      } else if (
+      (userNoise == 'lively' && otherNoise == 'very quiet') ||
+          (otherNoise == 'lively' && userNoise == 'very quiet')
+      ) {
+        // These are generally a bad match unless one is flexible. Score 0 here.
       }
 
       // Social Habits
-      if (userProfile.socialHabits.toLowerCase() == otherProfile.socialPreferences.toLowerCase()) {
+      maxScore += 1 * habitsWeight; // Max score for social habits
+      final userSocial = userProfile.socialHabits.toLowerCase();
+      final otherSocial = otherProfile.socialPreferences.toLowerCase();
+
+      if (userSocial == otherSocial) {
         score += 1 * habitsWeight;
+      } else if (
+      (userSocial == 'flexible' && (otherSocial == 'social & outgoing' || otherSocial == 'occasional gatherings' || otherSocial == 'quiet & private')) ||
+          (otherSocial == 'flexible' && (userSocial == 'social & outgoing' || userSocial == 'occasional gatherings' || userSocial == 'quiet & private'))
+      ) {
+        score += 0.9 * habitsWeight;
+      } else if (
+      (userSocial == 'social & outgoing' && otherSocial == 'occasional gatherings') ||
+          (otherSocial == 'social & outgoing' && userSocial == 'occasional gatherings')
+      ) {
+        score += 0.7 * habitsWeight;
+      } else if (
+      (userSocial == 'occasional gatherings' && otherSocial == 'quiet & private') ||
+          (otherSocial == 'occasional gatherings' && userSocial == 'quiet & private')
+      ) {
+        score += 0.6 * habitsWeight;
+      } else if (
+      (userSocial == 'social & outgoing' && otherSocial == 'quiet & private') ||
+          (otherSocial == 'social & outgoing' && userSocial == 'quiet & private')
+      ) {
+        score += 0.2 * habitsWeight;
       }
 
       // Pet Ownership/Tolerance
-      if ((userProfile.petOwnership.toLowerCase() == 'no pets' && otherProfile.petOwnership.toLowerCase() == 'no pets') ||
-          (userProfile.petOwnership.toLowerCase() == 'has pets' && otherProfile.petTolerance.toLowerCase() == 'tolerates pets') ||
-          (userProfile.petTolerance.toLowerCase() == 'tolerates pets' && otherProfile.petOwnership.toLowerCase() == 'has pets') ||
-          (userProfile.petOwnership.toLowerCase() == otherProfile.petOwnership.toLowerCase())) {
+      maxScore += 2 * habitsWeight; // Max score for pet ownership/tolerance
+      final userOwns = userProfile.petOwnership.toLowerCase();
+      final otherOwns = otherProfile.petOwnership.toLowerCase();
+      final userTolerates = (userProfile.petTolerance ?? '').toLowerCase();
+      final otherTolerates = (otherProfile.petTolerance ?? '').toLowerCase();
+
+      double currentPetScore = 0;
+      if (userOwns == 'no' && otherOwns == 'no') {
+        currentPetScore = 2.0 * habitsWeight;
+      } else if (userOwns == 'yes' && otherOwns == 'yes') {
+        currentPetScore = 2.0 * habitsWeight;
+      } else if ((userOwns == 'yes' && otherTolerates == 'tolerates pets') || (otherOwns == 'yes' && userTolerates == 'tolerates pets')) {
+        currentPetScore = 2.0 * habitsWeight;
+      } else if (userOwns == 'planning to get one' && otherOwns == 'planning to get one') {
+        currentPetScore = 1.8 * habitsWeight;
+      } else if ((userOwns == 'yes' && otherOwns == 'planning to get one') || (otherOwns == 'yes' && userOwns == 'planning to get one')) {
+        currentPetScore = 1.5 * habitsWeight;
+      } else if ((userOwns == 'no' && otherOwns == 'planning to get one' && userTolerates == 'tolerates pets') || (otherOwns == 'no' && userOwns == 'planning to get one' && otherTolerates == 'tolerates pets')) {
+        currentPetScore = 1.0 * habitsWeight;
+      } else if ((userOwns == 'planning to get one' && otherTolerates == 'tolerates pets') || (otherOwns == 'planning to get one' && userTolerates == 'tolerates pets')) {
+        currentPetScore = 1.0 * habitsWeight;
+      }
+      score += currentPetScore;
+
+      // Visitors Policy
+      maxScore += 2 * habitsWeight; // Max score for visitors policy
+      final userVisitors = userProfile.visitorsPolicy.toLowerCase();
+      final otherVisitors = otherProfile.visitorsPolicy.toLowerCase();
+
+      if (userVisitors == otherVisitors) {
         score += 2 * habitsWeight;
+      } else if (
+      (userVisitors == 'frequent visitors' && otherVisitors == 'occasional visitors') ||
+          (otherVisitors == 'frequent visitors' && userVisitors == 'occasional visitors')
+      ) {
+        score += 1.5 * habitsWeight;
+      } else if (
+      (userVisitors == 'occasional visitors' && otherVisitors == 'rarely have visitors') ||
+          (otherVisitors == 'occasional visitors' && userVisitors == 'rarely have visitors')
+      ) {
+        score += 1.5 * habitsWeight;
+      } else if (
+      (userVisitors == 'rarely have visitors' && otherVisitors == 'no visitors') ||
+          (otherVisitors == 'rarely have visitors' && userVisitors == 'no visitors')
+      ) {
+        score += 1.5 * habitsWeight;
+      } else if (
+      (userVisitors == 'occasional visitors' && otherVisitors == 'no visitors') ||
+          (otherVisitors == 'occasional visitors' && userVisitors == 'no visitors')
+      ) {
+        score += 0.5 * habitsWeight;
+      } else if (
+      (userVisitors == 'frequent visitors' && otherVisitors == 'rarely have visitors') ||
+          (otherVisitors == 'frequent visitors' && userVisitors == 'rarely have visitors')
+      ) {
+        score += 0.2 * habitsWeight;
+      } else if (
+      (userVisitors == 'frequent visitors' && otherVisitors == 'no visitors') ||
+          (otherVisitors == 'frequent visitors' && userVisitors == 'no visitors')
+      ) {
+        // strong mismatch, 0 points
       }
 
-      // Add more habit comparisons...
+      // Sleeping Schedule
+      maxScore += 2 * habitsWeight; // Max score for sleeping schedule
+      final userSchedule = userProfile.sleepingSchedule.toLowerCase();
+      final otherSchedule = otherProfile.sleepingSchedule.toLowerCase();
 
+      if (userSchedule == otherSchedule) {
+        score += 2 * habitsWeight;
+      } else if (
+      (userSchedule == 'flexible' && (otherSchedule == 'early riser' || otherSchedule == 'night owl')) ||
+          (otherSchedule == 'flexible' && (userSchedule == 'early riser' || userSchedule == 'night owl'))
+      ) {
+        score += 1.5 * habitsWeight;
+      } else if (
+      (userSchedule == 'flexible' && otherSchedule == 'irregular') ||
+          (otherSchedule == 'flexible' && userSchedule == 'irregular')
+      ) {
+        score += 1.0 * habitsWeight;
+      } else if (
+      (userSchedule == 'early riser' && otherSchedule == 'irregular') ||
+          (otherSchedule == 'early riser' && userSchedule == 'irregular')
+      ) {
+        score += 0.5 * habitsWeight;
+      } else if (
+      (userSchedule == 'night owl' && otherSchedule == 'irregular') ||
+          (otherSchedule == 'night owl' && userSchedule == 'irregular')
+      ) {
+        score += 0.5 * habitsWeight;
+      }
+
+      // Work/Study Schedule
+      maxScore += 2 * habitsWeight; // Max score for work/study schedule
+      final userWork = userProfile.workSchedule.toLowerCase();
+      final otherWork = otherProfile.workSchedule.toLowerCase();
+
+      if (userWork == otherWork) {
+        score += 2 * habitsWeight;
+      } else if (
+      (userWork == 'mixed' && (otherWork == 'freelance/flexible hours' || otherWork == '9-5 office hours' || otherWork == 'student schedule' || otherWork == 'night shifts')) ||
+          (otherWork == 'mixed' && (userWork == 'freelance/flexible hours' || userWork == '9-5 office hours' || userWork == 'student schedule' || userWork == 'night shifts')) ||
+          (userWork == 'freelance/flexible hours' && (otherWork == '9-5 office hours' || otherWork == 'student schedule')) ||
+          (otherWork == 'freelance/flexible hours' && (userWork == '9-5 office hours' || userWork == 'student schedule'))
+      ) {
+        score += 1.5 * habitsWeight;
+      } else if (
+      (userWork == '9-5 office hours' && otherWork == 'student schedule') ||
+          (otherWork == '9-5 office hours' && userWork == 'student schedule')
+      ) {
+        score += 1.0 * habitsWeight;
+      } else if (
+      (userWork == 'freelance/flexible hours' && otherWork == 'night shifts') ||
+          (otherWork == 'freelance/flexible hours' && userWork == 'night shifts')
+      ) {
+        score += 1.0 * habitsWeight;
+      } else if (
+      (userWork == 'night shifts' && otherWork == 'student schedule') ||
+          (otherWork == 'night shifts' && userWork == 'student schedule')
+      ) {
+        score += 0.5 * habitsWeight;
+      } else if (
+      (userWork == '9-5 office hours' && otherWork == 'night shifts') ||
+          (otherWork == '9-5 office hours' && userWork == 'night shifts')
+      ) {
+        score += 0.2 * habitsWeight;
+      }
+
+      // Sharing Habits (assuming property is `sharingCommonSpaces`)
+      maxScore += 2 * habitsWeight; // Max score for sharing habits
+      final userSharing = userProfile.sharingCommonSpaces.toLowerCase();
+      final otherSharing = otherProfile.sharingCommonSpaces.toLowerCase();
+
+      if (userSharing == otherSharing) {
+        score += 2 * habitsWeight;
+      } else if (
+      (userSharing == 'flexible' && (otherSharing == 'share everything' || otherSharing == 'share some items' || otherSharing == 'prefer separate items')) ||
+          (otherSharing == 'flexible' && (userSharing == 'share everything' || userSharing == 'share some items' || userSharing == 'prefer separate items'))
+      ) {
+        score += 1.8 * habitsWeight;
+      } else if (
+      (userSharing == 'share everything' && otherSharing == 'share some items') ||
+          (otherSharing == 'share everything' && userSharing == 'share some items')
+      ) {
+        score += 1.5 * habitsWeight;
+      } else if (
+      (userSharing == 'share some items' && otherSharing == 'prefer separate items') ||
+          (otherSharing == 'share some items' && userSharing == 'prefer separate items')
+      ) {
+        score += 1.0 * habitsWeight;
+      } else if (
+      (userSharing == 'share everything' && otherSharing == 'prefer separate items') ||
+          (otherSharing == 'share everything' && userSharing == 'prefer separate items')
+      ) {
+        score += 0.5 * habitsWeight;
+      }
+
+      // Guests Overnight Policy
+      maxScore += 2 * habitsWeight; // Max score for guests overnight policy
+      final userGuests = userProfile.guestsOvernightPolicy.toLowerCase();
+      final otherGuests = otherProfile.guestsOvernightPolicy.toLowerCase();
+
+      if (userGuests == otherGuests) {
+        score += 2 * habitsWeight;
+      } else if (
+      (userGuests == 'frequently' && otherGuests == 'occasionally') ||
+          (otherGuests == 'frequently' && userGuests == 'occasionally')
+      ) {
+        score += 1.5 * habitsWeight;
+      } else if (
+      (userGuests == 'occasionally' && otherGuests == 'rarely') ||
+          (otherGuests == 'occasionally' && userGuests == 'rarely')
+      ) {
+        score += 1.5 * habitsWeight;
+      } else if (
+      (userGuests == 'rarely' && otherGuests == 'never') ||
+          (otherGuests == 'rarely' && userGuests == 'never')
+      ) {
+        score += 1.5 * habitsWeight;
+      } else if (
+      (userGuests == 'occasionally' && otherGuests == 'never') ||
+          (otherGuests == 'occasionally' && userGuests == 'never')
+      ) {
+        score += 0.5 * habitsWeight;
+      } else if (
+      (userGuests == 'frequently' && otherGuests == 'rarely') ||
+          (otherGuests == 'frequently' && userGuests == 'rarely')
+      ) {
+        score += 0.2 * habitsWeight;
+      } else if (
+      (userGuests == 'frequently' && otherGuests == 'never') ||
+          (otherGuests == 'frequently' && userGuests == 'never')
+      ) {
+        // strong mismatch, 0 points
+      }
+
+      // Personal Space vs. Socialization
+      maxScore += 2 * habitsWeight; // Max score for personal space vs. socialization
+      final userSpaceSocial = userProfile.personalSpaceVsSocialization.toLowerCase();
+      final otherSpaceSocial = otherProfile.personalSpaceVsSocialization.toLowerCase();
+
+      if (userSpaceSocial == otherSpaceSocial) {
+        score += 2 * habitsWeight;
+      } else if (
+      (userSpaceSocial == 'flexible' && (otherSpaceSocial == 'value personal space highly' || otherSpaceSocial == 'enjoy a balance' || otherSpaceSocial == 'prefer more socialization')) ||
+          (otherSpaceSocial == 'flexible' && (userSpaceSocial == 'value personal space highly' || userSpaceSocial == 'enjoy a balance' || userSpaceSocial == 'prefer more socialization'))
+      ) {
+        score += 1.8 * habitsWeight;
+      } else if (
+      (userSpaceSocial == 'enjoy a balance' && (otherSpaceSocial == 'value personal space highly' || otherSpaceSocial == 'prefer more socialization')) ||
+          (otherSpaceSocial == 'enjoy a balance' && (userSpaceSocial == 'value personal space highly' || userSpaceSocial == 'prefer more socialization'))
+      ) {
+        score += 1.5 * habitsWeight;
+      } else if (
+      (userSpaceSocial == 'value personal space highly' && otherSpaceSocial == 'prefer more socialization') ||
+          (otherSpaceSocial == 'value personal space highly' && userSpaceSocial == 'prefer more socialization')
+      ) {
+        score += 0.2 * habitsWeight;
+      }
 
       // --- Requirements/Preferences Comparison ---
-      // Max score for requirements/preferences (e.g., 5 points per attribute, 10 for lists)
-      maxScore += 5 * requirementsPreferencesWeight;
+      // NO fixed maxScore for requirements here. Each requirement adds its max potential.
 
       // Flat Type
+      maxScore += 1 * requirementsPreferencesWeight; // Max score for flat type
       if (userProfile.preferredFlatType.toLowerCase() == otherProfile.flatType.toLowerCase()) {
         score += 1 * requirementsPreferencesWeight;
       }
 
       // Furnished Status
+      maxScore += 1 * requirementsPreferencesWeight; // Max score for furnished status
       if (userProfile.preferredFurnishedStatus.toLowerCase() == otherProfile.furnishedStatus.toLowerCase()) {
         score += 1 * requirementsPreferencesWeight;
       }
 
       // Budget (check if otherProfile's rent is within userProfile's budget range)
+      maxScore += 2 * requirementsPreferencesWeight; // Max score for budget
       if (userProfile.budgetMin != null && userProfile.budgetMax != null && otherProfile.rentPrice != null) {
         if (otherProfile.rentPrice! >= userProfile.budgetMin! && otherProfile.rentPrice! <= userProfile.budgetMax!) {
           score += 2 * requirementsPreferencesWeight;
         }
       }
 
-
       // Amenities Desired (overlap)
+      maxScore += 2 * requirementsPreferencesWeight; // Max score for amenities
       final amenityIntersection = userProfile.amenitiesDesired.toSet().intersection(otherProfile.amenities.toSet());
-      score += (amenityIntersection.length / (userProfile.amenitiesDesired.length > 0 ? userProfile.amenitiesDesired.length : 1)) * 2 * requirementsPreferencesWeight; // Scale by number of desired amenities
+      score += (amenityIntersection.length / (userProfile.amenitiesDesired.length > 0 ? userProfile.amenitiesDesired.length : 1)) * 2 * requirementsPreferencesWeight;
 
       // Preferred Habits (other user's actual habits matching preferred habits)
+      maxScore += 2 * requirementsPreferencesWeight; // Max score for preferred habits
       final preferredHabitsIntersection = userProfile.preferredHabits.toSet().intersection([
         otherProfile.smokingHabit,
         otherProfile.drinkingHabit,
@@ -533,26 +855,28 @@ class _MatchingScreenState extends State<MatchingScreen> {
       score += (preferredHabitsIntersection.length / (userProfile.preferredHabits.length > 0 ? userProfile.preferredHabits.length : 1)) * 2 * requirementsPreferencesWeight;
 
       // Ideal Qualities (overlap)
-      // This part requires you to define how 'ideal qualities' map to actual profile traits.
-      // For now, a simple overlap with 'deal breakers' from the other profile could be a reverse match.
-      // Or you might need to infer ideal qualities from the other profile's general habits/bio.
-      // For a basic match, we can just check for direct overlap if 'idealQualities' are also tags.
+      maxScore += 2 * requirementsPreferencesWeight; // Max score for ideal qualities
       final idealQualitiesIntersection = userProfile.idealQualities.toSet().intersection(otherProfile.flatmateIdealQualities.toSet());
       score += (idealQualitiesIntersection.length / (userProfile.idealQualities.length > 0 ? userProfile.idealQualities.length : 1)) * 2 * requirementsPreferencesWeight;
 
-
-      // Deal Breakers (penalty for overlap)
+      // Deal Breakers (penalty for overlap) - No maxScore addition as it's a penalty
       final dealBreakersIntersection = userProfile.dealBreakers.toSet().intersection(otherProfile.flatmateDealBreakers.toSet());
       score -= (dealBreakersIntersection.length * 5) * requirementsPreferencesWeight; // Penalize heavily
 
     } else if (userProfile is FlatListingProfile && otherProfile is SeekingFlatmateProfile) {
-      // Basic Info
+      // --- Basic Info Comparison ---
+      // Max score for basic info (5 attributes * 1 point each)
+      maxScore += 5 * basicInfoWeight; // Total for basic info
+
+      // Desired City
       if (userProfile.desiredCity.toLowerCase() == otherProfile.desiredCity.toLowerCase()) {
         score += 1 * basicInfoWeight;
       }
+      // Area Preference
       if (userProfile.areaPreference.toLowerCase() == otherProfile.areaPreference.toLowerCase()) {
         score += 1 * basicInfoWeight;
       }
+      // Gender
       if (userProfile.ownerGender.toLowerCase() == otherProfile.gender.toLowerCase()) {
         score += 1 * basicInfoWeight;
       }
@@ -578,79 +902,397 @@ class _MatchingScreenState extends State<MatchingScreen> {
         score += 1 * basicInfoWeight;
       }
 
-
       // --- Habits Comparison (more nuanced) ---
-      maxScore += 10 * habitsWeight;
+      // NO fixed maxScore for habits here. Each habit adds its max potential.
 
       // Smoking
-      if ((userProfile.smokingHabit.toLowerCase() == 'non-smoker' && otherProfile.smokingHabits.toLowerCase() == 'non-smoker') ||
-          (userProfile.smokingHabit.toLowerCase() == 'occasional' && (otherProfile.smokingHabits.toLowerCase() == 'occasional' || otherProfile.smokingHabits.toLowerCase() == 'non-smoker')) ||
-          (userProfile.smokingHabit.toLowerCase() == 'tolerates' && (otherProfile.smokingHabits.toLowerCase() == 'occasional' || otherProfile.smokingHabits.toLowerCase() == 'smoker')) ||
-          (userProfile.smokingHabit.toLowerCase() == otherProfile.smokingHabits.toLowerCase())) {
+      maxScore += 2 * habitsWeight; // Max score for smoking
+      final userSmokes = userProfile.smokingHabit.toLowerCase();
+      final otherSmokes = otherProfile.smokingHabits.toLowerCase();
+
+      if (
+      (userSmokes == 'never' && otherSmokes == 'never') ||
+          (userSmokes == 'occasionally' && (otherSmokes == 'occasionally' || otherSmokes == 'never')) ||
+          (userSmokes == 'socially' && (otherSmokes == 'socially' || otherSmokes == 'occasionally' || otherSmokes == 'never')) ||
+          (userSmokes == 'regularly' && otherSmokes == 'regularly') ||
+          (otherSmokes == 'tolerates' && (userSmokes == 'occasionally' || userSmokes == 'socially' || userSmokes == 'regularly'))
+      ) {
         score += 2 * habitsWeight;
       }
 
       // Drinking
-      if ((userProfile.drinkingHabit.toLowerCase() == 'non-drinker' && otherProfile.drinkingHabits.toLowerCase() == 'non-drinker') ||
-          (userProfile.drinkingHabit.toLowerCase() == 'social' && (otherProfile.drinkingHabits.toLowerCase() == 'social' || otherProfile.drinkingHabits.toLowerCase() == 'non-drinker')) ||
-          (userProfile.drinkingHabit.toLowerCase() == 'tolerates' && (otherProfile.drinkingHabits.toLowerCase() == 'social' || otherProfile.drinkingHabits.toLowerCase() == 'frequent')) ||
-          (userProfile.drinkingHabit.toLowerCase() == otherProfile.drinkingHabits.toLowerCase())) {
+      maxScore += 2 * habitsWeight; // Max score for drinking
+      final userDrinksActual = userProfile.drinkingHabit.toLowerCase();
+      final otherDrinksPref = otherProfile.drinkingHabits.toLowerCase();
+
+      if (
+      (userDrinksActual == 'never' && otherDrinksPref == 'never') ||
+          (userDrinksActual == 'occasionally' && (otherDrinksPref == 'occasionally' || otherDrinksPref == 'never')) ||
+          (userDrinksActual == 'socially' && (otherDrinksPref == 'socially' || otherDrinksPref == 'occasionally' || otherDrinksPref == 'never')) ||
+          (userDrinksActual == 'regularly' && otherDrinksPref == 'regularly') ||
+          (otherDrinksPref == 'tolerates' && (userDrinksActual == 'occasionally' || userDrinksActual == 'socially' || userDrinksActual == 'regularly'))
+      ) {
         score += 2 * habitsWeight;
       }
 
       // Food Preference
-      if (userProfile.foodPreference.toLowerCase() == otherProfile.foodPreference.toLowerCase()) {
+      maxScore += 1 * habitsWeight; // Max score for food preference
+      final userFood = userProfile.foodPreference.toLowerCase();
+      final otherFood = otherProfile.foodPreference.toLowerCase();
+
+      if (userFood == otherFood) {
         score += 1 * habitsWeight;
+      } else if (
+      (userFood == 'vegan' && (otherFood == 'vegetarian' || otherFood == 'eggetarian' || otherFood == 'jain')) ||
+          (otherFood == 'vegan' && (userFood == 'vegetarian' || userFood == 'eggetarian' || userFood == 'jain'))
+      ) {
+        score += 0.75 * habitsWeight;
+      } else if (
+      (userFood == 'vegetarian' && (otherFood == 'eggetarian' || otherFood == 'jain')) ||
+          (otherFood == 'vegetarian' && (userFood == 'eggetarian' || userFood == 'jain'))
+      ) {
+        score += 0.75 * habitsWeight;
+      } else if (
+      (userFood == 'eggetarian' && (otherFood == 'vegetarian' || otherFood == 'jain')) ||
+          (otherFood == 'eggetarian' && (userFood == 'vegetarian' || userFood == 'jain'))
+      ) {
+        score += 0.5 * habitsWeight;
+      } else if (
+      (userFood == 'jain' && (otherFood == 'vegetarian' || otherFood == 'vegan' || otherFood == 'eggetarian')) ||
+          (otherFood == 'jain' && (userFood == 'vegetarian' || userFood == 'vegan' || userFood == 'eggetarian'))
+      ) {
+        score += 0.75 * habitsWeight;
+      } else if ((userFood == 'other' || otherFood == 'other')) {
+        score += 0.2 * habitsWeight;
       }
 
       // Cleanliness
-      if (userProfile.cleanlinessLevel.toLowerCase() == otherProfile.cleanliness.toLowerCase()) {
+      maxScore += 2 * habitsWeight; // Max score for cleanliness
+      final userCleanliness = userProfile.cleanlinessLevel.toLowerCase();
+      final otherCleanliness = otherProfile.cleanliness.toLowerCase();
+
+      if (userCleanliness == otherCleanliness) {
         score += 2 * habitsWeight;
+      } else if (
+      (userCleanliness == 'very tidy' && otherCleanliness == 'moderately tidy') ||
+          (otherCleanliness == 'very tidy' && userCleanliness == 'moderately tidy')
+      ) {
+        score += 1.5 * habitsWeight;
+      } else if (
+      (userCleanliness == 'moderately tidy' && otherCleanliness == 'flexible') ||
+          (otherCleanliness == 'moderately tidy' && userCleanliness == 'flexible')
+      ) {
+        score += 1.0 * habitsWeight;
+      } else if (
+      (userCleanliness == 'flexible' && otherCleanliness == 'can be messy at times') ||
+          (otherCleanliness == 'flexible' && userCleanliness == 'can be messy at times')
+      ) {
+        score += 0.5 * habitsWeight;
+      } else if (
+      (userCleanliness == 'very tidy' && (otherCleanliness == 'flexible' || otherCleanliness == 'can be messy at times')) ||
+          (otherCleanliness == 'very tidy' && (userCleanliness == 'flexible' || userCleanliness == 'can be messy at times'))
+      ) {
+        score += 0.2 * habitsWeight;
       }
 
-      // Noise Level (e.g., quiet matches quiet, tolerant matches anything)
-      if ((userProfile.noiseLevel.toLowerCase() == 'quiet' && otherProfile.noiseLevel.toLowerCase() == 'quiet') ||
-          (userProfile.noiseLevel.toLowerCase() == 'moderate' && (otherProfile.noiseLevel.toLowerCase() == 'moderate' || otherProfile.noiseLevel.toLowerCase() == 'quiet')) ||
-          (userProfile.noiseLevel.toLowerCase() == 'tolerates') ||
-          (userProfile.noiseLevel.toLowerCase() == otherProfile.noiseLevel.toLowerCase())) {
+      // Noise Level
+      maxScore += 2 * habitsWeight; // Max score for noise level
+      final userNoise = userProfile.noiseLevel.toLowerCase();
+      final otherNoise = otherProfile.noiseLevel.toLowerCase();
+
+      if (userNoise == otherNoise) {
         score += 2 * habitsWeight;
+      } else if (
+      (userNoise == 'very quiet' && otherNoise == 'moderate noise') ||
+          (otherNoise == 'very quiet' && userNoise == 'moderate noise')
+      ) {
+        score += 1.5 * habitsWeight;
+      } else if (
+      (userNoise == 'moderate noise' && (otherNoise == 'very quiet' || otherNoise == 'lively')) ||
+          (otherNoise == 'moderate noise' && (userNoise == 'very quiet' || userNoise == 'lively'))
+      ) {
+        score += 1.0 * habitsWeight;
+      } else if (
+      (userNoise == 'flexible' && (otherNoise == 'very quiet' || otherNoise == 'moderate noise' || otherNoise == 'lively')) ||
+          (otherNoise == 'flexible' && (userNoise == 'very quiet' || userNoise == 'moderate noise' || userNoise == 'lively'))
+      ) {
+        score += 1.8 * habitsWeight;
+      } else if (
+      (userNoise == 'lively' && otherNoise == 'very quiet') ||
+          (otherNoise == 'lively' && userNoise == 'very quiet')
+      ) {
+        // These are generally a bad match unless one is flexible. Score 0 here.
       }
 
       // Social Habits
-      if (userProfile.socialPreferences.toLowerCase() == otherProfile.socialHabits.toLowerCase()) {
+      maxScore += 1 * habitsWeight; // Max score for social habits
+      final userSocial = userProfile.socialPreferences.toLowerCase();
+      final otherSocial = otherProfile.socialHabits.toLowerCase();
+
+      if (userSocial == otherSocial) {
         score += 1 * habitsWeight;
+      } else if (
+      (userSocial == 'flexible' && (otherSocial == 'social & outgoing' || otherSocial == 'occasional gatherings' || otherSocial == 'quiet & private')) ||
+          (otherSocial == 'flexible' && (userSocial == 'social & outgoing' || userSocial == 'occasional gatherings' || userSocial == 'quiet & private'))
+      ) {
+        score += 0.9 * habitsWeight;
+      } else if (
+      (userSocial == 'social & outgoing' && otherSocial == 'occasional gatherings') ||
+          (otherSocial == 'social & outgoing' && userSocial == 'occasional gatherings')
+      ) {
+        score += 0.7 * habitsWeight;
+      } else if (
+      (userSocial == 'occasional gatherings' && otherSocial == 'quiet & private') ||
+          (otherSocial == 'occasional gatherings' && userSocial == 'quiet & private')
+      ) {
+        score += 0.6 * habitsWeight;
+      } else if (
+      (userSocial == 'social & outgoing' && otherSocial == 'quiet & private') ||
+          (otherSocial == 'social & outgoing' && userSocial == 'quiet & private')
+      ) {
+        score += 0.2 * habitsWeight;
       }
 
       // Pet Ownership/Tolerance
-      if ((userProfile.petOwnership.toLowerCase() == 'no pets' && otherProfile.petOwnership.toLowerCase() == 'no pets') ||
-          (userProfile.petOwnership.toLowerCase() == 'has pets' && otherProfile.petTolerance.toLowerCase() == 'tolerates pets') ||
-          (userProfile.petTolerance.toLowerCase() == 'tolerates pets' && otherProfile.petOwnership.toLowerCase() == 'has pets') ||
-          (userProfile.petOwnership.toLowerCase() == otherProfile.petOwnership.toLowerCase())) {
-        score += 2 * habitsWeight;
+      maxScore += 2 * habitsWeight; // Max score for pet ownership/tolerance
+      final userOwns = userProfile.petOwnership.toLowerCase();
+      final otherOwns = otherProfile.petOwnership.toLowerCase();
+      final userTolerates = (userProfile.petTolerance ?? '').toLowerCase();
+      final otherTolerates = (otherProfile.petTolerance ?? '').toLowerCase();
+
+      double currentPetScore = 0;
+      if (userOwns == 'no' && otherOwns == 'no') {
+        currentPetScore = 2.0 * habitsWeight;
+      } else if (userOwns == 'yes' && otherOwns == 'yes') {
+        currentPetScore = 2.0 * habitsWeight;
+      } else if ((userOwns == 'yes' && otherTolerates == 'tolerates pets') || (otherOwns == 'yes' && userTolerates == 'tolerates pets')) {
+        currentPetScore = 2.0 * habitsWeight;
+      } else if (userOwns == 'planning to get one' && otherOwns == 'planning to get one') {
+        currentPetScore = 1.8 * habitsWeight;
+      } else if ((userOwns == 'yes' && otherOwns == 'planning to get one') || (otherOwns == 'yes' && userOwns == 'planning to get one')) {
+        currentPetScore = 1.5 * habitsWeight;
+      } else if ((userOwns == 'no' && otherOwns == 'planning to get one' && userTolerates == 'tolerates pets') || (otherOwns == 'no' && userOwns == 'planning to get one' && otherTolerates == 'tolerates pets')) {
+        currentPetScore = 1.0 * habitsWeight;
+      } else if ((userOwns == 'planning to get one' && otherTolerates == 'tolerates pets') || (otherOwns == 'planning to get one' && userTolerates == 'tolerates pets')) {
+        currentPetScore = 1.0 * habitsWeight;
       }
-      // Add more habit comparisons...
+      score += currentPetScore;
+
+      // Visitors Policy
+      maxScore += 2 * habitsWeight; // Max score for visitors policy
+      final userVisitors = userProfile.visitorsPolicy.toLowerCase();
+      final otherVisitors = otherProfile.visitorsPolicy.toLowerCase();
+
+      if (userVisitors == otherVisitors) {
+        score += 2 * habitsWeight;
+      } else if (
+      (userVisitors == 'frequent visitors' && otherVisitors == 'occasional visitors') ||
+          (otherVisitors == 'frequent visitors' && userVisitors == 'occasional visitors')
+      ) {
+        score += 1.5 * habitsWeight;
+      } else if (
+      (userVisitors == 'occasional visitors' && otherVisitors == 'rarely have visitors') ||
+          (otherVisitors == 'occasional visitors' && userVisitors == 'rarely have visitors')
+      ) {
+        score += 1.5 * habitsWeight;
+      } else if (
+      (userVisitors == 'rarely have visitors' && otherVisitors == 'no visitors') ||
+          (otherVisitors == 'rarely have visitors' && userVisitors == 'no visitors')
+      ) {
+        score += 1.5 * habitsWeight;
+      } else if (
+      (userVisitors == 'occasional visitors' && otherVisitors == 'no visitors') ||
+          (otherVisitors == 'occasional visitors' && userVisitors == 'no visitors')
+      ) {
+        score += 0.5 * habitsWeight;
+      } else if (
+      (userVisitors == 'frequent visitors' && otherVisitors == 'rarely have visitors') ||
+          (otherVisitors == 'frequent visitors' && userVisitors == 'rarely have visitors')
+      ) {
+        score += 0.2 * habitsWeight;
+      } else if (
+      (userVisitors == 'frequent visitors' && otherVisitors == 'no visitors') ||
+          (otherVisitors == 'frequent visitors' && userVisitors == 'no visitors')
+      ) {
+        // strong mismatch, 0 points
+      }
+
+      // Sleeping Schedule
+      maxScore += 2 * habitsWeight; // Max score for sleeping schedule
+      final userSchedule = userProfile.sleepingSchedule.toLowerCase();
+      final otherSchedule = otherProfile.sleepingSchedule.toLowerCase();
+
+      if (userSchedule == otherSchedule) {
+        score += 2 * habitsWeight;
+      } else if (
+      (userSchedule == 'flexible' && (otherSchedule == 'early riser' || otherSchedule == 'night owl')) ||
+          (otherSchedule == 'flexible' && (userSchedule == 'early riser' || userSchedule == 'night owl'))
+      ) {
+        score += 1.5 * habitsWeight;
+      } else if (
+      (userSchedule == 'flexible' && otherSchedule == 'irregular') ||
+          (otherSchedule == 'flexible' && userSchedule == 'irregular')
+      ) {
+        score += 1.0 * habitsWeight;
+      } else if (
+      (userSchedule == 'early riser' && otherSchedule == 'irregular') ||
+          (otherSchedule == 'early riser' && userSchedule == 'irregular')
+      ) {
+        score += 0.5 * habitsWeight;
+      } else if (
+      (userSchedule == 'night owl' && otherSchedule == 'irregular') ||
+          (otherSchedule == 'night owl' && userSchedule == 'irregular')
+      ) {
+        score += 0.5 * habitsWeight;
+      }
+
+      // Work/Study Schedule
+      maxScore += 2 * habitsWeight; // Max score for work/study schedule
+      final userWork = userProfile.workSchedule.toLowerCase();
+      final otherWork = otherProfile.workSchedule.toLowerCase();
+
+      if (userWork == otherWork) {
+        score += 2 * habitsWeight;
+      } else if (
+      (userWork == 'mixed' && (otherWork == 'freelance/flexible hours' || otherWork == '9-5 office hours' || otherWork == 'student schedule' || otherWork == 'night shifts')) ||
+          (otherWork == 'mixed' && (userWork == 'freelance/flexible hours' || userWork == '9-5 office hours' || userWork == 'student schedule' || userWork == 'night shifts')) ||
+          (userWork == 'freelance/flexible hours' && (otherWork == '9-5 office hours' || otherWork == 'student schedule')) ||
+          (otherWork == 'freelance/flexible hours' && (userWork == '9-5 office hours' || userWork == 'student schedule'))
+      ) {
+        score += 1.5 * habitsWeight;
+      } else if (
+      (userWork == '9-5 office hours' && otherWork == 'student schedule') ||
+          (otherWork == '9-5 office hours' && userWork == 'student schedule')
+      ) {
+        score += 1.0 * habitsWeight;
+      } else if (
+      (userWork == 'freelance/flexible hours' && otherWork == 'night shifts') ||
+          (otherWork == 'freelance/flexible hours' && userWork == 'night shifts')
+      ) {
+        score += 1.0 * habitsWeight;
+      } else if (
+      (userWork == 'night shifts' && otherWork == 'student schedule') ||
+          (otherWork == 'night shifts' && userWork == 'student schedule')
+      ) {
+        score += 0.5 * habitsWeight;
+      } else if (
+      (userWork == '9-5 office hours' && otherWork == 'night shifts') ||
+          (otherWork == '9-5 office hours' && userWork == 'night shifts')
+      ) {
+        score += 0.2 * habitsWeight;
+      }
+
+      // Sharing Habits (assuming property is `sharingCommonSpaces`)
+      maxScore += 2 * habitsWeight; // Max score for sharing habits
+      final userSharing = userProfile.sharingCommonSpaces.toLowerCase();
+      final otherSharing = otherProfile.sharingCommonSpaces.toLowerCase();
+
+      if (userSharing == otherSharing) {
+        score += 2 * habitsWeight;
+      } else if (
+      (userSharing == 'flexible' && (otherSharing == 'share everything' || otherSharing == 'share some items' || otherSharing == 'prefer separate items')) ||
+          (otherSharing == 'flexible' && (userSharing == 'share everything' || userSharing == 'share some items' || userSharing == 'prefer separate items'))
+      ) {
+        score += 1.8 * habitsWeight;
+      } else if (
+      (userSharing == 'share everything' && otherSharing == 'share some items') ||
+          (otherSharing == 'share everything' && userSharing == 'share some items')
+      ) {
+        score += 1.5 * habitsWeight;
+      } else if (
+      (userSharing == 'share some items' && otherSharing == 'prefer separate items') ||
+          (otherSharing == 'share some items' && userSharing == 'prefer separate items')
+      ) {
+        score += 1.0 * habitsWeight;
+      } else if (
+      (userSharing == 'share everything' && otherSharing == 'prefer separate items') ||
+          (otherSharing == 'share everything' && userSharing == 'prefer separate items')
+      ) {
+        score += 0.5 * habitsWeight;
+      }
+
+      // Guests Overnight Policy
+      maxScore += 2 * habitsWeight; // Max score for guests overnight policy
+      final userGuests = userProfile.guestsOvernightPolicy.toLowerCase();
+      final otherGuests = otherProfile.guestsOvernightPolicy.toLowerCase();
+
+      if (userGuests == otherGuests) {
+        score += 2 * habitsWeight;
+      } else if (
+      (userGuests == 'frequently' && otherGuests == 'occasionally') ||
+          (otherGuests == 'frequently' && userGuests == 'occasionally')
+      ) {
+        score += 1.5 * habitsWeight;
+      } else if (
+      (userGuests == 'occasionally' && otherGuests == 'rarely') ||
+          (otherGuests == 'occasionally' && userGuests == 'rarely')
+      ) {
+        score += 1.5 * habitsWeight;
+      } else if (
+      (userGuests == 'rarely' && otherGuests == 'never') ||
+          (otherGuests == 'rarely' && userGuests == 'never')
+      ) {
+        score += 1.5 * habitsWeight;
+      } else if (
+      (userGuests == 'occasionally' && otherGuests == 'never') ||
+          (otherGuests == 'occasionally' && userGuests == 'never')
+      ) {
+        score += 0.5 * habitsWeight;
+      } else if (
+      (userGuests == 'frequently' && otherGuests == 'rarely') ||
+          (otherGuests == 'frequently' && userGuests == 'rarely')
+      ) {
+        score += 0.2 * habitsWeight;
+      } else if (
+      (userGuests == 'frequently' && otherGuests == 'never') ||
+          (otherGuests == 'frequently' && userGuests == 'never')
+      ) {
+        // strong mismatch, 0 points
+      }
+
+      // Personal Space vs. Socialization
+      maxScore += 2 * habitsWeight; // Max score for personal space vs. socialization
+      final userSpaceSocial = userProfile.personalSpaceVsSocialization.toLowerCase();
+      final otherSpaceSocial = otherProfile.personalSpaceVsSocialization.toLowerCase();
+
+      if (userSpaceSocial == otherSpaceSocial) {
+        score += 2 * habitsWeight;
+      } else if (
+      (userSpaceSocial == 'flexible' && (otherSpaceSocial == 'value personal space highly' || otherSpaceSocial == 'enjoy a balance' || otherSpaceSocial == 'prefer more socialization')) ||
+          (otherSpaceSocial == 'flexible' && (userSpaceSocial == 'value personal space highly' || userSpaceSocial == 'enjoy a balance' || userSpaceSocial == 'prefer more socialization'))
+      ) {
+        score += 1.8 * habitsWeight;
+      } else if (
+      (userSpaceSocial == 'enjoy a balance' && (otherSpaceSocial == 'value personal space highly' || otherSpaceSocial == 'prefer more socialization')) ||
+          (otherSpaceSocial == 'enjoy a balance' && (userSpaceSocial == 'value personal space highly' || userSpaceSocial == 'prefer more socialization'))
+      ) {
+        score += 1.5 * habitsWeight;
+      } else if (
+      (userSpaceSocial == 'value personal space highly' && otherSpaceSocial == 'prefer more socialization') ||
+          (otherSpaceSocial == 'value personal space highly' && userSpaceSocial == 'prefer more socialization')
+      ) {
+        score += 0.2 * habitsWeight;
+      }
 
       // --- Requirements/Preferences Comparison (from flat lister's perspective) ---
-      maxScore += 5 * requirementsPreferencesWeight;
+      // NO fixed maxScore for requirements here. Each requirement adds its max potential.
 
       // Preferred Flatmate Gender
+      maxScore += 1 * requirementsPreferencesWeight; // Max score for preferred gender
       if (userProfile.preferredGender.toLowerCase() == otherProfile.gender.toLowerCase() || userProfile.preferredGender.toLowerCase() == 'any') {
         score += 1 * requirementsPreferencesWeight;
       }
 
-      // Preferred Flatmate Age Group (already handled with basic info)
-
-      // Preferred Occupation (already handled with basic info)
-
       // Preferred Habits (overlap with other user's actual habits)
+      maxScore += 2 * requirementsPreferencesWeight; // Max score for preferred habits
       final preferredHabitsIntersection = userProfile.preferredHabits.toSet().intersection([
-        otherProfile.smokingHabits,
-        otherProfile.drinkingHabits,
+        otherProfile.smokingHabits, // Note: seeking flatmate has 'smokingHabits', lister has 'smokingHabit'
+        otherProfile.drinkingHabits, // Note: seeking flatmate has 'drinkingHabits', lister has 'drinkingHabit'
         otherProfile.foodPreference,
         otherProfile.cleanliness,
         otherProfile.noiseLevel,
         otherProfile.socialHabits,
-        otherProfile.guestsFrequency,
+        otherProfile.guestsFrequency, // This variable name might be different from guestsOvernightPolicy
         otherProfile.visitorsPolicy,
         otherProfile.petOwnership,
         otherProfile.petTolerance,
@@ -663,10 +1305,11 @@ class _MatchingScreenState extends State<MatchingScreen> {
       score += (preferredHabitsIntersection.length / (userProfile.preferredHabits.length > 0 ? userProfile.preferredHabits.length : 1)) * 2 * requirementsPreferencesWeight;
 
       // Ideal Qualities (overlap)
+      maxScore += 2 * requirementsPreferencesWeight; // Max score for ideal qualities
       final idealQualitiesIntersection = userProfile.flatmateIdealQualities.toSet().intersection(otherProfile.idealQualities.toSet());
       score += (idealQualitiesIntersection.length / (userProfile.flatmateIdealQualities.length > 0 ? userProfile.flatmateIdealQualities.length : 1)) * 2 * requirementsPreferencesWeight;
 
-      // Deal Breakers (penalty for overlap)
+      // Deal Breakers (penalty for overlap) - No maxScore addition as it's a penalty
       final dealBreakersIntersection = userProfile.flatmateDealBreakers.toSet().intersection(otherProfile.dealBreakers.toSet());
       score -= (dealBreakersIntersection.length * 5) * requirementsPreferencesWeight; // Penalize heavily
 
