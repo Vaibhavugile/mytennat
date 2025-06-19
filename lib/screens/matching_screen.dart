@@ -6,6 +6,140 @@ import 'package:mytennat/screens/flatmate_profile_screen.dart'; // Ensure these 
 import 'package:mytennat/screens/flat_with_flatmate_profile_screen.dart'; // Ensure these are imported
 import 'package:intl/intl.dart';
 import 'package:mytennat/screens/chat_screen.dart'; // <--- NEW: Import your ChatScreen
+import 'package:mytennat/screens/filter_screen.dart';
+
+// NEW: Class to hold filter options
+class FilterOptions {
+  // Common filters
+  String? desiredCity;
+  int? ageMin;
+  int? ageMax;
+  String? gender;
+  List<String> selectedHabits;
+  List<String> selectedIdealQualities;
+  List<String> selectedDealBreakers;
+
+  // FlatListing specific filters
+  int? rentPriceMin;
+  int? rentPriceMax;
+  String? flatType;
+  String? furnishedStatus;
+  List<String> amenitiesDesired;
+
+  // SeekingFlatmate specific filters
+  int? budgetMin;
+  int? budgetMax;
+  String? preferredFlatmateGender; // For seeking_flatmate to filter flat_listing
+  String? preferredFlatmateAge; // For seeking_flatmate to filter flat_listing
+  String? preferredOccupation; // For seeking_flatmate to filter flat_listing
+
+
+  FilterOptions({
+    this.desiredCity,
+    this.ageMin,
+    this.ageMax,
+    this.gender,
+    List<String>? selectedHabits,
+    List<String>? selectedIdealQualities,
+    List<String>? selectedDealBreakers,
+    this.rentPriceMin,
+    this.rentPriceMax,
+    this.flatType,
+    this.furnishedStatus,
+    List<String>? amenitiesDesired,
+    this.budgetMin,
+    this.budgetMax,
+    this.preferredFlatmateGender,
+    this.preferredFlatmateAge,
+    this.preferredOccupation,
+  })  : selectedHabits = selectedHabits ?? [],
+        selectedIdealQualities = selectedIdealQualities ?? [],
+        selectedDealBreakers = selectedDealBreakers ?? [],
+        amenitiesDesired = amenitiesDesired ?? [];
+
+  // Method to check if any filters are actively set
+  bool hasFilters() {
+    return desiredCity != null ||
+        ageMin != null ||
+        ageMax != null ||
+        gender != null ||
+        selectedHabits.isNotEmpty ||
+        selectedIdealQualities.isNotEmpty ||
+        selectedDealBreakers.isNotEmpty ||
+        rentPriceMin != null ||
+        rentPriceMax != null ||
+        flatType != null ||
+        furnishedStatus != null ||
+        amenitiesDesired.isNotEmpty ||
+        budgetMin != null ||
+        budgetMax != null ||
+        preferredFlatmateGender != null ||
+        preferredFlatmateAge != null ||
+        preferredOccupation != null;
+  }
+
+  // Method to clear all filters
+  void clear() {
+    desiredCity = null;
+    ageMin = null;
+    ageMax = null;
+    gender = null;
+    selectedHabits.clear();
+    selectedIdealQualities.clear();
+    selectedDealBreakers.clear();
+    rentPriceMin = null;
+    rentPriceMax = null;
+    flatType = null;
+    furnishedStatus = null;
+    amenitiesDesired.clear();
+    budgetMin = null;
+    budgetMax = null;
+    preferredFlatmateGender = null;
+    preferredFlatmateAge = null;
+    preferredOccupation = null;
+  }
+
+  // Method to create a copy for filter screen interaction
+  FilterOptions copyWith({
+    String? desiredCity,
+    int? ageMin,
+    int? ageMax,
+    String? gender,
+    List<String>? selectedHabits,
+    List<String>? selectedIdealQualities,
+    List<String>? selectedDealBreakers,
+    int? rentPriceMin,
+    int? rentPriceMax,
+    String? flatType,
+    String? furnishedStatus,
+    List<String>? amenitiesDesired,
+    int? budgetMin,
+    int? budgetMax,
+    String? preferredFlatmateGender,
+    String? preferredFlatmateAge,
+    String? preferredOccupation,
+  }) {
+    return FilterOptions(
+      desiredCity: desiredCity ?? this.desiredCity,
+      ageMin: ageMin ?? this.ageMin,
+      ageMax: ageMax ?? this.ageMax,
+      gender: gender ?? this.gender,
+      selectedHabits: selectedHabits ?? List.from(this.selectedHabits),
+      selectedIdealQualities: selectedIdealQualities ?? List.from(this.selectedIdealQualities),
+      selectedDealBreakers: selectedDealBreakers ?? List.from(this.selectedDealBreakers),
+      rentPriceMin: rentPriceMin ?? this.rentPriceMin,
+      rentPriceMax: rentPriceMax ?? this.rentPriceMax,
+      flatType: flatType ?? this.flatType,
+      furnishedStatus: furnishedStatus ?? this.furnishedStatus,
+      amenitiesDesired: amenitiesDesired ?? List.from(this.amenitiesDesired),
+      budgetMin: budgetMin ?? this.budgetMin,
+      budgetMax: budgetMax ?? this.budgetMax,
+      preferredFlatmateGender: preferredFlatmateGender ?? this.preferredFlatmateGender,
+      preferredFlatmateAge: preferredFlatmateAge ?? this.preferredFlatmateAge,
+      preferredOccupation: preferredOccupation ?? this.preferredOccupation,
+    );
+  }
+}
 
 class MatchingScreen extends StatefulWidget {
   const MatchingScreen({super.key});
@@ -23,6 +157,8 @@ class _MatchingScreenState extends State<MatchingScreen> {
   bool _isLoading = true;
   String? _userProfileType;
   dynamic _currentUserParsedProfile; // NEW: Store the current user's parsed profile
+  FilterOptions _currentFilters = FilterOptions(); // NEW: Current active filters
+
 
   final PageController _pageController = PageController();
   int _currentImageIndex = 0;
@@ -48,21 +184,24 @@ class _MatchingScreenState extends State<MatchingScreen> {
     super.dispose();
   }
 
-  Future<void> _fetchUserProfile() async {
+  Future<void> _fetchUserProfile({bool applyFilters = false}) async { // Modified: added applyFilters
     if (_currentUser == null) return;
+
+    setState(() {
+      _isLoading = true;
+    });
 
     try {
       DocumentSnapshot userDoc = await _firestore.collection('users').doc(_currentUser!.uid).get();
       if (userDoc.exists) {
         _userProfileType = userDoc['userType'];
 
-        // NEW: Parse current user's profile based on their userType
         if (_userProfileType == 'flat_listing') {
           _currentUserParsedProfile = FlatListingProfile.fromMap(userDoc.data() as Map<String, dynamic>, userDoc.id);
-          await _fetchSeekingFlatmateProfiles();
+          await _fetchSeekingFlatmateProfiles(applyFilters: applyFilters); // Pass applyFilters
         } else if (_userProfileType == 'seeking_flatmate') {
           _currentUserParsedProfile = SeekingFlatmateProfile.fromMap(userDoc.data() as Map<String, dynamic>, userDoc.id);
-          await _fetchFlatListingProfiles();
+          await _fetchFlatListingProfiles(applyFilters: applyFilters); // Pass applyFilters
         } else {
           _showAlertDialog('Profile Type Not Found', 'Your profile type could not be determined.', () {});
         }
@@ -76,16 +215,133 @@ class _MatchingScreenState extends State<MatchingScreen> {
     } finally {
       setState(() {
         _isLoading = false;
+        _currentIndex = 0; // Reset index when new profiles are fetched
+        if (_pageController.hasClients) {
+          _pageController.jumpToPage(0); // Reset image carousel
+        }
       });
     }
   }
 
-  Future<void> _fetchFlatListingProfiles() async {
+  Future<void> _fetchFlatListingProfiles({bool applyFilters = false}) async { // Modified: added applyFilters
     try {
-      QuerySnapshot querySnapshot = await _firestore.collection('users')
+      Query query = _firestore.collection('users')
           .where('userType', isEqualTo: 'flat_listing')
-          .where('uid', isNotEqualTo: _currentUser!.uid)
-          .get();
+          .where('uid', isNotEqualTo: _currentUser!.uid);
+
+      // NEW: Apply filters based on _currentUserParsedProfile (SeekingFlatmateProfile)
+      // This means a 'seeking_flatmate' user is looking for 'flat_listing' profiles
+      if (applyFilters && _currentUserParsedProfile is SeekingFlatmateProfile) {
+        final SeekingFlatmateProfile userProfile = _currentUserParsedProfile as SeekingFlatmateProfile;
+
+        // Common filters from the filter screen
+        if (_currentFilters.desiredCity != null && _currentFilters.desiredCity!.isNotEmpty) {
+          query = query.where('desiredCity', isEqualTo: _currentFilters.desiredCity);
+        }
+        if (_currentFilters.ageMin != null) {
+          query = query.where('age', isGreaterThanOrEqualTo: _currentFilters.ageMin);
+        }
+        if (_currentFilters.ageMax != null) {
+          query = query.where('age', isLessThanOrEqualTo: _currentFilters.ageMax);
+        }
+        if (_currentFilters.gender != null && _currentFilters.gender!.isNotEmpty) {
+          query = query.where('gender', isEqualTo: _currentFilters.gender);
+        }
+
+        // Flat listing specific filters (from filter screen)
+        if (_currentFilters.rentPriceMin != null) {
+          query = query.where('flatDetails.rentPrice', isGreaterThanOrEqualTo: _currentFilters.rentPriceMin);
+        }
+        if (_currentFilters.rentPriceMax != null) {
+          query = query.where('flatDetails.rentPrice', isLessThanOrEqualTo: _currentFilters.rentPriceMax);
+        }
+        if (_currentFilters.flatType != null && _currentFilters.flatType!.isNotEmpty) {
+          query = query.where('flatDetails.flatType', isEqualTo: _currentFilters.flatType);
+        }
+        if (_currentFilters.furnishedStatus != null && _currentFilters.furnishedStatus!.isNotEmpty) {
+          query = query.where('flatDetails.furnishedStatus', isEqualTo: _currentFilters.furnishedStatus);
+        }
+        // For amenities, you might need an array-contains-any query if you want to match any of the selected amenities.
+        // A direct 'array-contains-all' might be too restrictive unless the other profile has ALL selected amenities.
+        if (_currentFilters.amenitiesDesired.isNotEmpty) {
+          query = query.where('flatDetails.amenities', arrayContainsAny: _currentFilters.amenitiesDesired);
+        }
+
+        // --- Flatmate preferences from the current user's profile to match other flat listings ---
+        // These are the *current user's* preferences for *their flatmate* (the person listing the flat)
+        // So, if current user (seeking_flatmate) prefers 'Male' flatmate, we look for 'flat_listing' profiles with gender 'Male'.
+        if (userProfile.preferredFlatmateGender.isNotEmpty && userProfile.preferredFlatmateGender != 'Any') {
+          query = query.where('gender', isEqualTo: userProfile.preferredFlatmateGender);
+        }
+        // Age matching is trickier. 'preferredFlatmateAge' might be a range like '18-25'.
+        // This requires custom logic or a backend function if you want exact range overlaps.
+        // For simplicity, let's assume 'preferredFlatmateAge' is a single value or we match on exact ranges if possible.
+        // A basic example: if preferred is '18-25', and a flat_listing profile has age 22, it's a match.
+        // This kind of range-based filtering is complex and often done with server-side functions or more advanced queries.
+        // For direct client-side query, you can only do equality or range on a single field.
+        // Let's assume preferredFlatmateAge is something like '18-25' or '26-35' and you want to match the *actual age* of the flat lister.
+        // This is a simplification. For robust age range matching, you'd usually pass min/max ages.
+        // If your preferredFlatmateAge is a string like "25-30", you'd need to parse it here.
+        // For now, if the user profile has preferredFlatmateAge set, we'll try to use it.
+        // A common approach for age range is to filter on ageMin/ageMax if they are defined in the user's preferences.
+        // Since your profile models currently store preferredFlatmateAge as a String (e.g., "18-25"),
+        // direct Firestore range queries on age based on this string are not straightforward.
+        // You'd typically need to store preferredFlatmateAgeMin and preferredFlatmateAgeMax as integers
+        // in your `SeekingFlatmateProfile` model if you want to use them for range queries.
+        // For now, I'll omit direct age range filtering on preferredFlatmateAge string from the query
+        // as it would require complex parsing and potentially multiple `where` clauses,
+        // which Firestore doesn't always handle well together without composite indexes.
+        // Consider if preferredFlatmateAge should be split into min/max integers in the model.
+
+        // Occupation matching
+        if (userProfile.preferredOccupation.isNotEmpty && userProfile.preferredOccupation != 'Any') {
+          query = query.where('occupation', isEqualTo: userProfile.preferredOccupation);
+        }
+
+        // Habits matching: This is complex with multiple `arrayContains` or `arrayContainsAny`
+        // Firestore only allows one `arrayContainsAny` per query.
+        // If userProfile.preferredHabits.isNotEmpty, you might use `arrayContainsAny`
+        // on the 'habits.preferredHabits' field of the target profiles.
+        // This implies the other profiles (flat_listing) also have a 'preferredHabits' field
+        // which might not be true if they are describing *their own* habits.
+        // Let's assume for now you want to filter based on the *other user's actual habits*
+        // matching the *current user's preferred habits*.
+        // E.g., if seeking_flatmate prefers a non-smoking flatmate, filter flat_listing where smoking is 'No'.
+        // This means mapping _currentFilters.selectedHabits to the specific habit fields.
+        // This can get very specific and might be better handled client-side or with backend functions.
+        // For simplicity, if a 'smoking' habit is selected in the filter, filter on it.
+        for (String habit in _currentFilters.selectedHabits) {
+          // This assumes `habit` string from filter directly maps to a field value.
+          // Example: if habit is 'Non-Smoker', you'd query 'habits.smoking': 'No'
+          // This requires a predefined mapping.
+          if (habit == 'Non-Smoker') {
+            query = query.where('habits.smoking', isEqualTo: 'No');
+          } else if (habit == 'Social Drinker') {
+            query = query.where('habits.drinking', isEqualTo: 'Socially');
+          }
+          // ... add more mappings for other habits as needed based on your data structure
+        }
+
+        // Deal breakers and ideal qualities are similar: they are lists.
+        // Firestore queries on multiple array fields or complex `OR` logic are limited.
+        // You generally pick one or two critical filters for Firestore and do the rest client-side.
+        if (_currentFilters.selectedDealBreakers.isNotEmpty) {
+          // Example: If a deal breaker is 'Smoking', filter for 'habits.smoking' != 'Yes'
+          // This requires mapping deal breaker strings to specific field checks.
+          // This is a simplification; for complex deal breakers, client-side filtering might be necessary.
+        }
+
+        // NEW: Budget filters for seeking flatmate profile
+        if (_currentFilters.budgetMin != null) {
+          query = query.where('budgetMin', isGreaterThanOrEqualTo: _currentFilters.budgetMin);
+        }
+        if (_currentFilters.budgetMax != null) {
+          query = query.where('budgetMax', isLessThanOrEqualTo: _currentFilters.budgetMax);
+        }
+
+      }
+
+      QuerySnapshot querySnapshot = await query.get();
 
       _profiles = querySnapshot.docs.map((doc) => FlatListingProfile.fromMap(doc.data() as Map<String, dynamic>, doc.id)).toList();
       setState(() {});
@@ -94,12 +350,66 @@ class _MatchingScreenState extends State<MatchingScreen> {
     }
   }
 
-  Future<void> _fetchSeekingFlatmateProfiles() async {
+  Future<void> _fetchSeekingFlatmateProfiles({bool applyFilters = false}) async { // Modified: added applyFilters
     try {
-      QuerySnapshot querySnapshot = await _firestore.collection('users')
+      Query query = _firestore.collection('users')
           .where('userType', isEqualTo: 'seeking_flatmate')
-          .where('uid', isNotEqualTo: _currentUser!.uid)
-          .get();
+          .where('uid', isNotEqualTo: _currentUser!.uid);
+
+      // NEW: Apply filters based on _currentUserParsedProfile (FlatListingProfile)
+      // This means a 'flat_listing' user is looking for 'seeking_flatmate' profiles
+      if (applyFilters && _currentUserParsedProfile is FlatListingProfile) {
+        final FlatListingProfile userProfile = _currentUserParsedProfile as FlatListingProfile;
+
+        // Common filters from the filter screen
+        if (_currentFilters.desiredCity != null && _currentFilters.desiredCity!.isNotEmpty) {
+          query = query.where('desiredCity', isEqualTo: _currentFilters.desiredCity);
+        }
+        if (_currentFilters.ageMin != null) {
+          query = query.where('age', isGreaterThanOrEqualTo: _currentFilters.ageMin);
+        }
+        if (_currentFilters.ageMax != null) {
+          query = query.where('age', isLessThanOrEqualTo: _currentFilters.ageMax);
+        }
+        if (_currentFilters.gender != null && _currentFilters.gender!.isNotEmpty) {
+          query = query.where('gender', isEqualTo: _currentFilters.gender);
+        }
+
+        // Seeking Flatmate specific filters (from filter screen)
+        if (_currentFilters.budgetMin != null) {
+          query = query.where('budgetMin', isGreaterThanOrEqualTo: _currentFilters.budgetMin);
+        }
+        if (_currentFilters.budgetMax != null) {
+          query = query.where('budgetMax', isLessThanOrEqualTo: _currentFilters.budgetMax);
+        }
+
+        // --- Flatmate preferences from the current user's profile to match other seeking flatmates ---
+        // These are the *current user's* preferences for *their flatmate* (the person seeking a flatmate)
+        // So, if current user (flat_listing) prefers 'Female' flatmate, we look for 'seeking_flatmate' profiles with gender 'Female'.
+        if (userProfile.preferredGender.isNotEmpty && userProfile.preferredGender != 'Any') {
+          query = query.where('gender', isEqualTo: userProfile.preferredGender);
+        }
+        // Similar age considerations as above.
+        // if (userProfile.preferredAgeGroup.isNotEmpty && userProfile.preferredAgeGroup != 'Any') {
+        //   // Logic to parse preferredAgeGroup (e.g., "18-25") and apply range query
+        // }
+        if (userProfile.preferredOccupation.isNotEmpty && userProfile.preferredOccupation != 'Any') {
+          query = query.where('occupation', isEqualTo: userProfile.preferredOccupation);
+        }
+
+        // Habits matching logic here as well, similar to above.
+        // If _currentFilters.selectedHabits is populated from the filter screen.
+        for (String habit in _currentFilters.selectedHabits) {
+          if (habit == 'Non-Smoker') {
+            query = query.where('habits.smokingHabits', isEqualTo: 'No'); // Note the field name change
+          } else if (habit == 'Social Drinker') {
+            query = query.where('habits.drinkingHabits', isEqualTo: 'Socially'); // Note the field name change
+          }
+          // ... add more mappings for other habits as needed based on your data structure
+        }
+      }
+
+      QuerySnapshot querySnapshot = await query.get();
 
       _profiles = querySnapshot.docs.map((doc) => SeekingFlatmateProfile.fromMap(doc.data() as Map<String, dynamic>, doc.id)).toList();
       setState(() {});
@@ -128,6 +438,29 @@ class _MatchingScreenState extends State<MatchingScreen> {
       },
     );
   }
+
+
+  Future<void> _navigateToFilterScreen() async {
+    // Pass a copy of current filters to the filter screen
+    final FilterOptions? resultFilters = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => FilterScreen(
+          initialFilters: _currentFilters.copyWith(), // Pass a copy
+          isSeekingFlatmate: _userProfileType == 'seeking_flatmate',
+        ),
+      ),
+    );
+
+    if (resultFilters != null) {
+      setState(() {
+        _currentFilters = resultFilters; // Update with new filters
+      });
+      // Re-fetch profiles with new filters applied
+      _fetchUserProfile(applyFilters: true);
+    }
+  }
+
 
   // --- NEW: Function to handle a 'like' action ---
 // In matching_screen.dart, inside _MatchingScreenState class:
@@ -1324,17 +1657,59 @@ class _MatchingScreenState extends State<MatchingScreen> {
     double percentage = (maxScore > 0) ? (score / maxScore) * 100 : 0.0;
     return percentage.clamp(0.0, 100.0); // Ensure it's between 0 and 100
   }
-
+  // This variable needs to be defined here so the Positioned widget can access it.
 
   @override
   Widget build(BuildContext context) {
-    // ... (rest of your build method remains the same) ...
+    final dynamic currentProfile = _profiles.isNotEmpty
+        ? _profiles[_currentIndex]
+        : null;
+
+    final double matchPercentage = (currentProfile != null && _currentUserParsedProfile != null)
+        ? _calculateMatchPercentage(_currentUserParsedProfile, currentProfile)
+        : 0.0;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Matching Profiles', style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.redAccent,
         elevation: 0,
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: Stack(
+              children: [
+                const Icon(Icons.filter_list, color: Colors.white, size: 28),
+                // NEW: Show a small dot if filters are active
+                if (_currentFilters.hasFilters())
+                  Positioned(
+                    right: 0,
+                    top: 0,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 12,
+                        minHeight: 12,
+                      ),
+                      child: const Text(
+                        '', // No text, just a dot
+                        style: TextStyle(
+                          color: Colors.redAccent,
+                          fontSize: 8,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  )
+              ],
+            ),
+            onPressed: _navigateToFilterScreen, // NEW: Open filter screen
+          ),
+        ],
       ),
       body: _isLoading
           ? const Center(
@@ -1345,6 +1720,7 @@ class _MatchingScreenState extends State<MatchingScreen> {
             SizedBox(height: 20),
             Text('Loading profiles...', style: TextStyle(fontSize: 18, color: Colors.grey)),
           ],
+
         ),
       )
           : _profiles.isEmpty
@@ -1352,13 +1728,11 @@ class _MatchingScreenState extends State<MatchingScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Custom Placeholder Image (add to your assets folder and pubspec.yaml)
-            // Example: assets/no_profiles.png
             Image.asset(
-              'assets/no_profiles.png', // <--- IMPORTANT: Replace with your image asset or remove if you don't have one
+              'assets/no_profiles.png',
               height: 150,
               width: 150,
-              color: Colors.grey[400], // Adjust color if it's a vector image
+              color: Colors.grey[400],
             ),
             const SizedBox(height: 30),
             const Text(
@@ -1375,18 +1749,26 @@ class _MatchingScreenState extends State<MatchingScreen> {
             const SizedBox(height: 30),
             ElevatedButton.icon(
               onPressed: () {
-                // Action: e.g., navigate to edit preferences, or refresh
-                // Navigator.push(context, MaterialPageRoute(builder: (context) => EditPreferencesScreen()));
-                _fetchUserProfile(); // To refresh if user changed preferences externally
+                _navigateToFilterScreen(); // Allow user to adjust filters
               },
-              icon: const Icon(Icons.refresh, color: Colors.white),
-              label: const Text('Refresh / Adjust Preferences', style: TextStyle(color: Colors.white)),
+              icon: const Icon(Icons.filter_list, color: Colors.white),
+              label: const Text('Adjust Filters', style: TextStyle(color: Colors.white)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.redAccent,
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
               ),
             ),
+            if (_currentFilters.hasFilters())
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    _currentFilters.clear(); // Clear filters
+                  });
+                  _fetchUserProfile(applyFilters: true); // Re-fetch without filters
+                },
+                child: const Text('Clear All Filters', style: TextStyle(color: Colors.redAccent)),
+              ),
           ],
         ),
       )
@@ -1396,13 +1778,11 @@ class _MatchingScreenState extends State<MatchingScreen> {
           children: [
             Expanded(
               child: Dismissible(
-                // Use a ValueKey with a unique identifier from the profile
                 key: ValueKey(_profiles[_currentIndex].documentId),
                 direction: DismissDirection.horizontal,
-                onDismissed: _handleProfileDismissed, // Call the new handler
-                // Enhanced Dismissible Backgrounds
+                onDismissed: _handleProfileDismissed,
                 background: Container(
-                  color: Colors.green.withOpacity(0.7), // Slightly transparent green
+                  color: Colors.green.withOpacity(0.7),
                   alignment: Alignment.centerLeft,
                   padding: const EdgeInsets.only(left: 30.0),
                   child: const Row(
@@ -1414,7 +1794,7 @@ class _MatchingScreenState extends State<MatchingScreen> {
                   ),
                 ),
                 secondaryBackground: Container(
-                  color: Colors.red.withOpacity(0.7), // Slightly transparent red
+                  color: Colors.red.withOpacity(0.7),
                   alignment: Alignment.centerRight,
                   padding: const EdgeInsets.only(right: 30.0),
                   child: const Row(
@@ -1426,6 +1806,7 @@ class _MatchingScreenState extends State<MatchingScreen> {
                     ],
                   ),
                 ),
+
                 child: Card(
                   elevation: 8,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -1434,7 +1815,6 @@ class _MatchingScreenState extends State<MatchingScreen> {
                     child: SingleChildScrollView(
                       child: Column(
                         children: [
-                          // Image carousel with Name/Age/Gender overlay
                           ClipRRect(
                             borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
                             child: Stack(
@@ -1444,12 +1824,11 @@ class _MatchingScreenState extends State<MatchingScreen> {
                                   width: double.infinity,
                                   child: PageView.builder(
                                     controller: _pageController,
-                                    // Safely access imageUrls and determine itemCount
                                     itemCount: (_profiles[_currentIndex] is FlatListingProfile && (_profiles[_currentIndex] as FlatListingProfile).imageUrls != null && (_profiles[_currentIndex] as FlatListingProfile).imageUrls!.isNotEmpty)
                                         ? (_profiles[_currentIndex] as FlatListingProfile).imageUrls!.length
                                         : (_profiles[_currentIndex] is SeekingFlatmateProfile && (_profiles[_currentIndex] as SeekingFlatmateProfile).imageUrls != null && (_profiles[_currentIndex] as SeekingFlatmateProfile).imageUrls!.isNotEmpty)
                                         ? (_profiles[_currentIndex] as SeekingFlatmateProfile).imageUrls!.length
-                                        : 1, // Default to 1 if no images
+                                        : 1,
                                     onPageChanged: (index) {
                                       setState(() {
                                         _currentImageIndex = index;
@@ -1457,7 +1836,6 @@ class _MatchingScreenState extends State<MatchingScreen> {
                                     },
                                     itemBuilder: (context, index) {
                                       String? imageUrl;
-                                      // Safely get imageUrl from the current profile
                                       if (_profiles[_currentIndex] is FlatListingProfile) {
                                         final profile = _profiles[_currentIndex] as FlatListingProfile;
                                         if (profile.imageUrls != null && index < profile.imageUrls!.length) {
@@ -1470,7 +1848,6 @@ class _MatchingScreenState extends State<MatchingScreen> {
                                         }
                                       }
 
-                                      // Placeholder if no image URL or an error occurs
                                       return imageUrl != null && imageUrl.isNotEmpty
                                           ? Image.network(
                                         imageUrl,
@@ -1480,7 +1857,6 @@ class _MatchingScreenState extends State<MatchingScreen> {
                                           if (loadingProgress == null) return child;
                                           return Center(
                                             child: CircularProgressIndicator(
-                                              // Fix: Correctly access expectedTotalBytes
                                               value: loadingProgress.expectedTotalBytes != null
                                                   ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
                                                   : null,
@@ -1493,7 +1869,7 @@ class _MatchingScreenState extends State<MatchingScreen> {
                                           child: const Icon(
                                             Icons.image_not_supported,
                                             size: 100,
-                                            color: Colors.grey, // Adjusted color for visibility
+                                            color: Colors.grey,
                                           ),
                                         ),
                                       )
@@ -1502,13 +1878,12 @@ class _MatchingScreenState extends State<MatchingScreen> {
                                         child: const Icon(
                                           Icons.person_outline,
                                           size: 100,
-                                          color: Colors.grey, // Adjusted color for visibility
+                                          color: Colors.grey,
                                         ),
                                       );
                                     },
                                   ),
                                 ),
-                                // Image indicators (dots)
                                 Positioned(
                                   bottom: 10,
                                   left: 0,
@@ -1516,12 +1891,11 @@ class _MatchingScreenState extends State<MatchingScreen> {
                                   child: Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: List.generate(
-                                      // Safely determine the number of dots
                                       (_profiles[_currentIndex] is FlatListingProfile && (_profiles[_currentIndex] as FlatListingProfile).imageUrls != null && (_profiles[_currentIndex] as FlatListingProfile).imageUrls!.isNotEmpty)
                                           ? (_profiles[_currentIndex] as FlatListingProfile).imageUrls!.length
                                           : (_profiles[_currentIndex] is SeekingFlatmateProfile && (_profiles[_currentIndex] as SeekingFlatmateProfile).imageUrls != null && (_profiles[_currentIndex] as SeekingFlatmateProfile).imageUrls!.isNotEmpty)
                                           ? (_profiles[_currentIndex] as SeekingFlatmateProfile).imageUrls!.length
-                                          : 1, // Default to 1 dot for placeholder
+                                          : 1,
                                           (index) => Container(
                                         width: 8.0,
                                         height: 8.0,
@@ -1536,7 +1910,6 @@ class _MatchingScreenState extends State<MatchingScreen> {
                                     ),
                                   ),
                                 ),
-                                // Gradient overlay for text readability
                                 Positioned(
                                   bottom: 0,
                                   left: 0,
@@ -1576,25 +1949,43 @@ class _MatchingScreenState extends State<MatchingScreen> {
                                     ),
                                   ),
                                 ),
-                                // NEW: Matching Percentage Display
-                                if (_currentUserParsedProfile != null)
+                                if (_currentUserParsedProfile != null
+                                )
                                   Positioned(
-                                    top: 10,
-                                    right: 10,
+                                    top: 15,
+                                    right: 15,
                                     child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                                       decoration: BoxDecoration(
-                                        color: Colors.redAccent.withOpacity(0.8),
-                                        borderRadius: BorderRadius.circular(15),
-                                        border: Border.all(color: Colors.white, width: 1.5),
-                                      ),
-                                      child: Text(
-                                        '${_calculateMatchPercentage(_currentUserParsedProfile, _profiles[_currentIndex]).toInt()}% Match',
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
+                                        gradient: const LinearGradient(
+                                          colors: [Colors.redAccent, Colors.red],
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
                                         ),
+                                        borderRadius: BorderRadius.circular(20),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withOpacity(0.2),
+                                            spreadRadius: 1,
+                                            blurRadius: 5,
+                                            offset: const Offset(0, 3),
+                                          ),
+                                        ],
+                                      ),
+                                      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+                                      child: TweenAnimationBuilder<double>(
+                                        tween: Tween<double>(begin: 0, end: matchPercentage.toDouble()),
+                                        duration: const Duration(milliseconds: 700),
+                                        curve: Curves.easeOutCubic,
+                                        builder: (context, value, child) {
+                                          return Text(
+                                            '${value.toInt()}% Match',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 18,
+                                            ),
+                                          );
+                                        },
                                       ),
                                     ),
                                   ),
@@ -1602,7 +1993,7 @@ class _MatchingScreenState extends State<MatchingScreen> {
                             ),
                           ),
                           Padding(
-                            padding: const EdgeInsets.all(20.0), // Padding for the rest of the content
+                            padding: const EdgeInsets.all(20.0),
                             child: _buildProfileContent(_profiles[_currentIndex]),
                           ),
                         ],
@@ -1612,7 +2003,7 @@ class _MatchingScreenState extends State<MatchingScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 30), // This is the user's reported line 427
+            const SizedBox(height: 30),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
@@ -1621,7 +2012,6 @@ class _MatchingScreenState extends State<MatchingScreen> {
                   label: 'Pass',
                   color: Colors.red,
                   onPressed: () {
-                    // Simulate a swipe left (pass)
                     if (_profiles.isNotEmpty) {
                       _handleProfileDismissed(DismissDirection.endToStart);
                     }
@@ -1632,7 +2022,6 @@ class _MatchingScreenState extends State<MatchingScreen> {
                   label: 'Connect',
                   color: Colors.green,
                   onPressed: () {
-                    // Simulate a swipe right (like)
                     if (_profiles.isNotEmpty) {
                       _handleProfileDismissed(DismissDirection.startToEnd);
                     }
@@ -1645,10 +2034,6 @@ class _MatchingScreenState extends State<MatchingScreen> {
       ),
     );
   }
-
-  // ... (rest of your helper methods: _buildActionButton, _buildProfileContent,
-  // _buildProfileHeader, _buildProfileDetailRow, _buildCompactInfoRow,
-  // _buildDetailCard, _buildChipList, _buildExpansionSection) ...
 
   Widget _buildActionButton({required IconData icon, required String label, required Color color, required VoidCallback onPressed}) {
     return Expanded(
@@ -1671,39 +2056,10 @@ class _MatchingScreenState extends State<MatchingScreen> {
   }
 
   Widget _buildProfileContent(dynamic profile) {
-    //
-    // IMPORTANT: For image carousel to work correctly,
-    // FlatListingProfile and SeekingFlatmateProfile models MUST include:
-    // List<String>? imageUrls;
-    //
-    // And their fromMap/toMap methods should handle this field.
-    //
-    // Example for FlatListingProfile (in flatmate_profile_screen.dart):
-    // class FlatListingProfile {
-    //   ...
-    //   List<String>? imageUrls;
-    //
-    //   FlatListingProfile.fromMap(Map<String, dynamic> map, this.documentId)
-    //       : imageUrls = (map['imageUrls'] as List<dynamic>?)?.map((e) => e.toString()).toList(), // Parse imageUrls
-    //         ...;
-    //
-    //   Map<String, dynamic> toMap() {
-    //     return {
-    //       ...
-    //       'imageUrls': imageUrls, // Add this line
-    //       ...
-    //     };
-    //   }
-    // }
-    //
-    // Similar changes for SeekingFlatmateProfile in flat_with_flatmate_profile_screen.dart.
-    //
-
     if (profile is FlatListingProfile) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Name and basic info are now handled in the Stack above, removed from here
           _buildDetailCard('About Me', profile.ownerBio, Icons.info_outline),
           _buildCompactInfoRow(
             Icons.work, 'Occupation', profile.ownerOccupation,
@@ -1722,7 +2078,6 @@ class _MatchingScreenState extends State<MatchingScreen> {
                 Icons.home, 'Flat Type', profile.flatType,
                 Icons.chair, 'Furnished Status', profile.furnishedStatus,
               ),
-              // Formatted Rent Price
               _buildCompactInfoRow(
                 Icons.date_range, 'Availability Date', profile.availabilityDate != null ? DateFormat('dd/MM/yyyy').format(profile.availabilityDate!) : 'N/A',
                 Icons.attach_money, 'Rent Price', profile.rentPrice != null ? NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0).format(profile.rentPrice!) : 'N/A',
@@ -1797,7 +2152,6 @@ class _MatchingScreenState extends State<MatchingScreen> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Name and basic info are now handled in the Stack above, removed from here
           _buildDetailCard('About Me', profile.bio, Icons.info_outline),
           _buildCompactInfoRow(
             Icons.work, 'Occupation', profile.occupation,
@@ -1807,7 +2161,6 @@ class _MatchingScreenState extends State<MatchingScreen> {
             Icons.place, 'Area Preference', profile.areaPreference,
             Icons.calendar_today, 'Move-in Date', profile.moveInDate != null ? DateFormat('dd/MM/yyyy').format(profile.moveInDate!) : 'N/A',
           ),
-          // Formatted Budget Range
           _buildProfileDetailRow(
             Icons.money,
             'Budget Range',
@@ -1881,11 +2234,7 @@ class _MatchingScreenState extends State<MatchingScreen> {
     return const Text('Error: Unknown Profile Type or Missing Data');
   }
 
-  // Helper widget for the main profile header (name, age, gender) - now just text
-  // The large image is handled directly in _buildProfileContent
   Widget _buildProfileHeader(String name, String subtitle) {
-    // This helper is now largely unused as name/subtitle are part of _buildProfileContent directly
-    // but kept for reference if you want to re-introduce a specific header widget.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1908,11 +2257,11 @@ class _MatchingScreenState extends State<MatchingScreen> {
     );
   }
 
-  // Helper widget for individual detail rows
   Widget _buildProfileDetailRow(IconData icon, String label, String value) {
     if (value == '' || value == 'N/A' || value == '0') {
-      return const SizedBox.shrink(); // Hide if value is empty or N/A or 0
+      return const SizedBox.shrink();
     }
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6.0),
       child: Row(
@@ -1937,7 +2286,6 @@ class _MatchingScreenState extends State<MatchingScreen> {
     );
   }
 
-  // Helper widget for showing two detail rows side-by-side
   Widget _buildCompactInfoRow(
       IconData icon1, String label1, String value1,
       IconData icon2, String label2, String value2,
@@ -1978,7 +2326,7 @@ class _MatchingScreenState extends State<MatchingScreen> {
                 ],
               ),
             ),
-          if (show1 && show2) const SizedBox(width: 16), // Spacer between two items
+          if (show1 && show2) const SizedBox(width: 16),
           if (show2)
             Expanded(
               child: Row(
@@ -2010,8 +2358,6 @@ class _MatchingScreenState extends State<MatchingScreen> {
     );
   }
 
-
-  // Helper widget for larger text descriptions (Bio, Flat Description)
   Widget _buildDetailCard(String title, String content, IconData icon) {
     if (content.isEmpty) {
       return const SizedBox.shrink();
@@ -2053,7 +2399,6 @@ class _MatchingScreenState extends State<MatchingScreen> {
     );
   }
 
-  // Helper widget for lists as chips
   Widget _buildChipList(String title, List<String> items, IconData icon) {
     if (items.isEmpty) {
       return const SizedBox.shrink();
@@ -2079,8 +2424,8 @@ class _MatchingScreenState extends State<MatchingScreen> {
           ),
           const SizedBox(height: 8),
           Wrap(
-            spacing: 8.0, // gap between adjacent chips
-            runSpacing: 4.0, // gap between lines
+            spacing: 8.0,
+            runSpacing: 4.0,
             children: items.map((item) {
               return Chip(
                 label: Text(item),
@@ -2099,13 +2444,11 @@ class _MatchingScreenState extends State<MatchingScreen> {
     );
   }
 
-  // Helper for collapsible sections
   Widget _buildExpansionSection({required String title, required IconData icon, required List<Widget> children}) {
-    // Filter out SizedBox.shrink from children to determine if section should be shown
     final visibleChildren = children.where((widget) => !(widget is SizedBox && widget.width == 0 && widget.height == 0)).toList();
 
     if (visibleChildren.isEmpty) {
-      return const SizedBox.shrink(); // Hide the section if no visible children
+      return const SizedBox.shrink();
     }
     return Card(
       elevation: 2,
@@ -2124,7 +2467,7 @@ class _MatchingScreenState extends State<MatchingScreen> {
         ),
         childrenPadding: const EdgeInsets.all(16.0),
         expandedCrossAxisAlignment: CrossAxisAlignment.start,
-        children: visibleChildren, // Pass only visible children
+        children: visibleChildren,
       ),
     );
   }
