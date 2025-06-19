@@ -7,139 +7,8 @@ import 'package:mytennat/screens/flat_with_flatmate_profile_screen.dart'; // Ens
 import 'package:intl/intl.dart';
 import 'package:mytennat/screens/chat_screen.dart'; // <--- NEW: Import your ChatScreen
 import 'package:mytennat/screens/filter_screen.dart';
+import 'package:mytennat/screens/filter_options.dart';
 
-// NEW: Class to hold filter options
-class FilterOptions {
-  // Common filters
-  String? desiredCity;
-  int? ageMin;
-  int? ageMax;
-  String? gender;
-  List<String> selectedHabits;
-  List<String> selectedIdealQualities;
-  List<String> selectedDealBreakers;
-
-  // FlatListing specific filters
-  int? rentPriceMin;
-  int? rentPriceMax;
-  String? flatType;
-  String? furnishedStatus;
-  List<String> amenitiesDesired;
-
-  // SeekingFlatmate specific filters
-  int? budgetMin;
-  int? budgetMax;
-  String? preferredFlatmateGender; // For seeking_flatmate to filter flat_listing
-  String? preferredFlatmateAge; // For seeking_flatmate to filter flat_listing
-  String? preferredOccupation; // For seeking_flatmate to filter flat_listing
-
-
-  FilterOptions({
-    this.desiredCity,
-    this.ageMin,
-    this.ageMax,
-    this.gender,
-    List<String>? selectedHabits,
-    List<String>? selectedIdealQualities,
-    List<String>? selectedDealBreakers,
-    this.rentPriceMin,
-    this.rentPriceMax,
-    this.flatType,
-    this.furnishedStatus,
-    List<String>? amenitiesDesired,
-    this.budgetMin,
-    this.budgetMax,
-    this.preferredFlatmateGender,
-    this.preferredFlatmateAge,
-    this.preferredOccupation,
-  })  : selectedHabits = selectedHabits ?? [],
-        selectedIdealQualities = selectedIdealQualities ?? [],
-        selectedDealBreakers = selectedDealBreakers ?? [],
-        amenitiesDesired = amenitiesDesired ?? [];
-
-  // Method to check if any filters are actively set
-  bool hasFilters() {
-    return desiredCity != null ||
-        ageMin != null ||
-        ageMax != null ||
-        gender != null ||
-        selectedHabits.isNotEmpty ||
-        selectedIdealQualities.isNotEmpty ||
-        selectedDealBreakers.isNotEmpty ||
-        rentPriceMin != null ||
-        rentPriceMax != null ||
-        flatType != null ||
-        furnishedStatus != null ||
-        amenitiesDesired.isNotEmpty ||
-        budgetMin != null ||
-        budgetMax != null ||
-        preferredFlatmateGender != null ||
-        preferredFlatmateAge != null ||
-        preferredOccupation != null;
-  }
-
-  // Method to clear all filters
-  void clear() {
-    desiredCity = null;
-    ageMin = null;
-    ageMax = null;
-    gender = null;
-    selectedHabits.clear();
-    selectedIdealQualities.clear();
-    selectedDealBreakers.clear();
-    rentPriceMin = null;
-    rentPriceMax = null;
-    flatType = null;
-    furnishedStatus = null;
-    amenitiesDesired.clear();
-    budgetMin = null;
-    budgetMax = null;
-    preferredFlatmateGender = null;
-    preferredFlatmateAge = null;
-    preferredOccupation = null;
-  }
-
-  // Method to create a copy for filter screen interaction
-  FilterOptions copyWith({
-    String? desiredCity,
-    int? ageMin,
-    int? ageMax,
-    String? gender,
-    List<String>? selectedHabits,
-    List<String>? selectedIdealQualities,
-    List<String>? selectedDealBreakers,
-    int? rentPriceMin,
-    int? rentPriceMax,
-    String? flatType,
-    String? furnishedStatus,
-    List<String>? amenitiesDesired,
-    int? budgetMin,
-    int? budgetMax,
-    String? preferredFlatmateGender,
-    String? preferredFlatmateAge,
-    String? preferredOccupation,
-  }) {
-    return FilterOptions(
-      desiredCity: desiredCity ?? this.desiredCity,
-      ageMin: ageMin ?? this.ageMin,
-      ageMax: ageMax ?? this.ageMax,
-      gender: gender ?? this.gender,
-      selectedHabits: selectedHabits ?? List.from(this.selectedHabits),
-      selectedIdealQualities: selectedIdealQualities ?? List.from(this.selectedIdealQualities),
-      selectedDealBreakers: selectedDealBreakers ?? List.from(this.selectedDealBreakers),
-      rentPriceMin: rentPriceMin ?? this.rentPriceMin,
-      rentPriceMax: rentPriceMax ?? this.rentPriceMax,
-      flatType: flatType ?? this.flatType,
-      furnishedStatus: furnishedStatus ?? this.furnishedStatus,
-      amenitiesDesired: amenitiesDesired ?? List.from(this.amenitiesDesired),
-      budgetMin: budgetMin ?? this.budgetMin,
-      budgetMax: budgetMax ?? this.budgetMax,
-      preferredFlatmateGender: preferredFlatmateGender ?? this.preferredFlatmateGender,
-      preferredFlatmateAge: preferredFlatmateAge ?? this.preferredFlatmateAge,
-      preferredOccupation: preferredOccupation ?? this.preferredOccupation,
-    );
-  }
-}
 
 class MatchingScreen extends StatefulWidget {
   const MatchingScreen({super.key});
@@ -184,7 +53,7 @@ class _MatchingScreenState extends State<MatchingScreen> {
     super.dispose();
   }
 
-  Future<void> _fetchUserProfile({bool applyFilters = false}) async { // Modified: added applyFilters
+  Future<void> _fetchUserProfile({bool applyFilters = false}) async {
     if (_currentUser == null) return;
 
     setState(() {
@@ -195,13 +64,14 @@ class _MatchingScreenState extends State<MatchingScreen> {
       DocumentSnapshot userDoc = await _firestore.collection('users').doc(_currentUser!.uid).get();
       if (userDoc.exists) {
         _userProfileType = userDoc['userType'];
+        Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
 
         if (_userProfileType == 'flat_listing') {
-          _currentUserParsedProfile = FlatListingProfile.fromMap(userDoc.data() as Map<String, dynamic>, userDoc.id);
-          await _fetchSeekingFlatmateProfiles(applyFilters: applyFilters); // Pass applyFilters
+          _currentUserParsedProfile = FlatListingProfile.fromMap(userData, userDoc.id);
+          await _fetchSeekingFlatmateProfiles(applyFilters: applyFilters);
         } else if (_userProfileType == 'seeking_flatmate') {
-          _currentUserParsedProfile = SeekingFlatmateProfile.fromMap(userDoc.data() as Map<String, dynamic>, userDoc.id);
-          await _fetchFlatListingProfiles(applyFilters: applyFilters); // Pass applyFilters
+          _currentUserParsedProfile = SeekingFlatmateProfile.fromMap(userData, userDoc.id);
+          await _fetchFlatListingProfiles(applyFilters: applyFilters);
         } else {
           _showAlertDialog('Profile Type Not Found', 'Your profile type could not be determined.', () {});
         }
@@ -223,115 +93,148 @@ class _MatchingScreenState extends State<MatchingScreen> {
     }
   }
 
-  Future<void> _fetchFlatListingProfiles({bool applyFilters = false}) async { // Modified: added applyFilters
+  Future<void> _fetchFlatListingProfiles({bool applyFilters = false}) async {
     try {
       Query query = _firestore.collection('users')
           .where('userType', isEqualTo: 'flat_listing')
           .where('uid', isNotEqualTo: _currentUser!.uid);
 
-      // NEW: Apply filters based on _currentUserParsedProfile (SeekingFlatmateProfile)
-      // This means a 'seeking_flatmate' user is looking for 'flat_listing' profiles
       if (applyFilters && _currentUserParsedProfile is SeekingFlatmateProfile) {
-        final SeekingFlatmateProfile userProfile = _currentUserParsedProfile as SeekingFlatmateProfile;
+        // final SeekingFlatmateProfile userProfile = _currentUserParsedProfile as SeekingFlatmateProfile; // Not directly used for filters here
 
-        // Common filters from the filter screen
+        // --- Location & Price Filters ---
         if (_currentFilters.desiredCity != null && _currentFilters.desiredCity!.isNotEmpty) {
           query = query.where('desiredCity', isEqualTo: _currentFilters.desiredCity);
         }
-        if (_currentFilters.ageMin != null) {
-          query = query.where('age', isGreaterThanOrEqualTo: _currentFilters.ageMin);
+        if (_currentFilters.areaPreference != null && _currentFilters.areaPreference!.isNotEmpty) {
+          query = query.where('areaPreference', isEqualTo: _currentFilters.areaPreference);
         }
-        if (_currentFilters.ageMax != null) {
-          query = query.where('age', isLessThanOrEqualTo: _currentFilters.ageMax);
+        if (_currentFilters.availabilityDate != null) {
+          // Query for dates greater than or equal to the filter date
+          query = query.where('flatDetails.availabilityDate', isGreaterThanOrEqualTo: _currentFilters.availabilityDate);
         }
-        if (_currentFilters.gender != null && _currentFilters.gender!.isNotEmpty) {
-          query = query.where('gender', isEqualTo: _currentFilters.gender);
-        }
-
-        // Flat listing specific filters (from filter screen)
         if (_currentFilters.rentPriceMin != null) {
           query = query.where('flatDetails.rentPrice', isGreaterThanOrEqualTo: _currentFilters.rentPriceMin);
         }
         if (_currentFilters.rentPriceMax != null) {
           query = query.where('flatDetails.rentPrice', isLessThanOrEqualTo: _currentFilters.rentPriceMax);
         }
+
+        // --- Flat Details Filters ---
         if (_currentFilters.flatType != null && _currentFilters.flatType!.isNotEmpty) {
           query = query.where('flatDetails.flatType', isEqualTo: _currentFilters.flatType);
         }
         if (_currentFilters.furnishedStatus != null && _currentFilters.furnishedStatus!.isNotEmpty) {
           query = query.where('flatDetails.furnishedStatus', isEqualTo: _currentFilters.furnishedStatus);
         }
-        // For amenities, you might need an array-contains-any query if you want to match any of the selected amenities.
-        // A direct 'array-contains-all' might be too restrictive unless the other profile has ALL selected amenities.
+        if (_currentFilters.numberOfBedrooms != null) {
+          query = query.where('flatDetails.numberOfBedrooms', isEqualTo: _currentFilters.numberOfBedrooms);
+        }
+        if (_currentFilters.numberOfBathrooms != null) {
+          query = query.where('flatDetails.numberOfBathrooms', isEqualTo: _currentFilters.numberOfBathrooms);
+        }
         if (_currentFilters.amenitiesDesired.isNotEmpty) {
+          // Firestore only allows one arrayContainsAny per query. If you have many, consider client-side filtering.
           query = query.where('flatDetails.amenities', arrayContainsAny: _currentFilters.amenitiesDesired);
         }
-
-        // --- Flatmate preferences from the current user's profile to match other flat listings ---
-        // These are the *current user's* preferences for *their flatmate* (the person listing the flat)
-        // So, if current user (seeking_flatmate) prefers 'Male' flatmate, we look for 'flat_listing' profiles with gender 'Male'.
-        if (userProfile.preferredFlatmateGender.isNotEmpty && userProfile.preferredFlatmateGender != 'Any') {
-          query = query.where('gender', isEqualTo: userProfile.preferredFlatmateGender);
-        }
-        // Age matching is trickier. 'preferredFlatmateAge' might be a range like '18-25'.
-        // This requires custom logic or a backend function if you want exact range overlaps.
-        // For simplicity, let's assume 'preferredFlatmateAge' is a single value or we match on exact ranges if possible.
-        // A basic example: if preferred is '18-25', and a flat_listing profile has age 22, it's a match.
-        // This kind of range-based filtering is complex and often done with server-side functions or more advanced queries.
-        // For direct client-side query, you can only do equality or range on a single field.
-        // Let's assume preferredFlatmateAge is something like '18-25' or '26-35' and you want to match the *actual age* of the flat lister.
-        // This is a simplification. For robust age range matching, you'd usually pass min/max ages.
-        // If your preferredFlatmateAge is a string like "25-30", you'd need to parse it here.
-        // For now, if the user profile has preferredFlatmateAge set, we'll try to use it.
-        // A common approach for age range is to filter on ageMin/ageMax if they are defined in the user's preferences.
-        // Since your profile models currently store preferredFlatmateAge as a String (e.g., "18-25"),
-        // direct Firestore range queries on age based on this string are not straightforward.
-        // You'd typically need to store preferredFlatmateAgeMin and preferredFlatmateAgeMax as integers
-        // in your `SeekingFlatmateProfile` model if you want to use them for range queries.
-        // For now, I'll omit direct age range filtering on preferredFlatmateAge string from the query
-        // as it would require complex parsing and potentially multiple `where` clauses,
-        // which Firestore doesn't always handle well together without composite indexes.
-        // Consider if preferredFlatmateAge should be split into min/max integers in the model.
-
-        // Occupation matching
-        if (userProfile.preferredOccupation.isNotEmpty && userProfile.preferredOccupation != 'Any') {
-          query = query.where('occupation', isEqualTo: userProfile.preferredOccupation);
+        if (_currentFilters.availableFor != null && _currentFilters.availableFor!.isNotEmpty) {
+          query = query.where('flatDetails.availableFor', isEqualTo: _currentFilters.availableFor);
         }
 
-        // Habits matching: This is complex with multiple `arrayContains` or `arrayContainsAny`
-        // Firestore only allows one `arrayContainsAny` per query.
-        // If userProfile.preferredHabits.isNotEmpty, you might use `arrayContainsAny`
-        // on the 'habits.preferredHabits' field of the target profiles.
-        // This implies the other profiles (flat_listing) also have a 'preferredHabits' field
-        // which might not be true if they are describing *their own* habits.
-        // Let's assume for now you want to filter based on the *other user's actual habits*
-        // matching the *current user's preferred habits*.
-        // E.g., if seeking_flatmate prefers a non-smoking flatmate, filter flat_listing where smoking is 'No'.
-        // This means mapping _currentFilters.selectedHabits to the specific habit fields.
-        // This can get very specific and might be better handled client-side or with backend functions.
-        // For simplicity, if a 'smoking' habit is selected in the filter, filter on it.
-        for (String habit in _currentFilters.selectedHabits) {
-          // This assumes `habit` string from filter directly maps to a field value.
-          // Example: if habit is 'Non-Smoker', you'd query 'habits.smoking': 'No'
-          // This requires a predefined mapping.
-          if (habit == 'Non-Smoker') {
-            query = query.where('habits.smoking', isEqualTo: 'No');
-          } else if (habit == 'Social Drinker') {
-            query = query.where('habits.drinking', isEqualTo: 'Socially');
-          }
-          // ... add more mappings for other habits as needed based on your data structure
+        // --- Lifestyle & Habit Filters (matching seeker's preferences with lister's habits) ---
+        // Note: The field names here must match exactly what's stored in your FlatListingProfile in Firestore
+        if (_currentFilters.gender != null && _currentFilters.gender!.isNotEmpty) {
+          query = query.where('ownerGender', isEqualTo: _currentFilters.gender);
+        }
+        if (_currentFilters.ageMin != null) {
+          query = query.where('ownerAge', isGreaterThanOrEqualTo: _currentFilters.ageMin);
+        }
+        if (_currentFilters.ageMax != null) {
+          query = query.where('ownerAge', isLessThanOrEqualTo: _currentFilters.ageMax);
+        }
+        if (_currentFilters.cleanlinessLevel != null && _currentFilters.cleanlinessLevel!.isNotEmpty) {
+          query = query.where('cleanlinessLevel', isEqualTo: _currentFilters.cleanlinessLevel);
+        }
+        if (_currentFilters.socialHabits != null && _currentFilters.socialHabits!.isNotEmpty) {
+          query = query.where('socialPreferences', isEqualTo: _currentFilters.socialHabits); // Assuming this mapping
+        }
+        if (_currentFilters.noiseLevel != null && _currentFilters.noiseLevel!.isNotEmpty) {
+          query = query.where('noiseLevel', isEqualTo: _currentFilters.noiseLevel);
+        }
+        if (_currentFilters.smokingHabit != null && _currentFilters.smokingHabit!.isNotEmpty) {
+          query = query.where('smokingHabit', isEqualTo: _currentFilters.smokingHabit);
+        }
+        if (_currentFilters.drinkingHabit != null && _currentFilters.drinkingHabit!.isNotEmpty) {
+          query = query.where('drinkingHabit', isEqualTo: _currentFilters.drinkingHabit);
+        }
+        if (_currentFilters.foodPreference != null && _currentFilters.foodPreference!.isNotEmpty) {
+          query = query.where('foodPreference', isEqualTo: _currentFilters.foodPreference);
+        }
+        if (_currentFilters.petOwnership != null && _currentFilters.petOwnership!.isNotEmpty) {
+          query = query.where('petOwnership', isEqualTo: _currentFilters.petOwnership);
+        }
+        if (_currentFilters.petTolerance != null && _currentFilters.petTolerance!.isNotEmpty) {
+          query = query.where('petTolerance', isEqualTo: _currentFilters.petTolerance);
+        }
+        if (_currentFilters.workSchedule != null && _currentFilters.workSchedule!.isNotEmpty) {
+          query = query.where('workSchedule', isEqualTo: _currentFilters.workSchedule);
+        }
+        if (_currentFilters.sleepingSchedule != null && _currentFilters.sleepingSchedule!.isNotEmpty) {
+          query = query.where('sleepingSchedule', isEqualTo: _currentFilters.sleepingSchedule);
+        }
+        if (_currentFilters.visitorsPolicy != null && _currentFilters.visitorsPolicy!.isNotEmpty) {
+          query = query.where('visitorsPolicy', isEqualTo: _currentFilters.visitorsPolicy);
+        }
+        if (_currentFilters.guestsOvernightPolicy != null && _currentFilters.guestsOvernightPolicy!.isNotEmpty) {
+          query = query.where('guestsOvernightPolicy', isEqualTo: _currentFilters.guestsOvernightPolicy);
+        }
+        if (_currentFilters.occupation != null && _currentFilters.occupation!.isNotEmpty) {
+          query = query.where('ownerOccupation', isEqualTo: _currentFilters.occupation);
         }
 
-        // Deal breakers and ideal qualities are similar: they are lists.
-        // Firestore queries on multiple array fields or complex `OR` logic are limited.
-        // You generally pick one or two critical filters for Firestore and do the rest client-side.
-        if (_currentFilters.selectedDealBreakers.isNotEmpty) {
-          // Example: If a deal breaker is 'Smoking', filter for 'habits.smoking' != 'Yes'
-          // This requires mapping deal breaker strings to specific field checks.
-          // This is a simplification; for complex deal breakers, client-side filtering might be necessary.
-        }
+        // --- Complex filtering (selectedIdealQualities, selectedDealBreakers) ---
+        // For these list-based preferences, direct Firestore queries are limited.
+        // You generally can only use one `arrayContainsAny` clause per query.
+        // If you need to filter by multiple ideal qualities OR deal breakers from lists,
+        // you will likely need to fetch a broader set of results and then filter them client-side.
+        // Example for one:
+        // if (_currentFilters.selectedIdealQualities.isNotEmpty) {
+        //   query = query.where('idealQualities', arrayContainsAny: _currentFilters.selectedIdealQualities);
+        // }
+        // For multiple, consider client-side filtering or a backend solution.
+      }
 
-        // NEW: Budget filters for seeking flatmate profile
+      QuerySnapshot querySnapshot = await query.get();
+
+      _profiles = querySnapshot.docs
+          .map((doc) => FlatListingProfile.fromMap(doc.data() as Map<String, dynamic>, doc.id))
+          .toList();
+      setState(() {});
+    } catch (e) {
+      _showAlertDialog('Error', 'Failed to load flat listing profiles: $e', () {});
+    }
+  }
+
+  Future<void> _fetchSeekingFlatmateProfiles({bool applyFilters = false}) async {
+    try {
+      Query query = _firestore.collection('users')
+          .where('userType', isEqualTo: 'seeking_flatmate')
+          .where('uid', isNotEqualTo: _currentUser!.uid);
+
+      if (applyFilters && _currentUserParsedProfile is FlatListingProfile) {
+        // final FlatListingProfile userProfile = _currentUserParsedProfile as FlatListingProfile; // Not directly used for filters here
+
+        // --- Location & Price Filters ---
+        if (_currentFilters.desiredCity != null && _currentFilters.desiredCity!.isNotEmpty) {
+          query = query.where('desiredCity', isEqualTo: _currentFilters.desiredCity);
+        }
+        if (_currentFilters.areaPreference != null && _currentFilters.areaPreference!.isNotEmpty) {
+          query = query.where('areaPreference', isEqualTo: _currentFilters.areaPreference);
+        }
+        if (_currentFilters.moveInDate != null) {
+          // Query for dates less than or equal to the filter date (i.e., they can move in by then)
+          query = query.where('moveInDate', isLessThanOrEqualTo: _currentFilters.moveInDate);
+        }
         if (_currentFilters.budgetMin != null) {
           query = query.where('budgetMin', isGreaterThanOrEqualTo: _currentFilters.budgetMin);
         }
@@ -339,31 +242,10 @@ class _MatchingScreenState extends State<MatchingScreen> {
           query = query.where('budgetMax', isLessThanOrEqualTo: _currentFilters.budgetMax);
         }
 
-      }
-
-      QuerySnapshot querySnapshot = await query.get();
-
-      _profiles = querySnapshot.docs.map((doc) => FlatListingProfile.fromMap(doc.data() as Map<String, dynamic>, doc.id)).toList();
-      setState(() {});
-    } catch (e) {
-      _showAlertDialog('Error', 'Failed to load flat listing profiles: $e', () {});
-    }
-  }
-
-  Future<void> _fetchSeekingFlatmateProfiles({bool applyFilters = false}) async { // Modified: added applyFilters
-    try {
-      Query query = _firestore.collection('users')
-          .where('userType', isEqualTo: 'seeking_flatmate')
-          .where('uid', isNotEqualTo: _currentUser!.uid);
-
-      // NEW: Apply filters based on _currentUserParsedProfile (FlatListingProfile)
-      // This means a 'flat_listing' user is looking for 'seeking_flatmate' profiles
-      if (applyFilters && _currentUserParsedProfile is FlatListingProfile) {
-        final FlatListingProfile userProfile = _currentUserParsedProfile as FlatListingProfile;
-
-        // Common filters from the filter screen
-        if (_currentFilters.desiredCity != null && _currentFilters.desiredCity!.isNotEmpty) {
-          query = query.where('desiredCity', isEqualTo: _currentFilters.desiredCity);
+        // --- Lifestyle & Habit Filters (matching lister's preferences with seeker's habits) ---
+        // Note: The field names here must match exactly what's stored in your SeekingFlatmateProfile in Firestore
+        if (_currentFilters.gender != null && _currentFilters.gender!.isNotEmpty) {
+          query = query.where('gender', isEqualTo: _currentFilters.gender);
         }
         if (_currentFilters.ageMin != null) {
           query = query.where('age', isGreaterThanOrEqualTo: _currentFilters.ageMin);
@@ -371,47 +253,57 @@ class _MatchingScreenState extends State<MatchingScreen> {
         if (_currentFilters.ageMax != null) {
           query = query.where('age', isLessThanOrEqualTo: _currentFilters.ageMax);
         }
-        if (_currentFilters.gender != null && _currentFilters.gender!.isNotEmpty) {
-          query = query.where('gender', isEqualTo: _currentFilters.gender);
+        if (_currentFilters.cleanlinessLevel != null && _currentFilters.cleanlinessLevel!.isNotEmpty) {
+          query = query.where('cleanliness', isEqualTo: _currentFilters.cleanlinessLevel); // Assuming this mapping
         }
-
-        // Seeking Flatmate specific filters (from filter screen)
-        if (_currentFilters.budgetMin != null) {
-          query = query.where('budgetMin', isGreaterThanOrEqualTo: _currentFilters.budgetMin);
+        if (_currentFilters.socialHabits != null && _currentFilters.socialHabits!.isNotEmpty) {
+          query = query.where('socialHabits', isEqualTo: _currentFilters.socialHabits);
         }
-        if (_currentFilters.budgetMax != null) {
-          query = query.where('budgetMax', isLessThanOrEqualTo: _currentFilters.budgetMax);
+        if (_currentFilters.noiseLevel != null && _currentFilters.noiseLevel!.isNotEmpty) {
+          query = query.where('noiseLevel', isEqualTo: _currentFilters.noiseLevel);
         }
-
-        // --- Flatmate preferences from the current user's profile to match other seeking flatmates ---
-        // These are the *current user's* preferences for *their flatmate* (the person seeking a flatmate)
-        // So, if current user (flat_listing) prefers 'Female' flatmate, we look for 'seeking_flatmate' profiles with gender 'Female'.
-        if (userProfile.preferredGender.isNotEmpty && userProfile.preferredGender != 'Any') {
-          query = query.where('gender', isEqualTo: userProfile.preferredGender);
+        if (_currentFilters.smokingHabit != null && _currentFilters.smokingHabit!.isNotEmpty) {
+          query = query.where('smokingHabits', isEqualTo: _currentFilters.smokingHabit); // Note field name
         }
-        // Similar age considerations as above.
-        // if (userProfile.preferredAgeGroup.isNotEmpty && userProfile.preferredAgeGroup != 'Any') {
-        //   // Logic to parse preferredAgeGroup (e.g., "18-25") and apply range query
-        // }
-        if (userProfile.preferredOccupation.isNotEmpty && userProfile.preferredOccupation != 'Any') {
-          query = query.where('occupation', isEqualTo: userProfile.preferredOccupation);
+        if (_currentFilters.drinkingHabit != null && _currentFilters.drinkingHabit!.isNotEmpty) {
+          query = query.where('drinkingHabits', isEqualTo: _currentFilters.drinkingHabit); // Note field name
         }
-
-        // Habits matching logic here as well, similar to above.
-        // If _currentFilters.selectedHabits is populated from the filter screen.
-        for (String habit in _currentFilters.selectedHabits) {
-          if (habit == 'Non-Smoker') {
-            query = query.where('habits.smokingHabits', isEqualTo: 'No'); // Note the field name change
-          } else if (habit == 'Social Drinker') {
-            query = query.where('habits.drinkingHabits', isEqualTo: 'Socially'); // Note the field name change
-          }
-          // ... add more mappings for other habits as needed based on your data structure
+        if (_currentFilters.foodPreference != null && _currentFilters.foodPreference!.isNotEmpty) {
+          query = query.where('foodPreference', isEqualTo: _currentFilters.foodPreference);
         }
+        if (_currentFilters.petOwnership != null && _currentFilters.petOwnership!.isNotEmpty) {
+          query = query.where('petOwnership', isEqualTo: _currentFilters.petOwnership);
+        }
+        if (_currentFilters.petTolerance != null && _currentFilters.petTolerance!.isNotEmpty) {
+          query = query.where('petTolerance', isEqualTo: _currentFilters.petTolerance);
+        }
+        if (_currentFilters.workSchedule != null && _currentFilters.workSchedule!.isNotEmpty) {
+          query = query.where('workSchedule', isEqualTo: _currentFilters.workSchedule);
+        }
+        if (_currentFilters.sleepingSchedule != null && _currentFilters.sleepingSchedule!.isNotEmpty) {
+          query = query.where('sleepingSchedule', isEqualTo: _currentFilters.sleepingSchedule);
+        }
+        if (_currentFilters.visitorsPolicy != null && _currentFilters.visitorsPolicy!.isNotEmpty) {
+          query = query.where('visitorsPolicy', isEqualTo: _currentFilters.visitorsPolicy);
+        }
+        if (_currentFilters.guestsOvernightPolicy != null && _currentFilters.guestsOvernightPolicy!.isNotEmpty) {
+          // This field might be in FlatListingProfile's preferences for a seeker, not seeker's own profile.
+          // You need to clarify where guestsOvernightPolicy is stored in SeekingFlatmateProfile to query it.
+          // For now, I'll assume it exists directly in SeekingFlatmateProfile, but verify.
+          query = query.where('guestsFrequency', isEqualTo: _currentFilters.guestsOvernightPolicy); // Assuming mapping
+        }
+        if (_currentFilters.occupation != null && _currentFilters.occupation!.isNotEmpty) {
+          query = query.where('occupation', isEqualTo: _currentFilters.occupation);
+        }
+        // --- Complex filtering (selectedIdealQualities, selectedDealBreakers) ---
+        // Same considerations as above, likely requiring client-side filtering.
       }
 
       QuerySnapshot querySnapshot = await query.get();
 
-      _profiles = querySnapshot.docs.map((doc) => SeekingFlatmateProfile.fromMap(doc.data() as Map<String, dynamic>, doc.id)).toList();
+      _profiles = querySnapshot.docs
+          .map((doc) => SeekingFlatmateProfile.fromMap(doc.data() as Map<String, dynamic>, doc.id))
+          .toList();
       setState(() {});
     } catch (e) {
       _showAlertDialog('Error', 'Failed to load seeking flatmate profiles: $e', () {});
