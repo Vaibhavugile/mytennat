@@ -30,6 +30,10 @@ class _FilterScreenState extends State<FilterScreen> {
   final TextEditingController _budgetMaxController = TextEditingController();
   final TextEditingController _bedroomsController = TextEditingController();
   final TextEditingController _bathroomsController = TextEditingController();
+  final TextEditingController _desiredCityController = TextEditingController();
+  final TextEditingController _areaPreferenceController = TextEditingController();
+  final TextEditingController _occupationController = TextEditingController();
+
 
   // Date controllers (not actual controllers, just for display/selection)
   String _moveInDateText = '';
@@ -37,37 +41,38 @@ class _FilterScreenState extends State<FilterScreen> {
 
   // Dropdown options (add all possible values from your data models)
   final List<String> _genders = ['Male', 'Female', 'Other', 'Any'];
-  final List<String> _flatTypes = ['1BHK', '2BHK', '3BHK', 'Studio', 'Private Room', 'Shared Room', 'Villa'];
-  final List<String> _furnishedStatuses = ['Fully Furnished', 'Semi-Furnished', 'Unfurnished'];
-  final List<String> _availableForOptions = ['Male', 'Female', 'Couple', 'Family', 'Students', 'Professionals'];
+  final List<String> _flatTypes = ['1 BHK', '2 BHK', '3 BHK', 'Studio', 'Private Room', 'Shared Room', 'Villa', 'Other'];
+  final List<String> _furnishedStatuses = ['Furnished', 'Semi-Furnished', 'Unfurnished'];
+  final List<String> _availableForOptions = ['Male', 'Female', 'Couple', 'Family', 'Students', 'Professionals', 'Any'];
 
   // Lifestyle & Habits options (ensure these match your profile data's values)
-  final List<String> _cleanlinessLevels = ['Very Clean', 'Moderately Clean', 'Flexible'];
-  final List<String> _socialHabitsOptions = ['Very Social', 'Moderately Social', 'Quiet/Introvert'];
-  final List<String> _noiseLevels = ['Quiet', 'Moderate', 'Lively'];
-  final List<String> _smokingHabitsOptions = ['Non-Smoker', 'Social Smoker', 'Smoker'];
-  final List<String> _drinkingHabitsOptions = ['Non-Drinker', 'Social Drinker', 'Heavy Drinker'];
+  final List<String> _cleanlinessLevels = ['Very Clean', 'Moderately Clean', 'Flexible', 'Any'];
+  final List<String> _socialHabitsOptions = ['Very Social', 'Moderately Social', 'Quiet/Introvert', 'Any'];
+  final List<String> _noiseLevels = ['Quiet', 'Moderate', 'Lively', 'Any'];
+  final List<String> _smokingHabitsOptions = ['Non-Smoker', 'Social Smoker', 'Smoker', 'Any'];
+  final List<String> _drinkingHabitsOptions = ['Non-Drinker', 'Social Drinker', 'Heavy Drinker', 'Any'];
   final List<String> _foodPreferences = ['Vegetarian', 'Non-Vegetarian', 'Vegan', 'Eggetarian', 'Any'];
-  final List<String> _petOwnershipOptions = ['Has Pets', 'No Pets'];
-  final List<String> _petToleranceOptions = ['Pet-Friendly', 'Not Pet-Friendly', 'Specific Pets Only'];
-  final List<String> _workScheduleOptions = ['9-5 Office', 'Flexible Remote', 'Night Shift', 'Student'];
-  final List<String> _sleepingScheduleOptions = ['Early Riser', 'Night Owl', 'Flexible'];
-  final List<String> _visitorsPolicyOptions = ['Guests Welcome', 'Occasional Guests', 'No Guests'];
-  final List<String> _guestsOvernightPolicyOptions = ['Allowed', 'Not Allowed', 'Occasional'];
+  final List<String> _petOwnershipOptions = ['Has Pets', 'No Pets', 'Any'];
+  final List<String> _petToleranceOptions = ['Pet-Friendly', 'Not Pet-Friendly', 'Specific Pets Only', 'Any'];
+  final List<String> _workScheduleOptions = ['9-5 Office', 'Flexible Remote', 'Night Shift', 'Student', 'Any'];
+  final List<String> _sleepingScheduleOptions = ['Early Riser', 'Night Owl', 'Flexible', 'Any'];
+  final List<String> _visitorsPolicyOptions = ['Guests Welcome', 'Occasional Guests', 'No Guests', 'Any'];
+  final List<String> _guestsOvernightPolicyOptions = ['Allowed', 'Not Allowed', 'Occasional', 'Any'];
   // For occupation, you might have a long list or use a text field.
 
   // Multi-select options (reusing _FilterChipGroup)
   final List<String> _amenitiesOptions = [
-    'Wi-Fi', 'Parking', 'AC', 'Gym', 'Laundry', 'Balcony', 'Garden',
-    'Private Bathroom', 'Attached Kitchen', 'Power Backup', 'Security', 'Swimming Pool'
+    'AC', 'Geyser', 'Washing Machine', 'Refrigerator', 'RO Water', 'Wi-Fi',
+    'Parking', 'Security', 'Lift', 'Gym', 'Swimming Pool', 'Clubhouse',
+    'Power Backup', 'Gas Pipeline', 'Modular Kitchen', 'Wardrobe',
   ];
   final List<String> _commonQualities = [
-    'Organized', 'Responsible', 'Friendly', 'Respectful', 'Quiet', 'Social',
-    'Clean', 'Independent', 'Communicative', 'Easygoing'
+    'Organized', 'Responsible', 'Friendly', 'Respectful', 'Good Communicator',
+    'Clean', 'Easygoing', 'Independent',
   ];
   final List<String> _commonDealBreakers = [
-    'Smoking', 'Excessive Noise', 'Untidiness', 'Frequent Parties',
-    'Pets', 'Late Rent Payments', 'Lack of Communication'
+    'Smoking Indoors', 'Excessive Noise', 'Untidiness', 'Frequent Parties',
+    'Undeclared Guests', 'Pets (if not allowed)',
   ];
 
 
@@ -85,6 +90,10 @@ class _FilterScreenState extends State<FilterScreen> {
     _budgetMaxController.text = _filters.budgetMax?.toString() ?? '';
     _bedroomsController.text = _filters.numberOfBedrooms?.toString() ?? '';
     _bathroomsController.text = _filters.numberOfBathrooms?.toString() ?? '';
+    _desiredCityController.text = _filters.desiredCity ?? '';
+    _areaPreferenceController.text = _filters.areaPreference ?? '';
+    _occupationController.text = _filters.occupation ?? '';
+
 
     if (_filters.moveInDate != null) {
       _moveInDateText = DateFormat('dd/MM/yyyy').format(_filters.moveInDate!);
@@ -104,6 +113,9 @@ class _FilterScreenState extends State<FilterScreen> {
     _budgetMaxController.dispose();
     _bedroomsController.dispose();
     _bathroomsController.dispose();
+    _desiredCityController.dispose();
+    _areaPreferenceController.dispose();
+    _occupationController.dispose();
     super.dispose();
   }
 
@@ -138,10 +150,24 @@ class _FilterScreenState extends State<FilterScreen> {
     _filters.numberOfBedrooms = int.tryParse(_bedroomsController.text);
     _filters.numberOfBathrooms = int.tryParse(_bathroomsController.text);
 
+    // Basic validation for ranges
+    if (_filters.ageMin != null && _filters.ageMax != null && _filters.ageMin! > _filters.ageMax!) {
+      _showErrorSnackBar("Minimum age cannot be greater than maximum age.");
+      return;
+    }
+    if (_filters.rentPriceMin != null && _filters.rentPriceMax != null && _filters.rentPriceMin! > _filters.rentPriceMax!) {
+      _showErrorSnackBar("Minimum rent cannot be greater than maximum rent.");
+      return;
+    }
+    if (_filters.budgetMin != null && _filters.budgetMax != null && _filters.budgetMin! > _filters.budgetMax!) {
+      _showErrorSnackBar("Minimum budget cannot be greater than maximum budget.");
+      return;
+    }
+
     Navigator.pop(context, _filters); // Return the updated filters
   }
 
-  void _clearFilters() {
+  void _clearAllFilters() {
     setState(() {
       _filters.clear();
       _ageMinController.clear();
@@ -152,23 +178,37 @@ class _FilterScreenState extends State<FilterScreen> {
       _budgetMaxController.clear();
       _bedroomsController.clear();
       _bathroomsController.clear();
+      _desiredCityController.clear();
+      _areaPreferenceController.clear();
+      _occupationController.clear();
       _moveInDateText = '';
       _availabilityDateText = '';
     });
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Filter Options'),
+        title: const Text('Filter Profiles', style: TextStyle(color: Colors.white)),
+        backgroundColor: Colors.redAccent,
+        iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           TextButton(
-            onPressed: _clearFilters,
-            child: const Text('Clear All', style: TextStyle(color: Colors.redAccent)),
+            onPressed: _clearAllFilters,
+            child: const Text('Clear All', style: TextStyle(color: Colors.white)),
           ),
           IconButton(
-            icon: const Icon(Icons.check, color: Colors.redAccent),
+            icon: const Icon(Icons.check, color: Colors.white),
             onPressed: _applyFilters,
           ),
         ],
@@ -180,12 +220,12 @@ class _FilterScreenState extends State<FilterScreen> {
           children: [
             _buildSectionTitle('Location & Price'),
             _buildTextField(
-              controller: TextEditingController(text: _filters.desiredCity),
+              controller: _desiredCityController,
               labelText: 'Desired City',
               onChanged: (value) => _filters.desiredCity = value,
             ),
             _buildTextField(
-              controller: TextEditingController(text: _filters.areaPreference),
+              controller: _areaPreferenceController,
               labelText: 'Area Preference',
               onChanged: (value) => _filters.areaPreference = value,
             ),
@@ -228,19 +268,27 @@ class _FilterScreenState extends State<FilterScreen> {
             ),
             const SizedBox(height: 24),
 
-            if (!widget.isSeekingFlatmate) ...[
-              _buildSectionTitle('Flat Details'),
-              _buildDropdownField(
-                labelText: 'Flat Type',
+            if (widget.isSeekingFlatmate) ...[ // This section was already present, just re-arranged
+              _buildSectionTitle('Flat Requirements'),
+              _buildDropdownFilter(
+                label: 'Preferred Flat Type',
                 value: _filters.flatType,
                 items: _flatTypes,
-                onChanged: (value) => setState(() => _filters.flatType = value),
+                onChanged: (String? newValue) {
+                  setState(() {
+                    _filters.flatType = newValue;
+                  });
+                },
               ),
-              _buildDropdownField(
-                labelText: 'Furnished Status',
+              _buildDropdownFilter(
+                label: 'Furnished Status',
                 value: _filters.furnishedStatus,
                 items: _furnishedStatuses,
-                onChanged: (value) => setState(() => _filters.furnishedStatus = value),
+                onChanged: (String? newValue) {
+                  setState(() {
+                    _filters.furnishedStatus = newValue;
+                  });
+                },
               ),
               Row(
                 children: [
@@ -262,13 +310,13 @@ class _FilterScreenState extends State<FilterScreen> {
                 ],
               ),
               _FilterChipGroup(
-                title: 'Amenities Desired',
+                title: 'Desired Amenities',
                 availableItems: _amenitiesOptions,
                 selectedItems: _filters.amenitiesDesired,
                 onSelectionChanged: (selected) => setState(() => _filters.amenitiesDesired = selected),
               ),
-              _buildDropdownField(
-                labelText: 'Available For',
+              _buildDropdownFilter(
+                label: 'Available For',
                 value: _filters.availableFor,
                 items: _availableForOptions,
                 onChanged: (value) => setState(() => _filters.availableFor = value),
@@ -276,108 +324,103 @@ class _FilterScreenState extends State<FilterScreen> {
               const SizedBox(height: 24),
             ],
 
-            _buildSectionTitle('Lifestyle & Habits'),
-            _buildDropdownField(
-              labelText: 'Gender (Other User)',
+            _buildSectionTitle('General Preferences'), // Renamed from "General Preferences" to match new structure
+            _buildDropdownFilter(
+              label: 'Gender',
               value: _filters.gender,
               items: _genders,
-              onChanged: (value) => setState(() => _filters.gender = value),
+              onChanged: (String? newValue) {
+                setState(() {
+                  _filters.gender = newValue == 'Any' ? null : newValue;
+                });
+              },
             ),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildNumberField(
-                    controller: _ageMinController,
-                    labelText: 'Min Age (Other User)',
-                    onChanged: (value) => _filters.ageMin = int.tryParse(value),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _buildNumberField(
-                    controller: _ageMaxController,
-                    labelText: 'Max Age (Other User)',
-                    onChanged: (value) => _filters.ageMax = int.tryParse(value),
-                  ),
-                ),
-              ],
+            _buildRangeInputFilter(
+              label: 'Age Range',
+              minController: _ageMinController,
+              maxController: _ageMaxController,
+              keyboardType: TextInputType.number,
             ),
             _buildTextField(
-              controller: TextEditingController(text: _filters.occupation),
-              labelText: 'Occupation (Other User)',
+              controller: _occupationController,
+              labelText: 'Occupation',
               onChanged: (value) => _filters.occupation = value,
             ),
-            _buildDropdownField(
-              labelText: 'Cleanliness Level',
+
+            const SizedBox(height: 20),
+
+            _buildSectionTitle('Lifestyle & Habits'),
+            _buildDropdownFilter(
+              label: 'Cleanliness Level',
               value: _filters.cleanlinessLevel,
               items: _cleanlinessLevels,
-              onChanged: (value) => setState(() => _filters.cleanlinessLevel = value),
+              onChanged: (value) => setState(() => _filters.cleanlinessLevel = value == 'Any' ? null : value),
             ),
-            _buildDropdownField(
-              labelText: 'Social Habits',
+            _buildDropdownFilter(
+              label: 'Social Habits',
               value: _filters.socialHabits,
               items: _socialHabitsOptions,
-              onChanged: (value) => setState(() => _filters.socialHabits = value),
+              onChanged: (value) => setState(() => _filters.socialHabits = value == 'Any' ? null : value),
             ),
-            _buildDropdownField(
-              labelText: 'Noise Level',
+            _buildDropdownFilter(
+              label: 'Noise Level',
               value: _filters.noiseLevel,
               items: _noiseLevels,
-              onChanged: (value) => setState(() => _filters.noiseLevel = value),
+              onChanged: (value) => setState(() => _filters.noiseLevel = value == 'Any' ? null : value),
             ),
-            _buildDropdownField(
-              labelText: 'Smoking Habits',
+            _buildDropdownFilter(
+              label: 'Smoking Habits',
               value: _filters.smokingHabit,
               items: _smokingHabitsOptions,
-              onChanged: (value) => setState(() => _filters.smokingHabit = value),
+              onChanged: (value) => setState(() => _filters.smokingHabit = value == 'Any' ? null : value),
             ),
-            _buildDropdownField(
-              labelText: 'Drinking Habits',
+            _buildDropdownFilter(
+              label: 'Drinking Habits',
               value: _filters.drinkingHabit,
               items: _drinkingHabitsOptions,
-              onChanged: (value) => setState(() => _filters.drinkingHabit = value),
+              onChanged: (value) => setState(() => _filters.drinkingHabit = value == 'Any' ? null : value),
             ),
-            _buildDropdownField(
-              labelText: 'Food Preference',
+            _buildDropdownFilter(
+              label: 'Food Preference',
               value: _filters.foodPreference,
               items: _foodPreferences,
-              onChanged: (value) => setState(() => _filters.foodPreference = value),
+              onChanged: (value) => setState(() => _filters.foodPreference = value == 'Any' ? null : value),
             ),
-            _buildDropdownField(
-              labelText: 'Pet Ownership',
+            _buildDropdownFilter(
+              label: 'Pet Ownership',
               value: _filters.petOwnership,
               items: _petOwnershipOptions,
-              onChanged: (value) => setState(() => _filters.petOwnership = value),
+              onChanged: (value) => setState(() => _filters.petOwnership = value == 'Any' ? null : value),
             ),
-            _buildDropdownField(
-              labelText: 'Pet Tolerance',
+            _buildDropdownFilter(
+              label: 'Pet Tolerance',
               value: _filters.petTolerance,
               items: _petToleranceOptions,
-              onChanged: (value) => setState(() => _filters.petTolerance = value),
+              onChanged: (value) => setState(() => _filters.petTolerance = value == 'Any' ? null : value),
             ),
-            _buildDropdownField(
-              labelText: 'Work Schedule',
+            _buildDropdownFilter(
+              label: 'Work Schedule',
               value: _filters.workSchedule,
               items: _workScheduleOptions,
-              onChanged: (value) => setState(() => _filters.workSchedule = value),
+              onChanged: (value) => setState(() => _filters.workSchedule = value == 'Any' ? null : value),
             ),
-            _buildDropdownField(
-              labelText: 'Sleeping Schedule',
+            _buildDropdownFilter(
+              label: 'Sleeping Schedule',
               value: _filters.sleepingSchedule,
               items: _sleepingScheduleOptions,
-              onChanged: (value) => setState(() => _filters.sleepingSchedule = value),
+              onChanged: (value) => setState(() => _filters.sleepingSchedule = value == 'Any' ? null : value),
             ),
-            _buildDropdownField(
-              labelText: 'Visitors Policy',
+            _buildDropdownFilter(
+              label: 'Visitors Policy',
               value: _filters.visitorsPolicy,
               items: _visitorsPolicyOptions,
-              onChanged: (value) => setState(() => _filters.visitorsPolicy = value),
+              onChanged: (value) => setState(() => _filters.visitorsPolicy = value == 'Any' ? null : value),
             ),
-            _buildDropdownField(
-              labelText: 'Guests Overnight Policy',
+            _buildDropdownFilter(
+              label: 'Guests Overnight Policy',
               value: _filters.guestsOvernightPolicy,
               items: _guestsOvernightPolicyOptions,
-              onChanged: (value) => setState(() => _filters.guestsOvernightPolicy = value),
+              onChanged: (value) => setState(() => _filters.guestsOvernightPolicy = value == 'Any' ? null : value),
             ),
             const SizedBox(height: 24),
             _FilterChipGroup(
@@ -393,6 +436,19 @@ class _FilterScreenState extends State<FilterScreen> {
               onSelectionChanged: (selected) => setState(() => _filters.selectedDealBreakers = selected),
             ),
             const SizedBox(height: 50), // Extra space for scroll
+            Center(
+              child: ElevatedButton.icon(
+                onPressed: _applyFilters,
+                icon: const Icon(Icons.check, color: Colors.white),
+                label: const Text('Apply Filters', style: TextStyle(color: Colors.white, fontSize: 18)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.redAccent,
+                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                  elevation: 5,
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -401,10 +457,96 @@ class _FilterScreenState extends State<FilterScreen> {
 
   Widget _buildSectionTitle(String title) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0, top: 16.0),
+      padding: const EdgeInsets.only(bottom: 10.0, top: 10.0),
       child: Text(
         title,
-        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
+        style: const TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+          color: Colors.redAccent,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDropdownFilter({
+    required String label,
+    required String? value,
+    required List<String> items,
+    required ValueChanged<String?> onChanged,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String>(
+            value: value,
+            decoration: InputDecoration(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              filled: true,
+              fillColor: Colors.grey[50],
+            ),
+            hint: Text('Select $label'),
+            items: items.map((String item) {
+              return DropdownMenuItem<String>(
+                value: item,
+                child: Text(item),
+              );
+            }).toList(),
+            onChanged: onChanged,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRangeInputFilter({
+    required String label,
+    required TextEditingController minController,
+    required TextEditingController maxController,
+    TextInputType keyboardType = TextInputType.text,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: minController,
+                  keyboardType: keyboardType,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  decoration: InputDecoration(
+                    labelText: 'Min',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: TextField(
+                  controller: maxController,
+                  keyboardType: keyboardType,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  decoration: InputDecoration(
+                    labelText: 'Max',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -416,17 +558,6 @@ class _FilterScreenState extends State<FilterScreen> {
     TextInputType keyboardType = TextInputType.text,
     List<TextInputFormatter>? inputFormatters,
   }) {
-    // Populate controller initially
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (controller.text.isEmpty && labelText == 'Desired City' && _filters.desiredCity != null) {
-        controller.text = _filters.desiredCity!;
-      } else if (controller.text.isEmpty && labelText == 'Area Preference' && _filters.areaPreference != null) {
-        controller.text = _filters.areaPreference!;
-      } else if (controller.text.isEmpty && labelText == 'Occupation (Other User)' && _filters.occupation != null) {
-        controller.text = _filters.occupation!;
-      }
-    });
-
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: TextFormField(
@@ -480,34 +611,6 @@ class _FilterScreenState extends State<FilterScreen> {
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildDropdownField({
-    required String labelText,
-    required String? value,
-    required List<String> items,
-    required ValueChanged<String?> onChanged,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: DropdownButtonFormField<String>(
-        value: value,
-        decoration: InputDecoration(
-          labelText: labelText,
-          border: const OutlineInputBorder(),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        ),
-        items: items.map((String item) {
-          return DropdownMenuItem<String>(
-            value: item,
-            child: Text(item),
-          );
-        }).toList(),
-        onChanged: onChanged,
-        // Optional: Add hint text if no value is selected
-        hint: Text('Select $labelText'),
       ),
     );
   }
