@@ -7,11 +7,12 @@ import 'package:intl/intl.dart'; // For date formatting
 class FilterScreen extends StatefulWidget {
   final FilterOptions initialFilters;
   final bool isSeekingFlatmate; // To determine which filters to show/apply
-
+  final ValueChanged<FilterOptions> onFiltersChanged; // <--- ADD THIS LINE
   const FilterScreen({
     super.key,
     required this.initialFilters,
     required this.isSeekingFlatmate,
+    required this.onFiltersChanged, // <--- ADD THIS LINE
   });
 
   @override
@@ -163,8 +164,7 @@ class _FilterScreenState extends State<FilterScreen> {
       _showErrorSnackBar("Minimum budget cannot be greater than maximum budget.");
       return;
     }
-
-    Navigator.pop(context, _filters); // Return the updated filters
+    widget.onFiltersChanged(_filters); // <--- REPLACE 'Navigator.pop' WITH THIS LINE
   }
 
   void _clearAllFilters() {
@@ -206,10 +206,6 @@ class _FilterScreenState extends State<FilterScreen> {
           TextButton(
             onPressed: _clearAllFilters,
             child: const Text('Clear All', style: TextStyle(color: Colors.white)),
-          ),
-          IconButton(
-            icon: const Icon(Icons.check, color: Colors.white),
-            onPressed: _applyFilters,
           ),
         ],
       ),
