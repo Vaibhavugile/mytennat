@@ -82,6 +82,7 @@ class _MatchingScreenState extends State<MatchingScreen> {
       }
     } catch (e) {
       _showAlertDialog('Error', 'Failed to fetch user profile: $e', () {});
+      print('Firebase Firestore Error: $e');
     } finally {
       setState(() {
         _isLoading = false;
@@ -212,6 +213,7 @@ class _MatchingScreenState extends State<MatchingScreen> {
       setState(() {});
     } catch (e) {
       _showAlertDialog('Error', 'Failed to load flat listing profiles: $e', () {});
+      print('Firebase Firestore Error: $e');
     }
   }
 
@@ -307,6 +309,7 @@ class _MatchingScreenState extends State<MatchingScreen> {
       setState(() {});
     } catch (e) {
       _showAlertDialog('Error', 'Failed to load seeking flatmate profiles: $e', () {});
+      print('Firebase Firestore Error: $e');
     }
   }
 
