@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart'; // Added Firebase Import
 import 'package:firebase_auth/firebase_auth.dart';// Added Firebase Auth Import for UID and Email
 import 'package:mytennat/screens/home_page.dart';
 import 'package:intl/intl.dart'; // For date formatting
+import 'package:mytennat/data/location_data.dart'; // Adjust path as needed
 
 // Data model to hold all the answers for the user seeking a flat
 class SeekingFlatmateProfile {
@@ -361,6 +362,7 @@ class _SingleChoiceQuestionWidgetState extends State<SingleChoiceQuestionWidget>
     );
   }
 
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -503,7 +505,9 @@ class _MultiChoiceQuestionWidgetState extends State<MultiChoiceQuestionWidget> {
 }
 
 class FlatWithFlatmateProfileScreen extends StatefulWidget {
+
   const FlatWithFlatmateProfileScreen({super.key});
+
 
   @override
   State<FlatWithFlatmateProfileScreen> createState() =>
@@ -766,6 +770,109 @@ class _FlatWithFlatmateProfileScreenState
       },
     );
   }
+  Widget _buildCitySelectionQuestion({
+    required String title,
+    required String subtitle,
+    required Function(String) onCitySelected,
+    required List<String> cities,
+    String? initialValue,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            subtitle,
+            style: const TextStyle(fontSize: 15, color: Colors.grey),
+          ),
+          const SizedBox(height: 30),
+          DropdownButtonFormField<String>(
+            value: initialValue == '' ? null : initialValue, // Set to null if initial value is empty string
+            decoration: InputDecoration(
+              hintText: "Select a city",
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: BorderSide.none,
+              ),
+              filled: true,
+              fillColor: Colors.grey[200],
+            ),
+            items: cities.map((String city) {
+              return DropdownMenuItem<String>(
+                value: city,
+                child: Text(city),
+              );
+            }).toList(),
+            onChanged: (String? newValue) {
+              if (newValue != null) {
+                onCitySelected(newValue);
+              }
+            },
+            isExpanded: true,
+          ),
+        ],
+      ),
+    );
+  }
+  Widget _buildAreaSelectionQuestion({
+    required String title,
+    required String subtitle,
+    required Function(String) onAreaSelected,
+    required List<String> areas,
+    String? initialValue,
+    required String selectedCity, // To enable/disable based on city selection
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            subtitle,
+            style: const TextStyle(fontSize: 15, color: Colors.grey),
+          ),
+          const SizedBox(height: 30),
+          DropdownButtonFormField<String>(
+            value: initialValue == '' || !areas.contains(initialValue) ? null : initialValue,
+            decoration: InputDecoration(
+              hintText: selectedCity.isNotEmpty ? "Select an area" : "Select a city first",
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: BorderSide.none,
+              ),
+              filled: true,
+              fillColor: Colors.grey[200],
+            ),
+            items: areas.map((String area) {
+              return DropdownMenuItem<String>(
+                value: area,
+                child: Text(area),
+              );
+            }).toList(),
+            onChanged: selectedCity.isNotEmpty // Enable only if a city is selected
+                ? (String? newValue) {
+              if (newValue != null) {
+                onAreaSelected(newValue);
+              }
+            }
+                : null, // Disable if no city is selected
+            isExpanded: true,
+          ),
+        ],
+      ),
+    );
+  }
 
   // --- Page Definitions ---
 
@@ -820,11 +927,32 @@ class _FlatWithFlatmateProfileScreenState
       ),
 
       // Page 5: Desired City
-      _buildTextQuestion(
+      _buildCitySelectionQuestion(
         title: "Which city are you looking for a flat/flatmate in?",
         subtitle: "This helps us filter relevant listings for you.",
-        hintText: "e.g., Pune, Bangalore",
-        controller: _desiredCityController,
+        onCitySelected: (value) {
+          setState(() {
+            _seekingFlatmateProfile.desiredCity = value;
+            // Clear area preference when city changes
+            _seekingFlatmateProfile.areaPreference = '';
+            _areaPreferenceController.clear();
+          });
+        },
+        initialValue: _seekingFlatmateProfile.desiredCity,
+        cities: maharashtraLocations.keys.toList(),
+      ),
+
+      _buildAreaSelectionQuestion(
+        title: "What are your preferred areas/localities?",
+        subtitle: "Select preferred areas within ${(_seekingFlatmateProfile.desiredCity.isNotEmpty ? _seekingFlatmateProfile.desiredCity : 'the selected city')}.",
+        onAreaSelected: (value) {
+          setState(() {
+            _seekingFlatmateProfile.areaPreference = value;
+          });
+        },
+        initialValue: _seekingFlatmateProfile.areaPreference,
+        areas: maharashtraLocations[_seekingFlatmateProfile.desiredCity] ?? [], // Dynamically load areas
+        selectedCity: _seekingFlatmateProfile.desiredCity, // Pass selected city to enable/disable
       ),
 
       // Page 6: Move-in Date
@@ -868,12 +996,6 @@ class _FlatWithFlatmateProfileScreenState
       ),
 
       // Page 9: Area Preference
-      _buildTextQuestion(
-        title: "What are your preferred areas/localities?",
-        subtitle: "e.g., Koregaon Park, Viman Nagar, Hinjewadi.",
-        hintText: "Enter preferred areas (comma-separated)",
-        controller: _areaPreferenceController,
-      ),
 
       // Page 10: Bio
       _buildTextQuestion(

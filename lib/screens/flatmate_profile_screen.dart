@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:mytennat/screens/home_page.dart';
+import 'package:mytennat/data/location_data.dart'; // Adjust path as needed
 
 // Data model to hold all the answers for the user listing a flat
 class FlatListingProfile {
@@ -571,6 +572,7 @@ class FlatmateProfileScreen extends StatefulWidget {
 }
 
 class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
+
   final PageController _pageController = PageController();
   final FlatListingProfile _flatListingProfile = FlatListingProfile();
   int _currentPage = 0;
@@ -932,6 +934,110 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
     );
   }
 
+  Widget _buildAreaSelectionQuestion({
+    required String title,
+    required String subtitle,
+    required Function(String) onAreaSelected,
+    required List<String> areas,
+    String? initialValue,
+    required String selectedCity, // To enable/disable based on city selection
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            subtitle,
+            style: const TextStyle(fontSize: 15, color: Colors.grey),
+          ),
+          const SizedBox(height: 30),
+          DropdownButtonFormField<String>(
+            value: initialValue == '' || !areas.contains(initialValue) ? null : initialValue,
+            decoration: InputDecoration(
+              hintText: selectedCity.isNotEmpty ? "Select an area" : "Select a city first",
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: BorderSide.none,
+              ),
+              filled: true,
+              fillColor: Colors.grey[200],
+            ),
+            items: areas.map((String area) {
+              return DropdownMenuItem<String>(
+                value: area,
+                child: Text(area),
+              );
+            }).toList(),
+            onChanged: selectedCity.isNotEmpty // Enable only if a city is selected
+                ? (String? newValue) {
+              if (newValue != null) {
+                onAreaSelected(newValue);
+              }
+            }
+                : null, // Disable if no city is selected
+            isExpanded: true,
+          ),
+        ],
+      ),
+    );
+  }
+  Widget _buildCitySelectionQuestion({
+    required String title,
+    required String subtitle,
+    required Function(String) onCitySelected,
+    required List<String> cities,
+    String? initialValue,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            subtitle,
+            style: const TextStyle(fontSize: 15, color: Colors.grey),
+          ),
+          const SizedBox(height: 30),
+          DropdownButtonFormField<String>(
+            value: initialValue == '' ? null : initialValue, // Set to null if initial value is empty string
+            decoration: InputDecoration(
+              hintText: "Select a city",
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: BorderSide.none,
+              ),
+              filled: true,
+              fillColor: Colors.grey[200],
+            ),
+            items: cities.map((String city) {
+              return DropdownMenuItem<String>(
+                value: city,
+                child: Text(city),
+              );
+            }).toList(),
+            onChanged: (String? newValue) {
+              if (newValue != null) {
+                onCitySelected(newValue);
+              }
+            },
+            isExpanded: true,
+          ),
+        ],
+      ),
+    );
+  }
+
   // --- Page Definitions ---
 
   List<Widget> _buildPages() {
@@ -986,21 +1092,35 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
       ),
 
       // Page 5: Desired City (This is the city the flat is *in*)
-      _buildTextQuestion(
-        title: "Which city is the flat available in?",
-        subtitle: "Confirm the city where your flat is located.",
-        hintText: "e.g., Pune, Mumbai",
-        controller: _desiredCityController,
-      ),
+
 
       // Page 6: Area Preference (This is for the flat's area)
-      _buildTextQuestion(
-        title: "What's the area/locality of your flat?",
-        subtitle: "e.g., Koregaon Park, Viman Nagar, Hinjewadi.",
-        hintText: "Enter the area/locality",
-        controller: _areaPreferenceController,
+      _buildCitySelectionQuestion(
+        title: "Which city does your flat located ?",
+        subtitle: "This helps us filter relevant listings for you.",
+        onCitySelected: (value) {
+          setState(() {
+            _flatListingProfile.desiredCity = value;
+            // Clear area preference when city changes
+            _flatListingProfile.areaPreference = '';
+            _areaPreferenceController.clear();
+          });
+        },
+        initialValue: _flatListingProfile.desiredCity,
+        cities: maharashtraLocations.keys.toList(),
       ),
-
+      _buildAreaSelectionQuestion(
+        title: "What is your flat located  areas/localities?",
+        subtitle: "Select preferred areas within ${(_flatListingProfile.desiredCity.isNotEmpty ? _flatListingProfile.desiredCity : 'the selected city')}.",
+        onAreaSelected: (value) {
+          setState(() {
+            _flatListingProfile.areaPreference = value;
+          });
+        },
+        initialValue: _flatListingProfile.areaPreference,
+        areas: maharashtraLocations[_flatListingProfile.desiredCity] ?? [], // Dynamically load areas
+        selectedCity: _flatListingProfile.desiredCity, // Pass selected city to enable/disable
+      ),
       // --- Section 2: Your Habits (Owner's Habits) (Pages 7-20) ---
       // Page 7: Smoking Habits (Owner's)
       SingleChoiceQuestionWidget(

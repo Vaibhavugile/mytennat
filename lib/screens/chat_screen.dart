@@ -16,12 +16,14 @@ class ChatScreen extends StatefulWidget {
   final String chatPartnerId;
   final String chatPartnerName;
   final String? chatPartnerImageUrl;
+  final String? chatRoomId; // Make it nullable
 
   const ChatScreen({
     Key? key,
     required this.chatPartnerId,
     required this.chatPartnerName,
     this.chatPartnerImageUrl,
+    this.chatRoomId,
   }) : super(key: key);
 
   @override

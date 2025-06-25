@@ -4,7 +4,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mytennat/screens/edit_profile_screen.dart';
 import 'package:mytennat/screens/matching_screen.dart';
-import 'package:mytennat/screens/matches_list_screen.dart'; // <--- NEW: Import your MatchesListScreen
+import 'package:mytennat/screens/matches_list_screen.dart';
+import 'package:mytennat/screens/ActivityScreen.dart';
+import 'package:mytennat/widgets/profile_display_widgets.dart'; // NEW: Import the ViewProfileScreen
+
+import 'package:mytennat/screens/view_profile_screen.dart'; // Add this import
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -68,7 +72,27 @@ class _HomePageState extends State<HomePage> {
             icon: const Icon(Icons.logout),
             onPressed: () async {
               await FirebaseAuth.instance.signOut();
+              // Make sure '/login' route is defined in your MaterialApp or use pushReplacement
               Navigator.of(context).pushReplacementNamed('/login');
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.favorite_border, color: Colors.white, size: 28),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ActivityScreen()),
+              );
+            },
+          ),
+          // NEW: View Profile button in AppBar actions
+          IconButton(
+            icon: const Icon(Icons.person, color: Colors.white, size: 28),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ViewProfileScreen()),
+              );
             },
           ),
         ],
@@ -114,20 +138,19 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
                 const SizedBox(height: 15),
-                // <--- NEW: Chat Button --->
                 ElevatedButton.icon(
                   onPressed: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const MatchesListScreen(), // Navigate to MatchesListScreen
+                        builder: (context) => const MatchesListScreen(),
                       ),
                     );
                   },
-                  icon: const Icon(Icons.chat), // Chat icon
-                  label: const Text('My Chats'), // Button label
+                  icon: const Icon(Icons.chat),
+                  label: const Text('My Chats'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.teal, // A different color for distinction
+                    backgroundColor: Colors.teal,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
                     shape: RoundedRectangleBorder(
@@ -136,7 +159,6 @@ class _HomePageState extends State<HomePage> {
                     textStyle: const TextStyle(fontSize: 18),
                   ),
                 ),
-                // <--- END NEW: Chat Button --->
                 const SizedBox(height: 15),
                 ElevatedButton.icon(
                   onPressed: () {

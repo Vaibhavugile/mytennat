@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart'; // Added for Firestore
 // import 'package:lottie/lottie.dart'; // Uncomment if you plan to use Lottie animations
 import 'selection_screen.dart';
 import 'home_page.dart'; // Import your home page (create this if it doesn't exist)
+import 'package:flutter/foundation.dart'; // Import for debugPrint
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -90,6 +91,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         phoneNumber: '+91${_phoneController.text}', // Assuming Indian numbers
         verificationCompleted: (PhoneAuthCredential credential) async {
           // AUTO RETRIEVAL - Only on Android and for some instant verifications
+          debugPrint('Phone verification completed automatically.');
           await FirebaseAuth.instance.signInWithCredential(credential);
           _navigateToNextScreen(); // Navigate after auto-verification
         },
@@ -103,6 +105,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           } else if (e.code == 'too-many-requests') {
             errorMessage = 'Too many requests. Please try again later.';
           }
+          debugPrint('Phone verification failed: ${e.code} - ${e.message}'); // Log to console
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(errorMessage)),
           );
@@ -114,6 +117,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
             _loading = false;
           });
           _startResendTimer();
+          debugPrint('OTP code sent to phone number. Verification ID: $verificationId'); // Log to console
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('OTP sent to your phone!')),
           );
@@ -123,6 +127,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
             _verificationId = verificationId;
             _loading = false;
           });
+          debugPrint('OTP auto-retrieval timed out. Verification ID: $verificationId'); // Log to console
         },
         timeout: const Duration(seconds: 60), // Set timeout for OTP
       );
@@ -130,6 +135,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       setState(() {
         _loading = false;
       });
+      debugPrint('Error verifying phone number: ${e.toString()}'); // Log to console
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: ${e.toString()}')),
       );
@@ -147,6 +153,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         smsCode: _otpController.text,
       );
       await FirebaseAuth.instance.signInWithCredential(credential);
+      debugPrint('OTP verification successful. User signed in.'); // Log to console
       _navigateToNextScreen(); // Navigate after successful OTP verification
     } on FirebaseAuthException catch (e) {
       setState(() {
@@ -158,6 +165,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       } else if (e.code == 'session-expired') {
         errorMessage = 'OTP session expired. Please resend OTP.';
       }
+      debugPrint('OTP verification failed: ${e.code} - ${e.message}'); // Log to console
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(errorMessage)),
       );
@@ -165,6 +173,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       setState(() {
         _loading = false;
       });
+      debugPrint('Error verifying OTP and signing in: ${e.toString()}'); // Log to console
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: ${e.toString()}')),
       );
@@ -182,12 +191,14 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
 
       if (userDoc.exists) {
+        debugPrint('User profile exists. Navigating to HomePage.'); // Log to console
         // User exists in Firestore, navigate to HomePage
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const HomePage()), // Replace with your HomePage
               (Route<dynamic> route) => false,
         );
       } else {
+        debugPrint('New user. Navigating to profile creation (SelectionScreen).'); // Log to console
         // New user, navigate to profile creation (SelectionScreen)
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const SelectionScreen()),
@@ -195,6 +206,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         );
       }
     } else {
+      debugPrint('Authentication failed: No current user after sign-in attempt.'); // Log to console
       // This case should ideally not happen if signInWithCredential was successful
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Authentication failed. Please try again.')),

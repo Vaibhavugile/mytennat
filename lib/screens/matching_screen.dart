@@ -217,6 +217,7 @@ class _MatchingScreenState extends State<MatchingScreen> {
     }
   }
 
+
   Future<void> _fetchSeekingFlatmateProfiles({bool applyFilters = false}) async {
     try {
       Query query = _firestore.collection('users')
@@ -388,6 +389,7 @@ class _MatchingScreenState extends State<MatchingScreen> {
       try {
         await _firestore.collection('user_likes').doc(currentUserId).collection('likes').doc(likedUserId).set({
           'timestamp': FieldValue.serverTimestamp(),
+          'likedUserId': likedUserId, // <--- ADD THIS LINE
         });
         print("_processLike (Op1): Successfully recorded like for $currentUserId on $likedUserId.");
       } catch (e) {
@@ -561,71 +563,6 @@ class _MatchingScreenState extends State<MatchingScreen> {
       );
     }
   }
-
-  // --- NEW: Match Dialog ---
-  void _showMatchDialog(String title, String message, VoidCallback onChatPressed) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
-          content: Text(message),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(); // Just dismiss the dialog
-              },
-              child: const Text('Later'),
-            ),
-            ElevatedButton(
-              onPressed: onChatPressed,
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-              child: const Text('Chat Now!', style: TextStyle(color: Colors.white)),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _handleProfileDismissed(DismissDirection direction) {
-    setState(() {
-      if (_profiles.isNotEmpty) {
-        final dismissedProfile = _profiles[_currentIndex];
-        final dismissedProfileId = dismissedProfile.documentId; // Assuming 'documentId' exists on your profile models
-
-        if (direction == DismissDirection.endToStart) { // Swiped left (Pass)
-          ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Profile Passed'))
-          );
-          // TODO: Optionally record the 'pass' in Firestore to avoid showing again
-        } else if (direction == DismissDirection.startToEnd) { // Swiped right (Like)
-          _processLike(dismissedProfileId); // Call the new like processing function
-        }
-
-        // Remove the dismissed profile from the list AFTER processing
-        // This ensures _processLike has the correct context of the dismissed profile
-        _profiles.removeAt(_currentIndex);
-
-
-      }
-
-      // If no more profiles after removal, show the empty state
-      if (_profiles.isEmpty) {
-        _showAlertDialog('No More Profiles', 'You\'ve viewed all available profiles for now.', () {
-          // Optionally, navigate to homepage or show a different state
-        });
-      }
-      // Reset image index for the new card
-      _currentImageIndex = 0;
-      // Ensure page controller is attached before jumping
-      if (_pageController.hasClients) {
-        _pageController.jumpToPage(0);
-      }
-    });
-  }
-
-  // NEW: Function to calculate matching percentage
   double _calculateMatchPercentage(dynamic userProfile, dynamic otherProfile) {
     if (userProfile == null || otherProfile == null) return 0.0;
 
@@ -1566,6 +1503,71 @@ class _MatchingScreenState extends State<MatchingScreen> {
     double percentage = (maxScore > 0) ? (score / maxScore) * 100 : 0.0;
     return percentage.clamp(0.0, 100.0); // Ensure it's between 0 and 100
   }
+  // --- NEW: Match Dialog ---
+  void _showMatchDialog(String title, String message, VoidCallback onChatPressed) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+          content: Text(message),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Just dismiss the dialog
+              },
+              child: const Text('Later'),
+            ),
+            ElevatedButton(
+              onPressed: onChatPressed,
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+              child: const Text('Chat Now!', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _handleProfileDismissed(DismissDirection direction) {
+    setState(() {
+      if (_profiles.isNotEmpty) {
+        final dismissedProfile = _profiles[_currentIndex];
+        final dismissedProfileId = dismissedProfile.documentId; // Assuming 'documentId' exists on your profile models
+
+        if (direction == DismissDirection.endToStart) { // Swiped left (Pass)
+          ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Profile Passed'))
+          );
+          // TODO: Optionally record the 'pass' in Firestore to avoid showing again
+        } else if (direction == DismissDirection.startToEnd) { // Swiped right (Like)
+          _processLike(dismissedProfileId); // Call the new like processing function
+        }
+
+        // Remove the dismissed profile from the list AFTER processing
+        // This ensures _processLike has the correct context of the dismissed profile
+        _profiles.removeAt(_currentIndex);
+
+
+      }
+
+      // If no more profiles after removal, show the empty state
+      if (_profiles.isEmpty) {
+        _showAlertDialog('No More Profiles', 'You\'ve viewed all available profiles for now.', () {
+          // Optionally, navigate to homepage or show a different state
+        });
+      }
+      // Reset image index for the new card
+      _currentImageIndex = 0;
+      // Ensure page controller is attached before jumping
+      if (_pageController.hasClients) {
+        _pageController.jumpToPage(0);
+      }
+    });
+  }
+
+  // NEW: Function to calculate matching percentage
+  
   // This variable needs to be defined here so the Positioned widget can access it.
 
 
@@ -1943,7 +1945,7 @@ class _MatchingScreenState extends State<MatchingScreen> {
     },
     ),
     _buildActionButton(
-    icon: Icons.favorite,
+    icon: Icons.home_work_outlined,
     label: 'Connect',
     color: Colors.green,
     onPressed: () {

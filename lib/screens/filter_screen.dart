@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // For TextInputFormatter
 import 'package:mytennat/screens/filter_options.dart'; // Make sure this path is correct
 import 'package:intl/intl.dart'; // For date formatting
+import 'package:mytennat/data/location_data.dart'; // Import the new location data
 
 class FilterScreen extends StatefulWidget {
   final FilterOptions initialFilters;
@@ -21,8 +22,6 @@ class FilterScreen extends StatefulWidget {
 }
 
 class _FilterScreenState extends State<FilterScreen> with SingleTickerProviderStateMixin {
-  // Add SingleTickerProviderStateMixin for TabController
-
   late FilterOptions _filters; // Working copy of filters
 
   // Text controllers for numerical inputs (kept for non-slider inputs)
@@ -45,9 +44,9 @@ class _FilterScreenState extends State<FilterScreen> with SingleTickerProviderSt
   final List<String> _furnishedStatuses = ['Furnished', 'Semi-Furnished', 'Unfurnished'];
   final List<String> _availableForOptions = ['Male', 'Female', 'Couple', 'Family', 'Students', 'Professionals', 'Any'];
 
-  // New: Lists for Desired City and Area Preference dropdowns
-  final List<String> _cities = ['Mumbai', 'Delhi', 'Bangalore', 'Chennai', 'Kolkata', 'Pune', 'Hyderabad', 'Any']; // Example cities
-  final List<String> _areas = ['Andheri', 'Bandra', 'Koregaon Park', 'Hinjewadi', 'Cyber City', 'Any']; // Example areas
+  // Updated: Lists for Desired City and Area Preference dropdowns
+  late List<String> _cities; // Will be initialized from maharashtraLocations
+  late List<String> _areas; // Will be dynamically updated based on selected city
 
   // Lifestyle & Habits options (ensure these match your profile data's values)
   final List<String> _cleanlinessLevels = ['Very Clean', 'Moderately Clean', 'Flexible', 'Any'];
@@ -62,7 +61,6 @@ class _FilterScreenState extends State<FilterScreen> with SingleTickerProviderSt
   final List<String> _sleepingScheduleOptions = ['Early Riser', 'Night Owl', 'Flexible', 'Any'];
   final List<String> _visitorsPolicyOptions = ['Guests Welcome', 'Occasional Guests', 'No Guests', 'Any'];
   final List<String> _guestsOvernightPolicyOptions = ['Allowed', 'Not Allowed', 'Occasional', 'Any'];
-  // For occupation, you might have a long list or use a text field.
 
   // Multi-select options (reusing _FilterChipGroup)
   final List<String> _amenitiesOptions = [
@@ -87,12 +85,12 @@ class _FilterScreenState extends State<FilterScreen> with SingleTickerProviderSt
     _filters = widget.initialFilters.copyWith(); // Create a working copy
 
     // Initialize TabController
-    _tabController = TabController(length: 2, vsync: this); //
+    _tabController = TabController(length: 2, vsync: this);
 
     // Initialize text controllers with current filter values
     _bedroomsController.text = _filters.numberOfBedrooms?.toString() ?? '';
     _bathroomsController.text = _filters.numberOfBathrooms?.toString() ?? '';
-    _occupationController.text = _filters.occupation ?? ''; // Only occupation remains
+    _occupationController.text = _filters.occupation ?? '';
 
     // Initialize RangeValues based on initial filters or default values
     _ageRange = RangeValues(
@@ -101,11 +99,11 @@ class _FilterScreenState extends State<FilterScreen> with SingleTickerProviderSt
     );
     _rentRange = RangeValues(
       _filters.rentPriceMin?.toDouble() ?? 0,
-      _filters.rentPriceMax?.toDouble() ?? 50000, // Adjust max as per your data
+      _filters.rentPriceMax?.toDouble() ?? 50000,
     );
     _budgetRange = RangeValues(
       _filters.budgetMin?.toDouble() ?? 0,
-      _filters.budgetMax?.toDouble() ?? 50000, // Adjust max as per your data
+      _filters.budgetMax?.toDouble() ?? 50000,
     );
 
     if (_filters.moveInDate != null) {
@@ -114,14 +112,26 @@ class _FilterScreenState extends State<FilterScreen> with SingleTickerProviderSt
     if (_filters.availabilityDate != null) {
       _availabilityDateText = DateFormat('dd/MM/yyyy').format(_filters.availabilityDate!);
     }
+
+    // Initialize cities and areas
+    _cities = ['Any'] + maharashtraLocations.keys.toList(); // Add 'Any' option
+    _areas = _getAreasForCity(_filters.desiredCity); // Get initial areas based on selected city
+  }
+
+  // Helper method to get areas for a given city
+  List<String> _getAreasForCity(String? city) {
+    if (city == null || city == 'Any' || !maharashtraLocations.containsKey(city)) {
+      return ['Any']; // Return only 'Any' if no specific city or 'Any' is selected
+    }
+    return ['Any'] + maharashtraLocations[city]!; // Add 'Any' option to specific city areas
   }
 
   @override
   void dispose() {
     _bedroomsController.dispose();
     _bathroomsController.dispose();
-    _occupationController.dispose(); // Dispose only occupation controller
-    _tabController.dispose(); // Dispose tab controller
+    _occupationController.dispose();
+    _tabController.dispose();
     super.dispose();
   }
 
@@ -156,12 +166,8 @@ class _FilterScreenState extends State<FilterScreen> with SingleTickerProviderSt
   }
 
   void _applyFilters() {
-    // Parse text controller values to integers (only for non-slider inputs)
     _filters.numberOfBedrooms = int.tryParse(_bedroomsController.text);
     _filters.numberOfBathrooms = int.tryParse(_bathroomsController.text);
-
-    // Range slider values are already updated in setState in _buildRangeSliderFilter
-    // No need for validation here as RangeSlider inherently handles min/max
 
     widget.onFiltersChanged(_filters);
     // Navigator.of(context).pop(); // Close the filter screen after applying
@@ -172,7 +178,7 @@ class _FilterScreenState extends State<FilterScreen> with SingleTickerProviderSt
       _filters.clear();
       _bedroomsController.clear();
       _bathroomsController.clear();
-      _occupationController.clear(); // Clear only occupation controller
+      _occupationController.clear();
       _moveInDateText = '';
       _availabilityDateText = '';
 
@@ -180,11 +186,19 @@ class _FilterScreenState extends State<FilterScreen> with SingleTickerProviderSt
       _ageRange = const RangeValues(18, 60);
       _rentRange = const RangeValues(0, 50000);
       _budgetRange = const RangeValues(0, 50000);
+
+      // Reset city and areas
+      _filters.desiredCity = null;
+      _filters.areaPreference = null;
+      _areas = _getAreasForCity(null); // Reset areas to only 'Any'
     });
-    // Notify the parent that filters have been cleared
     widget.onFiltersChanged(_filters);
   }
 
+  // NOTE: This method is defined but not called in filter_screen.dart.
+  // The Firebase error you showed in the screenshot is likely from your data fetching logic.
+  // This method would typically be used to show a SnackBar for client-side validation errors,
+  // not for backend/Firestore errors like the one you observed.
   void _showErrorSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -202,18 +216,24 @@ class _FilterScreenState extends State<FilterScreen> with SingleTickerProviderSt
         title: const Text('Filter Profiles', style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.redAccent,
         iconTheme: const IconThemeData(color: Colors.white),
+        elevation: 0, // Remove app bar shadow for a flatter look
         actions: [
           TextButton(
             onPressed: _clearAllFilters,
-            child: const Text('Clear All', style: TextStyle(color: Colors.white)),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.white, // Text color for the button
+              textStyle: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            child: const Text('Clear All'),
           ),
+          const SizedBox(width: 8), // Add some spacing
         ],
       ),
       body: Column(
         children: [
           // TabBar for "Filters" and "Premium Filters"
           Material(
-            elevation: 4, // Add a subtle shadow to the tab bar
+            elevation: 2, // Slightly reduced elevation
             color: Colors.white,
             child: TabBar(
               controller: _tabController,
@@ -221,14 +241,14 @@ class _FilterScreenState extends State<FilterScreen> with SingleTickerProviderSt
                 Tab(text: 'Filters'),
                 Tab(text: 'Premium Filters'),
               ],
-              labelColor: Colors.redAccent, // Active tab text color
-              unselectedLabelColor: Colors.grey, // Inactive tab text color
-              indicatorColor: Colors.redAccent, // Underline indicator color
-              indicatorSize: TabBarIndicatorSize.tab, // Indicator covers the entire tab
-              indicatorWeight: 3.0, // Thicker indicator
+              labelColor: Colors.redAccent,
+              unselectedLabelColor: Colors.grey.shade600, // Darker grey for better contrast
+              indicatorColor: Colors.redAccent,
+              indicatorSize: TabBarIndicatorSize.tab,
+              indicatorWeight: 3.0,
+              labelStyle: const TextStyle(fontWeight: FontWeight.bold), // Bold active tab text
             ),
           ),
-          // TabBarView to show content based on selected tab
           Expanded(
             child: TabBarView(
               controller: _tabController,
@@ -243,20 +263,23 @@ class _FilterScreenState extends State<FilterScreen> with SingleTickerProviderSt
                       _buildFilterSection(
                         title: 'Location & Price',
                         children: [
-                          _buildDropdownFilter( // Changed to dropdown
+                          _buildDropdownFilter(
                             label: 'Desired City',
                             value: _filters.desiredCity,
                             items: _cities,
                             onChanged: (String? newValue) {
                               setState(() {
                                 _filters.desiredCity = newValue == 'Any' ? null : newValue;
+                                // Reset area preference and update available areas when city changes
+                                _filters.areaPreference = null;
+                                _areas = _getAreasForCity(_filters.desiredCity);
                               });
                             },
                           ),
-                          _buildDropdownFilter( // Changed to dropdown
+                          _buildDropdownFilter(
                             label: 'Area Preference',
                             value: _filters.areaPreference,
-                            items: _areas,
+                            items: _areas, // Dynamically loaded areas
                             onChanged: (String? newValue) {
                               setState(() {
                                 _filters.areaPreference = newValue == 'Any' ? null : newValue;
@@ -294,8 +317,8 @@ class _FilterScreenState extends State<FilterScreen> with SingleTickerProviderSt
                               });
                             },
                             min: 0,
-                            max: 100000, // Max value for rent/budget
-                            divisions: 20, // Adjust divisions for desired step (e.g., 100000 / 20 = 5000 steps)
+                            max: 100000,
+                            divisions: 20,
                             icon: Icons.attach_money,
                             prefixText: '₹',
                           ),
@@ -303,7 +326,6 @@ class _FilterScreenState extends State<FilterScreen> with SingleTickerProviderSt
                       ),
                       const SizedBox(height: 24),
 
-                      // Flat Requirements Section (conditionally shown)
                       if (widget.isSeekingFlatmate)
                         _buildFilterSection(
                           title: 'Flat Requirements',
@@ -390,8 +412,8 @@ class _FilterScreenState extends State<FilterScreen> with SingleTickerProviderSt
                               });
                             },
                             min: 18,
-                            max: 80, // Max age
-                            divisions: 62, // (80 - 18) for single year increments
+                            max: 80,
+                            divisions: 62,
                             icon: Icons.person,
                           ),
                           _buildTextField(
@@ -415,7 +437,7 @@ class _FilterScreenState extends State<FilterScreen> with SingleTickerProviderSt
                     children: [
                       // Lifestyle & Habits Section
                       _buildFilterSection(
-                        title: 'Lifestyle & Habits', // This is now in the "Premium Filters" tab
+                        title: 'Lifestyle & Habits',
                         children: [
                           _buildDropdownFilter(
                             label: 'Cleanliness Level',
@@ -537,15 +559,15 @@ class _FilterScreenState extends State<FilterScreen> with SingleTickerProviderSt
   Widget _buildFilterSection({required String title, required List<Widget> children}) {
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 10.0),
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 4, // Increased elevation for a more prominent look
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), // More rounded corners
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(18.0), // Slightly more padding
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildSectionTitle(title),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12), // Slightly more space below title
             ...children,
           ],
         ),
@@ -557,8 +579,8 @@ class _FilterScreenState extends State<FilterScreen> with SingleTickerProviderSt
     return Text(
       title,
       style: const TextStyle(
-        fontSize: 22,
-        fontWeight: FontWeight.bold,
+        fontSize: 24, // Slightly larger title font
+        fontWeight: FontWeight.w700, // Bolder title
         color: Colors.redAccent,
       ),
     );
@@ -567,23 +589,25 @@ class _FilterScreenState extends State<FilterScreen> with SingleTickerProviderSt
   InputDecoration _buildInputDecoration(String labelText, {IconData? icon}) {
     return InputDecoration(
       labelText: labelText,
-      prefixIcon: icon != null ? Icon(icon, color: Colors.grey[600]) : null,
+      prefixIcon: icon != null ? Icon(icon, color: Colors.redAccent.shade400) : null, // Icon color
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: Colors.grey.shade400),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(12), // More rounded input borders
         borderSide: BorderSide(color: Colors.grey.shade300),
       ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Colors.redAccent, width: 2),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.grey.shade200, width: 1.5), // Slightly bolder enabled border
       ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.redAccent, width: 2.5), // Prominent focused border
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14), // More padding
       filled: true,
-      fillColor: Colors.grey[50],
+      fillColor: Colors.white, // Explicitly white fill
       floatingLabelBehavior: FloatingLabelBehavior.auto,
+      labelStyle: TextStyle(color: Colors.grey.shade700), // Label text style
+      hintStyle: TextStyle(color: Colors.grey.shade400),
     );
   }
 
@@ -594,26 +618,27 @@ class _FilterScreenState extends State<FilterScreen> with SingleTickerProviderSt
     required ValueChanged<String?> onChanged,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: const EdgeInsets.symmetric(vertical: 10.0), // Increased vertical padding
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
+          Text(label, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: Colors.black87)),
+          const SizedBox(height: 10),
           DropdownButtonFormField<String>(
             value: value,
             decoration: _buildInputDecoration('Select $label'),
             items: items.map((String item) {
               return DropdownMenuItem<String>(
                 value: item,
-                child: Text(item),
+                child: Text(item, style: const TextStyle(color: Colors.black87)),
               );
             }).toList(),
             onChanged: onChanged,
-            // The icon for dropdown
-            icon: Icon(Icons.arrow_drop_down, color: Colors.grey[600]),
+            icon: Icon(Icons.keyboard_arrow_down_rounded, color: Colors.redAccent.shade400, size: 28), // Modern dropdown icon
             style: const TextStyle(color: Colors.black87, fontSize: 16),
             dropdownColor: Colors.white,
+            elevation: 2, // Add elevation to dropdown menu
+            borderRadius: BorderRadius.circular(12), // Rounded corners for dropdown menu
           ),
         ],
       ),
@@ -626,41 +651,41 @@ class _FilterScreenState extends State<FilterScreen> with SingleTickerProviderSt
     required ValueChanged<RangeValues> onRangeChanged,
     required double min,
     required double max,
-    int divisions = 1, // Default to 1 division if not specified
+    int divisions = 1,
     IconData? icon,
-    String? prefixText, // e.g., '₹' for currency
+    String? prefixText,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: const EdgeInsets.symmetric(vertical: 10.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
+          Text(label, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: Colors.black87)),
+          const SizedBox(height: 10),
           Row(
             children: [
-              if (icon != null) Icon(icon, color: Colors.grey[600]),
-              if (icon != null) const SizedBox(width: 8),
+              if (icon != null) Icon(icon, color: Colors.redAccent.shade400),
+              if (icon != null) const SizedBox(width: 10),
               SizedBox(
-                width: 60, // Fixed width for min value to prevent jumpiness
+                width: 70, // Increased width for values
                 child: Text(
                   '${prefixText ?? ''}${currentRange.start.round()}',
-                  style: const TextStyle(fontSize: 16),
-                  textAlign: TextAlign.right, // Align text to right
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                  textAlign: TextAlign.right,
                 ),
               ),
               Expanded(
                 child: SliderTheme(
                   data: SliderTheme.of(context).copyWith(
                     activeTrackColor: Colors.redAccent,
-                    inactiveTrackColor: Colors.redAccent.withOpacity(0.3),
+                    inactiveTrackColor: Colors.redAccent.withOpacity(0.2), // Lighter inactive track
                     thumbColor: Colors.redAccent,
-                    overlayColor: Colors.redAccent.withOpacity(0.2),
-                    thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10.0),
-                    overlayShape: const RoundSliderOverlayShape(overlayRadius: 20.0),
-                    trackHeight: 4.0, // Thicker track
+                    overlayColor: Colors.redAccent.withOpacity(0.1),
+                    thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 12.0), // Slightly larger thumb
+                    overlayShape: const RoundSliderOverlayShape(overlayRadius: 24.0), // Larger overlay
+                    trackHeight: 6.0, // Thicker track
                     valueIndicatorColor: Colors.redAccent.shade700,
-                    valueIndicatorTextStyle: const TextStyle(color: Colors.white, fontSize: 14),
+                    valueIndicatorTextStyle: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
                   ),
                   child: RangeSlider(
                     values: currentRange,
@@ -676,11 +701,11 @@ class _FilterScreenState extends State<FilterScreen> with SingleTickerProviderSt
                 ),
               ),
               SizedBox(
-                width: 60, // Fixed width for max value
+                width: 70,
                 child: Text(
                   '${prefixText ?? ''}${currentRange.end.round()}',
-                  style: const TextStyle(fontSize: 16),
-                  textAlign: TextAlign.left, // Align text to left
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                  textAlign: TextAlign.left,
                 ),
               ),
             ],
@@ -696,16 +721,18 @@ class _FilterScreenState extends State<FilterScreen> with SingleTickerProviderSt
     required ValueChanged<String> onChanged,
     TextInputType keyboardType = TextInputType.text,
     List<TextInputFormatter>? inputFormatters,
-    IconData? icon, // Added icon parameter
+    IconData? icon,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: const EdgeInsets.symmetric(vertical: 10.0),
       child: TextFormField(
         controller: controller,
         decoration: _buildInputDecoration(labelText, icon: icon),
         keyboardType: keyboardType,
         inputFormatters: inputFormatters,
         onChanged: onChanged,
+        style: const TextStyle(color: Colors.black87, fontSize: 16),
+        cursorColor: Colors.redAccent, // Custom cursor color
       ),
     );
   }
@@ -714,7 +741,7 @@ class _FilterScreenState extends State<FilterScreen> with SingleTickerProviderSt
     required TextEditingController controller,
     required String labelText,
     required ValueChanged<String> onChanged,
-    IconData? icon, // Added icon parameter
+    IconData? icon,
   }) {
     return _buildTextField(
       controller: controller,
@@ -732,15 +759,16 @@ class _FilterScreenState extends State<FilterScreen> with SingleTickerProviderSt
     required VoidCallback onTap,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: const EdgeInsets.symmetric(vertical: 10.0),
       child: InkWell(
         onTap: onTap,
+        borderRadius: BorderRadius.circular(12), // Apply border radius to InkWell
         child: InputDecorator(
-          decoration: _buildInputDecoration(labelText, icon: Icons.calendar_today),
+          decoration: _buildInputDecoration(labelText, icon: Icons.calendar_today_outlined), // Outlined icon
           child: Text(
             displayDate.isNotEmpty ? displayDate : 'Select Date',
             style: TextStyle(
-              color: displayDate.isNotEmpty ? Colors.black87 : Colors.grey[700],
+              color: displayDate.isNotEmpty ? Colors.black87 : Colors.grey.shade600, // Darker grey for placeholder
               fontSize: 16,
             ),
           ),
@@ -750,9 +778,6 @@ class _FilterScreenState extends State<FilterScreen> with SingleTickerProviderSt
   }
 }
 
-// Re-using the _FilterChipGroup you likely already have from your filter_screen.dart
-// Ensure this class is defined in your project, e.g., at the bottom of filter_screen.dart
-// or in a separate file if you prefer.
 class _FilterChipGroup extends StatefulWidget {
   final String title;
   final List<String> availableItems;
@@ -791,18 +816,18 @@ class _FilterChipGroupState extends State<_FilterChipGroup> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: const EdgeInsets.symmetric(vertical: 10.0), // Consistent padding
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             widget.title,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
+            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: Colors.black87),
           ),
           const SizedBox(height: 10),
           Wrap(
-            spacing: 8.0,
-            runSpacing: 8.0,
+            spacing: 10.0, // Increased spacing between chips
+            runSpacing: 10.0,
             children: widget.availableItems.map((item) {
               final isSelected = _localSelectedItems.contains(item);
               return FilterChip(
@@ -815,25 +840,25 @@ class _FilterChipGroupState extends State<_FilterChipGroup> {
                     } else {
                       _localSelectedItems.remove(item);
                     }
-                    widget.onSelectionChanged(_localSelectedItems); // Notify parent of change
+                    widget.onSelectionChanged(_localSelectedItems);
                   });
                 },
-                selectedColor: Colors.redAccent.withOpacity(0.3),
+                selectedColor: Colors.redAccent.withOpacity(0.2), // Lighter selected color for modern feel
                 checkmarkColor: Colors.redAccent.shade700,
                 labelStyle: TextStyle(
-                  color: isSelected ? Colors.redAccent.shade700 : Colors.black87,
+                  color: isSelected ? Colors.redAccent.shade700 : Colors.grey.shade800, // Better contrast
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 ),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(24), // More rounded chips
                   side: BorderSide(
-                    color: isSelected ? Colors.redAccent : Colors.grey.shade400,
+                    color: isSelected ? Colors.redAccent.shade400 : Colors.grey.shade300, // Softer border
                     width: 1.0,
                   ),
                 ),
                 backgroundColor: Colors.white,
-                elevation: 1, // Add a subtle elevation
-                pressElevation: 3, // Elevation when pressed
+                elevation: isSelected ? 2 : 1, // Slightly more elevation when selected
+                pressElevation: 4,
               );
             }).toList(),
           ),
