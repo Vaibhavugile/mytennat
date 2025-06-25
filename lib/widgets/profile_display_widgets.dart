@@ -49,34 +49,44 @@ Widget _buildSection({
   );
 }
 
-// Helper widget to display a single profile field (label: value format) with an optional icon
-Widget _buildProfileField(String label, String? value, {IconData? icon}) {
+// Helper widget to display a single profile field (label: value format) with an optional icon - (kept for non-grid sections)
+// This is no longer used for the Basic Information section directly.
+Widget _buildProfileField(String label, String? value, {IconData? icon, int iconColorIndex = 0}) {
+  final palette = _vibrantColorPalettes[iconColorIndex % _vibrantColorPalettes.length];
+
   return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 4.0), // Increased vertical padding
+    padding: const EdgeInsets.symmetric(vertical: 6.0), // Increased vertical padding
     child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start, // Align to start to handle multi-line values
       children: [
         if (icon != null) ...[
-          Icon(icon, color: Colors.redAccent, size: 18), // Increased icon size
-          const SizedBox(width: 8), // Increased spacing
+          Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: palette.key, // Light background color for the icon container
+            ),
+            padding: const EdgeInsets.all(6), // Padding around the icon
+            child: Icon(icon, color: palette.value, size: 18), // Icon size matches previous step, vibrant color
+          ),
+          const SizedBox(width: 10), // Increased spacing
         ],
         SizedBox(
-          width: 90, // Increased fixed width for labels
+          width: 100, // Increased fixed width for labels to give more room
           child: Text(
             '$label:',
             style: const TextStyle(
-              fontSize: 14, // Increased font
+              fontSize: 14, // Font size matches previous step
               fontWeight: FontWeight.w600,
               color: Colors.black87,
             ),
           ),
         ),
-        const SizedBox(width: 10), // Increased spacing
+        const SizedBox(width: 12), // Increased spacing between label and value
         Expanded(
           child: Text(
             value ?? 'N/A', // Display 'N/A' if value is null
             style: TextStyle(
-              fontSize: 14, // Increased font
+              fontSize: 14, // Font size matches previous step
               color: value != null && value.isNotEmpty ? Colors.black : Colors.grey,
             ),
           ),
@@ -86,7 +96,8 @@ Widget _buildProfileField(String label, String? value, {IconData? icon}) {
   );
 }
 
-// Helper for displaying list fields (Amenities, Habits, Qualities, Deal Breakers) with check chips
+// Helper for displaying list fields (used for sections that remain as text chips, if any)
+// This is no longer used for Amenities.
 Widget _buildProfileListField(String label, List<String>? values) {
   if (values == null || values.isEmpty) {
     return _buildSection(
@@ -152,6 +163,24 @@ final Map<String, IconData> _characteristicIcons = {
   'Any': Icons.all_inclusive,
   'Both': Icons.people_outline, // Changed for clarity
   'Other': Icons.category,
+
+  // Basic Information Specific
+  'Gender': Icons.person, // Added for basic info
+  'Age': Icons.cake, // Added for basic info
+  'Occupation': Icons.work, // Added for basic info
+  'Current Location': Icons.location_on, // Added for basic info
+  'Desired City': Icons.location_city, // Added for basic info
+  'Area Pref.': Icons.map, // Added for basic info
+  'Move-in Date': Icons.calendar_today, // Added for basic info
+  'Budget Range': Icons.currency_rupee, // Added for basic info
+  'Bio': Icons.info, // Added for basic info
+  'Name': Icons.person_outline, // For owner name in flat listing
+  'Availability Date': Icons.event_available, // For flat availability date
+  'Rent Price': Icons.attach_money, // For flat rent price
+  'Deposit Amt.': Icons.account_balance_wallet, // For flat deposit amount
+  'Address': Icons.home_filled,
+  'Landmark': Icons.push_pin,
+  'Description': Icons.description,
 
   // Habits & Lifestyle
   'Very Tidy': Icons.cleaning_services,
@@ -225,20 +254,73 @@ final Map<String, IconData> _characteristicIcons = {
   'No preference': Icons.favorite_border,
   'Student': Icons.school,
   'Working Professional': Icons.business_center,
+  'Bathroom Type': Icons.bathtub,
+  'Balcony': Icons.balcony,
+  'Parking': Icons.local_parking,
+
+  // Amenities Specific Icons
+  'Wi-Fi': Icons.wifi,
+  'AC': Icons.ac_unit,
+  'Geyser': Icons.water_drop,
+  'Washing Machine': Icons.local_laundry_service,
+  'Refrigerator': Icons.kitchen,
+  'Microwave': Icons.microwave,
+  'Maid Service': Icons.cleaning_services,
+  'Cook': Icons.lunch_dining,
+  'Gym': Icons.fitness_center,
+  'Swimming Pool': Icons.pool,
+  'Power Backup': Icons.power,
+  'Security': Icons.security,
+
+  // Preferred Habits
+  'Non-smoker': Icons.smoke_free,
+  'Non-drinker': Icons.no_drinks,
+  // Vegetarian: Icons.local_florist (already exists)
+  'Tidy': Icons.cleaning_services, // (already exists)
+  'Quiet': Icons.volume_mute, // (already exists)
+  'Social': Icons.sentiment_very_satisfied, // (already exists)
+  'Respectful': Icons.volunteer_activism,
+  'Financially responsible': Icons.account_balance_wallet,
+  'Pet-friendly': Icons.pets, // (already exists)
+
+  // Ideal Qualities
+  // Respectful: Icons.volunteer_activism (already exists)
+  // Tidy: Icons.cleaning_services (already exists)
+  'Communicative': Icons.chat_bubble_outline,
+  'Friendly': Icons.sentiment_satisfied_alt, // (already exists)
+  'Responsible': Icons.check_circle_outline, // (already exists)
+  // Quiet: Icons.volume_mute (already exists)
+  'Social': Icons.group,
+  'Independent': Icons.person_pin,
+  'Shares chores': Icons.handshake,
+  'Financially stable': Icons.paid,
+
+  // Deal Breakers
+  'Excessive Noise': Icons.volume_up, // (already exists, used for 'Lively')
+  'Untidiness': Icons.cleaning_services,
+  'Frequent Parties': Icons.party_mode_rounded,
+  'Smoking Indoors': Icons.smoking_rooms,
+  'Unpaid Bills': Icons.money_off,
+  'Lack of Communication': Icons.do_not_disturb_on,
+  'Pets (if not allowed)': Icons.pets,
+  'Late Night Guests': Icons.bedtime,
+  'Drugs': Icons.dangerous,
+  'Disrespectful behavior': Icons.gpp_bad,
 };
 
 // Helper for displaying a single characteristic with icon and text, formatted as a colorful card
 Widget _buildIconValueCard(String label, String? value, {Color? backgroundColor, Color? iconColor}) {
-  if (value == null || value.isEmpty || value == 'N/A') return Container();
+  // Use a default icon if not found, or if label itself maps to an icon like 'Gender' or an amenity like 'Wi-Fi'
+  final icon = _characteristicIcons[label] ?? _characteristicIcons[value] ?? Icons.category;
 
-  final icon = _characteristicIcons[value] ?? Icons.category;
+  if (value == null || value.isEmpty || value == 'N/A') return Container();
 
   return Column(
     mainAxisSize: MainAxisSize.min,
     children: [
       // Add the label here
       Text(
-        label, // Display the label (e.g., "Smoking Habits")
+        label, // Display the label (e.g., "Smoking Habits", or "Gender", or "Wi-Fi")
         textAlign: TextAlign.center,
         style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black87), // Increased font for label
         maxLines: 1,
@@ -397,6 +479,13 @@ Widget _buildPreferenceGrid(String title, List<String>? preferences) {
   );
 }
 
+// Helper to convert List<String> to List<MapEntry<String, String?>> for grid display
+List<MapEntry<String, String?>> _convertStringListToCharacteristicEntries(List<String>? list) {
+  if (list == null) {
+    return [];
+  }
+  return list.map((item) => MapEntry(item, item)).toList();
+}
 
 
 // --- Main Display Widgets ---
@@ -481,22 +570,21 @@ class SeekingFlatmateProfileDisplay extends StatelessWidget {
           ),
 
 
-          // Basic Info
-          _buildSection(
-            title: 'Basic Information',
-            children: [
-              _buildProfileField('Gender', profile.gender, icon: Icons.person),
-              _buildProfileField('Age', profile.age?.toString(), icon: Icons.cake),
-              _buildProfileField('Occupation', profile.occupation, icon: Icons.work),
-              _buildProfileField('Current Location', profile.currentLocation, icon: Icons.location_on),
-              _buildProfileField('Desired City', profile.desiredCity, icon: Icons.location_city),
-              _buildProfileField('Area Pref.', profile.areaPreference, icon: Icons.map),
-              _buildProfileField('Move-in Date', profile.moveInDate != null
+          // Basic Info - NOW AS A GRID
+          _buildCharacteristicGrid(
+            'Basic Information',
+            [
+              MapEntry('Gender', profile.gender),
+              MapEntry('Age', profile.age?.toString()),
+              MapEntry('Occupation', profile.occupation),
+              MapEntry('Current Location', profile.currentLocation),
+              MapEntry('Desired City', profile.desiredCity),
+              MapEntry('Area Pref.', profile.areaPreference),
+              MapEntry('Move-in Date', profile.moveInDate != null
                   ? DateFormat('dd/MM/yyyy').format(profile.moveInDate!)
-                  : null, icon: Icons.calendar_today),
-              _buildProfileField('Budget Range',
-                  '₹${profile.budgetMin ?? 'N/A'} - ₹${profile.budgetMax ?? 'N/A'}', icon: Icons.currency_rupee),
-              _buildProfileField('Bio', profile.bio, icon: Icons.info),
+                  : null),
+              MapEntry('Budget Range', '₹${profile.budgetMin ?? 'N/A'} - ₹${profile.budgetMax ?? 'N/A'}'),
+              MapEntry('Bio', profile.bio),
             ],
           ),
 
@@ -543,7 +631,8 @@ class SeekingFlatmateProfileDisplay extends StatelessWidget {
               MapEntry('Furnished Status', profile.preferredFurnishedStatus),
             ],
           ),
-          _buildProfileListField('Amenities Desired', profile.amenitiesDesired),
+          // Amenities Desired - NOW AS A GRID
+          _buildCharacteristicGrid('Amenities Desired', _convertStringListToCharacteristicEntries(profile.amenitiesDesired)),
 
 
           // Flatmate Preferences
@@ -555,9 +644,12 @@ class SeekingFlatmateProfileDisplay extends StatelessWidget {
               MapEntry('Preferred Occupation', profile.preferredOccupation),
             ],
           ),
-          _buildProfileListField('Preferred Habits', profile.preferredHabits),
-          _buildProfileListField('Ideal Qualities', profile.idealQualities),
-          _buildProfileListField('Deal Breakers', profile.dealBreakers),
+          // Preferred Habits - NOW AS A GRID
+          _buildCharacteristicGrid('Preferred Habits', _convertStringListToCharacteristicEntries(profile.preferredHabits)),
+          // Ideal Qualities - NOW AS A GRID
+          _buildCharacteristicGrid('Ideal Qualities', _convertStringListToCharacteristicEntries(profile.idealQualities)),
+          // Deal Breakers - NOW AS A GRID
+          _buildCharacteristicGrid('Deal Breakers', _convertStringListToCharacteristicEntries(profile.dealBreakers)),
 
           // Profile Images (using the existing implementation)
           if (profile.imageUrls != null && profile.imageUrls!.isNotEmpty)
@@ -679,15 +771,15 @@ class FlatListingProfileDisplay extends StatelessWidget {
             ),
           ),
 
-          // Basic Info (Owner's Info)
-          _buildSection(
-            title: 'About The Owner / Current Flatmate',
-            children: [
-              _buildProfileField('Name', profile.ownerName, icon: Icons.person),
-              _buildProfileField('Age', profile.ownerAge?.toString(), icon: Icons.cake),
-              _buildProfileField('Gender', profile.ownerGender, icon: Icons.wc),
-              _buildProfileField('Occupation', profile.ownerOccupation, icon: Icons.work),
-              _buildProfileField('Bio', profile.ownerBio, icon: Icons.info),
+          // Basic Info (Owner's Info) - NOW AS A GRID
+          _buildCharacteristicGrid(
+            'About The Owner / Current Flatmate',
+            [
+              MapEntry('Name', profile.ownerName),
+              MapEntry('Age', profile.ownerAge?.toString()),
+              MapEntry('Gender', profile.ownerGender),
+              MapEntry('Occupation', profile.ownerOccupation),
+              MapEntry('Bio', profile.ownerBio),
             ],
           ),
 
@@ -712,39 +804,31 @@ class FlatListingProfileDisplay extends StatelessWidget {
             ],
           ),
 
-          // Flat Details
-          _buildSection(
-            title: 'Flat Details',
-            children: [
-              _buildProfileField('City', profile.desiredCity, icon: Icons.location_city),
-              _buildProfileField('Area', profile.areaPreference, icon: Icons.map),
-              _buildProfileField('Address', profile.address, icon: Icons.home),
-              _buildProfileField('Landmark', profile.landmark, icon: Icons.push_pin),
-              _buildProfileField('Description', profile.flatDescription, icon: Icons.description),
-              _buildCharacteristicGrid(
-                '', // No specific title here as it's part of Flat Details
-                [
-                  MapEntry('Flat Type', profile.flatType),
-                  MapEntry('Furnished Status', profile.furnishedStatus),
-                  MapEntry('Available For', profile.availableFor),
-                ],
-              ),
-              _buildProfileField('Availability Date', profile.availabilityDate != null
+          // Flat Details - NOW CONTAINS GRID FOR SOME FIELDS
+          _buildCharacteristicGrid(
+            'Flat Details',
+            [
+              MapEntry('City', profile.desiredCity),
+              MapEntry('Area', profile.areaPreference),
+              MapEntry('Address', profile.address),
+              MapEntry('Landmark', profile.landmark),
+              MapEntry('Description', profile.flatDescription),
+              MapEntry('Flat Type', profile.flatType),
+              MapEntry('Furnished Status', profile.furnishedStatus),
+              MapEntry('Available For', profile.availableFor),
+              MapEntry('Availability Date', profile.availabilityDate != null
                   ? DateFormat('dd/MM/yyyy').format(profile.availabilityDate!)
-                  : null, icon: Icons.calendar_today),
-              _buildProfileField('Rent Price', '₹${profile.rentPrice ?? 'N/A'}', icon: Icons.currency_rupee),
-              _buildProfileField('Deposit Amt.', '₹${profile.depositAmount ?? 'N/A'}', icon: Icons.money),
-              _buildCharacteristicGrid(
-                '', // No specific title here as it's part of Flat Details
-                [
-                  MapEntry('Bathroom Type', profile.bathroomType),
-                  MapEntry('Balcony', profile.balconyAvailability),
-                  MapEntry('Parking', profile.parkingAvailability),
-                ],
-              ),
-              _buildProfileListField('Amenities', profile.amenities),
+                  : null),
+              MapEntry('Rent Price', '₹${profile.rentPrice ?? 'N/A'}'),
+              MapEntry('Deposit Amt.', '₹${profile.depositAmount ?? 'N/A'}'),
+              MapEntry('Bathroom Type', profile.bathroomType),
+              MapEntry('Balcony', profile.balconyAvailability),
+              MapEntry('Parking', profile.parkingAvailability),
             ],
           ),
+          // Amenities - NOW AS A GRID
+          _buildCharacteristicGrid('Amenities', _convertStringListToCharacteristicEntries(profile.amenities)),
+
 
           // Flatmate Preferences
           _buildCharacteristicGrid(
@@ -755,9 +839,12 @@ class FlatListingProfileDisplay extends StatelessWidget {
               MapEntry('Preferred Occupation', profile.preferredOccupation),
             ],
           ),
-          _buildProfileListField('Preferred Habits', profile.preferredHabits),
-          _buildProfileListField('Ideal Qualities', profile.flatmateIdealQualities),
-          _buildProfileListField('Deal Breakers', profile.flatmateDealBreakers),
+          // Preferred Habits - NOW AS A GRID
+          _buildCharacteristicGrid('Preferred Habits', _convertStringListToCharacteristicEntries(profile.preferredHabits)),
+          // Ideal Qualities - NOW AS A GRID
+          _buildCharacteristicGrid('Ideal Qualities', _convertStringListToCharacteristicEntries(profile.flatmateIdealQualities)),
+          // Deal Breakers - NOW AS A GRID
+          _buildCharacteristicGrid('Deal Breakers', _convertStringListToCharacteristicEntries(profile.flatmateDealBreakers)),
 
           // Flat Images (using the existing implementation)
           if (profile.imageUrls != null && profile.imageUrls!.isNotEmpty)
