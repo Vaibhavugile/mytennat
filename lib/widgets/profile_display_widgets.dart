@@ -1,11 +1,11 @@
 // lib/widgets/profile_display_widgets.dart
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // For date formatting
-import 'package:mytennat/screens/flat_with_flatmate_profile_screen.dart'; // Import your SeekingFlatmateProfile
-import 'package:mytennat/screens/flatmate_profile_screen.dart'; // Import your FlatListingProfile
+import 'package:intl/intl.dart';
+import 'package:mytennat/screens/flat_with_flatmate_profile_screen.dart';
+import 'package:mytennat/screens/flatmate_profile_screen.dart';
+import 'package:lottie/lottie.dart'; // Import Lottie
 
 // --- Color Palettes for Vibrant Icons ---
-// Each entry is a pair: {background_color_light_shade, icon_color_dark_shade}
 final List<MapEntry<Color, Color>> _vibrantColorPalettes = [
   MapEntry(Colors.purple.shade100, Colors.purple.shade700),
   MapEntry(Colors.green.shade100, Colors.green.shade700),
@@ -25,23 +25,23 @@ Widget _buildSection({
   EdgeInsetsGeometry? padding,
 }) {
   return Card(
-    margin: margin ?? const EdgeInsets.symmetric(vertical: 6, horizontal: 12), // Increased margin
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), // Increased border radius
-    elevation: 3.0, // Increased elevation
+    margin: margin ?? const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    elevation: 3.0,
     child: Padding(
-      padding: padding ?? const EdgeInsets.all(12.0), // Increased padding
+      padding: padding ?? const EdgeInsets.all(12.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
             style: const TextStyle(
-              fontSize: 18, // Increased title font
+              fontSize: 18,
               fontWeight: FontWeight.bold,
               color: Colors.redAccent,
             ),
           ),
-          const Divider(height: 10, thickness: 1.0, color: Colors.grey), // Increased height and thickness
+          const Divider(height: 10, thickness: 1.0, color: Colors.grey),
           ...children,
         ],
       ),
@@ -50,43 +50,42 @@ Widget _buildSection({
 }
 
 // Helper widget to display a single profile field (label: value format) with an optional icon - (kept for non-grid sections)
-// This is no longer used for the Basic Information section directly.
 Widget _buildProfileField(String label, String? value, {IconData? icon, int iconColorIndex = 0}) {
   final palette = _vibrantColorPalettes[iconColorIndex % _vibrantColorPalettes.length];
 
   return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 6.0), // Increased vertical padding
+    padding: const EdgeInsets.symmetric(vertical: 6.0),
     child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start, // Align to start to handle multi-line values
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (icon != null) ...[
           Container(
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: palette.key, // Light background color for the icon container
+              color: palette.key,
             ),
-            padding: const EdgeInsets.all(6), // Padding around the icon
-            child: Icon(icon, color: palette.value, size: 18), // Icon size matches previous step, vibrant color
+            padding: const EdgeInsets.all(6),
+            child: Icon(icon, color: palette.value, size: 18),
           ),
-          const SizedBox(width: 10), // Increased spacing
+          const SizedBox(width: 10),
         ],
         SizedBox(
-          width: 100, // Increased fixed width for labels to give more room
+          width: 100,
           child: Text(
             '$label:',
             style: const TextStyle(
-              fontSize: 14, // Font size matches previous step
+              fontSize: 14,
               fontWeight: FontWeight.w600,
               color: Colors.black87,
             ),
           ),
         ),
-        const SizedBox(width: 12), // Increased spacing between label and value
+        const SizedBox(width: 12),
         Expanded(
           child: Text(
-            value ?? 'N/A', // Display 'N/A' if value is null
+            value ?? 'N/A',
             style: TextStyle(
-              fontSize: 14, // Font size matches previous step
+              fontSize: 14,
               color: value != null && value.isNotEmpty ? Colors.black : Colors.grey,
             ),
           ),
@@ -97,7 +96,6 @@ Widget _buildProfileField(String label, String? value, {IconData? icon, int icon
 }
 
 // Helper for displaying list fields (used for sections that remain as text chips, if any)
-// This is no longer used for Amenities.
 Widget _buildProfileListField(String label, List<String>? values) {
   if (values == null || values.isEmpty) {
     return _buildSection(
@@ -105,41 +103,41 @@ Widget _buildProfileListField(String label, List<String>? values) {
       children: const [
         Text(
           'N/A',
-          style: TextStyle(fontSize: 14, color: Colors.grey), // Increased font
+          style: TextStyle(fontSize: 14, color: Colors.grey),
         ),
       ],
     );
   }
 
   return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12), // Increased padding
+    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
           style: const TextStyle(
-            fontSize: 18, // Increased title font
+            fontSize: 18,
             fontWeight: FontWeight.bold,
             color: Colors.redAccent,
           ),
         ),
-        const SizedBox(height: 10), // Increased spacing
+        const SizedBox(height: 10),
         Wrap(
-          spacing: 8.0, // Increased spacing between chips
-          runSpacing: 8.0, // Increased run spacing between chip rows
+          spacing: 8.0,
+          runSpacing: 8.0,
           children: values
               .map(
                 (item) => Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), // Increased padding within chips
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(18), // Increased border radius for chips
+                borderRadius: BorderRadius.circular(18),
                 border: Border.all(color: Colors.grey.shade200),
               ),
               child: Text(
                 item,
-                style: const TextStyle(fontSize: 12), // Increased font for chip text
+                style: const TextStyle(fontSize: 12),
               ),
             ),
           )
@@ -150,201 +148,204 @@ Widget _buildProfileListField(String label, List<String>? values) {
   );
 }
 
-
 // Comprehensive map for various characteristic values and their icons
-final Map<String, IconData> _characteristicIcons = {
+// This map will now store either IconData or a String path to a Lottie animation
+final Map<String, dynamic> _characteristicIcons = {
   // Common
-  'Male': Icons.male,
-  'Female': Icons.female,
-  'Non-binary': Icons.transgender,
-  'Prefer not to say': Icons.do_not_disturb_alt,
-  'Yes': Icons.check_circle_outline,
-  'No': Icons.cancel_outlined,
+  'Male': 'assets/lottie/male.json', // Lottie path for Male
+  'Female': 'assets/lottie/female.json', // Lottie path for Female
+  'Non-binary': 'assets/lottie/non_binary.json', // Example Lottie
+  'Prefer not to say': 'assets/lottie/do_not_disturb_alt.json',
+  'Yes': 'assets/lottie/check.json', // Example Lottie
+  'No': 'assets/lottie/cross.json', // Example Lottie
   'Any': Icons.all_inclusive,
-  'Both': Icons.people_outline, // Changed for clarity
+  'Both': Icons.people_outline,
   'Other': Icons.category,
 
   // Basic Information Specific
-  'Gender': Icons.person, // Added for basic info
-  'Age': Icons.cake, // Added for basic info
-  'Occupation': Icons.work, // Added for basic info
-  'Current Location': Icons.location_on, // Added for basic info
-  'Desired City': Icons.location_city, // Added for basic info
-  'Area Pref.': Icons.map, // Added for basic info
-  'Move-in Date': Icons.calendar_today, // Added for basic info
-  'Budget Range': Icons.currency_rupee, // Added for basic info
-  'Bio': Icons.info, // Added for basic info
-  'Name': Icons.person_outline, // For owner name in flat listing
-  'Availability Date': Icons.event_available, // For flat availability date
-  'Rent Price': Icons.attach_money, // For flat rent price
-  'Deposit Amt.': Icons.account_balance_wallet, // For flat deposit amount
-  'Address': Icons.home_filled,
-  'Landmark': Icons.push_pin,
-  'Description': Icons.description,
+  'Gender': 'assets/lottie/person.json', // Example Lottie
+  'Age': 'assets/lottie/cake.json', // Example Lottie
+  'Occupation': 'assets/lottie/occupation.json', // Example Lottie
+  'Current Location': 'assets/lottie/current_location.json', // Example Lottie
+  'Desired City': 'assets/lottie/location_city.json', // Example Lottie
+  'Area Pref.': 'assets/lottie/current_location.json', // Example Lottie
+  'Move-in Date': 'assets/lottie/calendar.json', // Example Lottie
+  'Budget Range': 'assets/lottie/currency_rupee.json', // Example Lottie
+  'Bio': 'assets/lottie/info.json', // Example Lottie
+  'Name': Icons.person_outline,
+  'Availability Date': 'assets/lottie/calendar.json', // Example Lottie
+  'Rent Price': 'assets/lottie/currency_rupee.json', // Example Lottie
+  'Deposit Amt.': 'assets/lottie/currency_rupee.json', // Example Lottie
+  'Address': 'assets/lottie/address.json', // Example Lottie
+  'Landmark': 'assets/lottie/current_location.json', // Example Lottie
+  'Description': 'assets/lottie/info.json', // Example Lottie
 
   // Habits & Lifestyle
-  'Very Tidy': Icons.cleaning_services,
-  'Moderately Tidy': Icons.wc, // Representing general cleanliness
-  'Flexible': Icons.shuffle, // Representing adaptability
-  'Can be messy at times': Icons.cleaning_services_rounded,
-  'Social & outgoing': Icons.sentiment_very_satisfied,
-  'Occasional gatherings': Icons.group_add,
-  'Quiet & private': Icons.lock_person, // Represents personal space
-  '9-5 Office hours': Icons.work,
-  'Freelance/Flexible hours': Icons.laptop_chromebook,
-  'Night shifts': Icons.nights_stay,
-  'Student schedule': Icons.school,
-  'Mixed': Icons.calendar_month, // Representing varied schedule
-  'Very quiet': Icons.volume_mute,
-  'Moderate noise': Icons.volume_down,
-  'Lively': Icons.volume_up,
-  'Never': Icons.no_drinks, // More specific for habits
-  'Occasionally': Icons.local_bar_outlined, // For drinks
-  'Socially': Icons.wine_bar,
-  'Regularly': Icons.liquor, // Stronger icon for regular drinking
-  'Vegetarian': Icons.local_florist, // More appealing vegetarian icon
-  'Non-Vegetarian': Icons.fastfood,
-  'Vegan': Icons.eco,
-  'Eggetarian': Icons.egg,
-  'Jain': Icons.self_improvement, // Represents a lifestyle choice
-  'Frequently': Icons.group_add, // For guests/overnight policy
-  'Rarely': Icons.event_busy, // Less frequent events
-  'Frequent visitors': Icons.people_alt,
-  'Occasional visitors': Icons.person_add_alt_1,
-  'Rarely have visitors': Icons.person_off,
-  'No visitors': Icons.do_not_disturb_alt,
-  'Planning to get one': Icons.pets_outlined,
-  'Comfortable with pets': Icons.pets,
-  'Tolerant of pets': Icons.pets_rounded, // Slightly different pet icon
-  'Prefer no pets': Icons.no_backpack, // No pets allowed
-  'Allergic to pets': Icons.masks, // Represents allergies
-  'Early riser': Icons.wb_sunny,
-  'Night Owl': Icons.bedtime, // More specific for night owl
-  'Irregular': Icons.schedule_send, // Irregular schedule
-  'Share everything': Icons.share,
-  'Share some items': Icons.apps, // Apps can represent shared items
-  'Prefer separate items': Icons.lock,
-  'Value personal space highly': Icons.person_off_outlined, // Focus on personal space
-  'Enjoy a balance': Icons.balance,
-  'Prefer more socialization': Icons.sentiment_satisfied_alt,
+  'Very Tidy': 'assets/lottie/cleanliness.json', // Example Lottie
+  'Moderately Tidy': 'assets/lottie/cleanliness.json', // Example Lottie
+  'Flexible': 'assets/lottie/cleanliness.json', // Example Lottie
+  'Can be messy at times': 'assets/lottie/cleanliness.json', // Example Lottie
+  'Social & outgoing': 'assets/lottie/socialhabits.json', // Example Lottie
+  'Occasional gatherings': 'assets/lottie/socialhabits.json', // Example Lottie
+  'Quiet & private': 'assets/lottie/socialhabits.json', // Example Lottie
+  '9-5 Office hours': 'assets/lottie/freelancer.json', // Example Lottie
+  'Freelance/Flexible hours': 'assets/lottie/freelancer.json', // Example Lottie
+  'Night shifts': 'assets/lottie/nightshift.json', // Example Lottie
+  'Student schedule': 'assets/lottie/student.json', // Example Lottie
+  'Mixed': 'assets/lottie/mixed_schedule.json', // Example Lottie
+  'Very quiet': 'assets/lottie/noise level.json', // Example Lottie
+  'Moderate noise': 'assets/lottie/noise level.json', // Example Lottie
+  'Lively': 'assets/lottie/noise level.json', // Example Lottie
+  'Never': 'assets/lottie/nosmoking.json', // Example Lottie
+  'Occasionally': 'assets/lottie/smoking.json', // Example Lottie
+  'Socially': 'assets/lottie/smoking.json', // Example Lottie
+  'Regularly': 'assets/lottie/smoking.json', // Example Lottie
+  'Vegetarian': 'assets/lottie/food.json', // Example Lottie
+  'Non-Vegetarian': 'assets/lottie/food.json', // Example Lottie
+  'Vegan': 'assets/lottie/food.json', // Example Lottie
+  'Eggetarian': 'assets/lottie/food.json', // Example Lottie
+  'Jain': 'assets/lottie/food.json', // Example Lottie
+  'Frequently': 'assets/lottie/frequent_guests.json', // Example Lottie //
+  'Rarely': 'assets/lottie/rare_guests.json', // Example Lottie//
+  'Frequent visitors': 'assets/lottie/frequent_visitors.json', // Example Lottie //
+  'Occasional visitors': 'assets/lottie/occasional_visitors.json', // Example Lottie //
+  'Rarely have visitors': 'assets/lottie/rare_visitors.json', // Example Lottie//
+  'No visitors': 'assets/lottie/no_visitors.json', // Example Lottie //
+  'Planning to get one': 'assets/lottie/pets.json', // Example Lottie
+  'Comfortable with pets': 'assets/lottie/pets.json', // Example Lottie
+  'Tolerant of pets': 'assets/lottie/pets.json', // Example Lottie
+  'Prefer no pets': 'assets/lottie/nopets.json', // Example Lottie
+  'Allergic to pets': 'assets/lottie/nopets.json', // Example Lottie
+  'Early riser': 'assets/lottie/earlyriserrr.json', // Example Lottie
+  'Night Owl': 'assets/lottie/nightowl.json', // Lottie specific to Night Owl in _preferenceIcons too.
+  'Irregular': 'assets/lottie/earlyriserrr.json', // Example Lottie
+  'Share everything': 'assets/lottie/sharing.json', // Example Lottie
+  'Share some items': 'assets/lottie/sharing.json', // Example Lottie
+  'Prefer separate items': 'assets/lottie/sharing.json', // Example Lottie//
+  'Value personal space highly': 'assets/lottie/socialization.json', // Example Lottie
+  'Enjoy a balance': 'assets/lottie/socialization.json', // Example Lottie
+  'Prefer more socialization': 'assets/lottie/socialization.json', // Example Lottie
 
   // Flat Details
-  'Studio Apartment': Icons.single_bed, // Studio specific
-  '1BHK': Icons.home,
-  '2BHK': Icons.home_work,
-  '3BHK': Icons.villa,
-  '4BHK+': Icons.castle, // Larger flat
-  'Furnished': Icons.chair,
-  'Semi-furnished': Icons.table_restaurant,
-  'Unfurnished': Icons.house_siding, // Empty house
-  'Boys': Icons.boy,
-  'Girls': Icons.girl,
-  'Couples': Icons.people_alt,
-  'Anyone': Icons.groups_2,
-  'Attached Bathroom': Icons.bathtub,
-  'Shared Bathroom': Icons.shower,
-  'Yes, for Car': Icons.directions_car,
-  'Yes, for Two-wheeler': Icons.two_wheeler,
-  'Only in living room': Icons.living,
-  'Only in bedroom': Icons.bed,
-  '18-24': Icons.looks_one,
-  '25-30': Icons.looks_two,
-  '30-40': Icons.looks_3,
-  '40+': Icons.looks_4,
+  'Studio Apartment': 'assets/lottie/address.json', // Example Lottie
+  '1BHK': 'assets/lottie/address.json', // Example Lottie
+  '2BHK': 'assets/lottie/address.json', // Example Lottie
+  '3BHK': 'assets/lottie/address.json', // Example Lottie
+  '4BHK+': 'assets/lottie/address.json', // Example Lottie
+  'Furnished': 'assets/lottie/furnished.json', // Example Lottie
+  'Semi-furnished': 'assets/lottie/furnished.json', // Example Lottie//
+  'Unfurnished': 'assets/lottie/furnished.json', // Example Lottie//
+  'Boys': 'assets/lottie/male.json', // Example Lottie
+  'Girls': 'assets/lottie/female.json', // Example Lottie//
+  'Couples': 'assets/lottie/person.json', // Example Lottie'//
+  'Anyone': 'assets/lottie/person.json', // Example Lottie//
+  'Attached Bathroom': 'assets/lottie/attached_bathroom.json', // Example Lottie//
+  'Shared Bathroom': 'assets/lottie/shared_bathroom.json', // Example Lottie//
+  'Yes, for Car': 'assets/lottie/car_parking.json', // Example Lottie//
+  'Yes, for Two-wheeler': 'assets/lottie/two_wheeler_parking.json', // Example Lottie//
+  'Only in living room': 'assets/lottie/living_room.json', // Example Lottie//
+  'Only in bedroom': 'assets/lottie/bedroom.json', // Example Lottie//
+  '18-24': 'assets/lottie/cake.json', // Example Lottie
+  '25-30': 'assets/lottie/cake.json', // Example Lottie
+  '30-40': 'assets/lottie/cake.json', // Example Lottie
+  '40+': 'assets/lottie/cake.json', // Example Lottie
   'No preference': Icons.favorite_border,
-  'Student': Icons.school,
-  'Working Professional': Icons.business_center,
-  'Bathroom Type': Icons.bathtub,
-  'Balcony': Icons.balcony,
-  'Parking': Icons.local_parking,
+  'Student': 'assets/lottie/student.json', // Example Lottie
+  'Working Professional': 'assets/lottie/freelancer.json', // Example Lottie
+  'Bathroom Type': Icons.bathtub, // Keeping as IconData
+  'Balcony': Icons.balcony, // Keeping as IconData
+  'Parking': Icons.local_parking, // Keeping as IconData
 
   // Amenities Specific Icons
-  'Wi-Fi': Icons.wifi,
-  'AC': Icons.ac_unit,
-  'Geyser': Icons.water_drop,
-  'Washing Machine': Icons.local_laundry_service,
-  'Refrigerator': Icons.kitchen,
-  'Microwave': Icons.microwave,
-  'Maid Service': Icons.cleaning_services,
-  'Cook': Icons.lunch_dining,
-  'Gym': Icons.fitness_center,
-  'Swimming Pool': Icons.pool,
-  'Power Backup': Icons.power,
-  'Security': Icons.security,
+  'Wi-Fi': 'assets/lottie/wifi.json', // Example Lottie
+  'AC': 'assets/lottie/ac.json', // Example Lottie
+  'Geyser': 'assets/lottie/gyser.json', // Example Lottie
+  'Washing Machine': 'assets/lottie/washingmachine.json', // Example Lottie
+  'Refrigerator': 'assets/lottie/refrigerator.json', // Example Lottie
+  'Microwave': 'assets/lottie/microwave.json', // Example Lottie
+  'Maid Service': 'assets/lottie/cleaning.json', // Example Lottie
+  'Cook': 'assets/lottie/cook.json', // Example Lottie
+  'Gym': 'assets/lottie/gym.json', // Example Lottie
+  'Swimming Pool': 'assets/lottie/swimming.json', // Example Lottie
+  'Power Backup': 'assets/lottie/powerbackup.json', // Example Lottie
+  'Security': 'assets/lottie/security.json', // Example Lottie
 
   // Preferred Habits
-  'Non-smoker': Icons.smoke_free,
-  'Non-drinker': Icons.no_drinks,
-  // Vegetarian: Icons.local_florist (already exists)
-  'Tidy': Icons.cleaning_services, // (already exists)
-  'Quiet': Icons.volume_mute, // (already exists)
-  'Social': Icons.sentiment_very_satisfied, // (already exists)
-  'Respectful': Icons.volunteer_activism,
-  'Financially responsible': Icons.account_balance_wallet,
-  'Pet-friendly': Icons.pets, // (already exists)
+  'Non-smoker': 'assets/lottie/non_smoker.json', // Example Lottie
+  'Non-drinker': 'assets/lottie/no_alcohol.json', // Reusing
+  'Tidy': 'assets/lottie/cleaning_tidy.json', // Reusing
+  'Quiet': 'assets/lottie/very_quiet.json', // Reusing
+  'Social': 'assets/lottie/social_outgoing.json', // Reusing
+  'Respectful': 'assets/lottie/respectful.json', // Example Lottie
+  'Financially responsible': 'assets/lottie/financial_responsible.json', // Example Lottie
+  'Pet-friendly': 'assets/lottie/comfortable_pets.json', // Reusing
 
   // Ideal Qualities
-  // Respectful: Icons.volunteer_activism (already exists)
-  // Tidy: Icons.cleaning_services (already exists)
-  'Communicative': Icons.chat_bubble_outline,
-  'Friendly': Icons.sentiment_satisfied_alt, // (already exists)
-  'Responsible': Icons.check_circle_outline, // (already exists)
-  // Quiet: Icons.volume_mute (already exists)
-  'Social': Icons.group,
-  'Independent': Icons.person_pin,
-  'Shares chores': Icons.handshake,
-  'Financially stable': Icons.paid,
+  'Communicative': 'assets/lottie/communicative.json', // Example Lottie
+  'Friendly': 'assets/lottie/friendly.json', // Example Lottie
+  'Responsible': 'assets/lottie/responsible.json', // Example Lottie
+  'Social': 'assets/lottie/social_group.json', // Example Lottie
+  'Independent': 'assets/lottie/independent.json', // Example Lottie
+  'Shares chores': 'assets/lottie/chores.json', // Example Lottie
+  'Financially stable': 'assets/lottie/financially_stable.json', // Example Lottie
 
   // Deal Breakers
-  'Excessive Noise': Icons.volume_up, // (already exists, used for 'Lively')
-  'Untidiness': Icons.cleaning_services,
-  'Frequent Parties': Icons.party_mode_rounded,
-  'Smoking Indoors': Icons.smoking_rooms,
-  'Unpaid Bills': Icons.money_off,
-  'Lack of Communication': Icons.do_not_disturb_on,
-  'Pets (if not allowed)': Icons.pets,
-  'Late Night Guests': Icons.bedtime,
-  'Drugs': Icons.dangerous,
-  'Disrespectful behavior': Icons.gpp_bad,
+  'Excessive Noise': 'assets/lottie/excessive_noise.json', // Example Lottie
+  'Untidiness': 'assets/lottie/untidiness.json', // Example Lottie
+  'Frequent Parties': 'assets/lottie/frequent_parties.json', // Example Lottie
+  'Smoking Indoors': 'assets/lottie/smoking_indoors.json', // Example Lottie
+  'Unpaid Bills': 'assets/lottie/unpaid_bills.json', // Example Lottie
+  'Lack of Communication': 'assets/lottie/no_communication.json', // Example Lottie
+  'Pets (if not allowed)': 'assets/lottie/no_pets_allowed.json', // Example Lottie
+  'Late Night Guests': 'assets/lottie/late_guests.json', // Example Lottie
+  'Drugs': 'assets/lottie/drugs.json', // Example Lottie
+  'Disrespectful behavior': 'assets/lottie/disrespectful.json', // Example Lottie
 };
 
-// Helper for displaying a single characteristic with icon and text, formatted as a colorful card
+// Helper for displaying a single characteristic with icon and text, formatted as a card-like structure (without a container)
 Widget _buildIconValueCard(String label, String? value, {Color? backgroundColor, Color? iconColor}) {
-  // Use a default icon if not found, or if label itself maps to an icon like 'Gender' or an amenity like 'Wi-Fi'
-  final icon = _characteristicIcons[label] ?? _characteristicIcons[value] ?? Icons.category;
+  if (value == null || value.isEmpty || value == 'N/A') return const SizedBox.shrink(); // Use SizedBox.shrink for empty items
 
-  if (value == null || value.isEmpty || value == 'N/A') return Container();
+  dynamic iconData = _characteristicIcons[label] ?? _characteristicIcons[value];
+  Widget iconWidget;
 
-  return Column(
+  // Determine the icon widget and its size
+  if (iconData is IconData) {
+    iconWidget = Icon(iconData, size: 60, color: Colors.black87); // Increased IconData size
+  } else if (iconData is String && iconData.endsWith('.json')) {
+    iconWidget = Lottie.asset(
+      iconData,
+      width: 90, // Increased Lottie width
+      height: 90, // Increased Lottie height
+      fit: BoxFit.contain,
+      repeat: true,
+    );
+  } else {
+    iconWidget = Icon(Icons.category, size: 60, color: Colors.black87); // Default if not found, Increased size
+  }
+
+  return Column( // Directly use Column instead of Container
     mainAxisSize: MainAxisSize.min,
+    mainAxisAlignment: MainAxisAlignment.center,
     children: [
-      // Add the label here
       Text(
-        label, // Display the label (e.g., "Smoking Habits", or "Gender", or "Wi-Fi")
+        label,
         textAlign: TextAlign.center,
-        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black87), // Increased font for label
+        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black87), // Label text black as per image
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
-      const SizedBox(height: 4), // Increased space
-      Container(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: backgroundColor ?? Colors.grey.shade100,
-        ),
-        padding: const EdgeInsets.all(10), // Increased padding
-        child: Icon(icon, size: 28, color: iconColor ?? Colors.black87), // Increased icon size
-      ),
-      const SizedBox(height: 6), // Increased spacing
+      const SizedBox(height: 8), // Spacing
+      iconWidget, // Directly place the icon widget
+      const SizedBox(height: 8), // Spacing
       Text(
         value,
         textAlign: TextAlign.center,
-        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500), // Increased font
+        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.black87), // Value text black as per image
       ),
     ],
   );
 }
-
 
 // Helper for displaying a grid of characteristics, like "Habits & Lifestyle"
 Widget _buildCharacteristicGrid(String title, List<MapEntry<String, String?>> characteristics) {
@@ -352,39 +353,38 @@ Widget _buildCharacteristicGrid(String title, List<MapEntry<String, String?>> ch
 
   if (validItems.isEmpty) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12), // Increased padding
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.redAccent)), // Increased title
-          const SizedBox(height: 8), // Increased spacing
-          const Text('No details specified.', style: TextStyle(fontSize: 14, color: Colors.grey)), // Increased font
+          Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.redAccent)),
+          const SizedBox(height: 8),
+          const Text('No details specified.', style: TextStyle(fontSize: 14, color: Colors.grey)),
         ],
       ),
     );
   }
 
   return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12), // Increased padding
+    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.redAccent)), // Increased title
-        const SizedBox(height: 10), // Increased spacing
+        Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.redAccent)),
+        const SizedBox(height: 10),
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent( // Changed to MaxCrossAxisExtent
-            maxCrossAxisExtent: 180.0, // Increased max width for each item
-            crossAxisSpacing: 10, // Increased spacing
-            mainAxisSpacing: 10, // Increased spacing
-            childAspectRatio: 1.1, // Adjusted to give more height for larger content
+          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+            maxCrossAxisExtent: 180.0, // Reverted max width for each item
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+            childAspectRatio: 1.0, // Reverted aspect ratio
           ),
           itemCount: validItems.length,
           itemBuilder: (context, index) {
             final entry = validItems[index];
-            final palette = _vibrantColorPalettes[index % _vibrantColorPalettes.length];
-            return _buildIconValueCard(entry.key, entry.value, backgroundColor: palette.key, iconColor: palette.value);
+            return _buildIconValueCard(entry.key, entry.value, backgroundColor: Colors.white, iconColor: Colors.black87);
           },
         ),
       ],
@@ -392,23 +392,20 @@ Widget _buildCharacteristicGrid(String title, List<MapEntry<String, String?>> ch
   );
 }
 
-
 // Helper for displaying preferences with custom icons in a grid (e.g., Night Owl, Early Bird)
-// This map's icons are used directly, but now they'll get vibrant colors
-final Map<String, IconData> _preferenceIcons = {
-  'Night Owl': Icons.nights_stay,
-  'Early Bird': Icons.wb_sunny,
-  'Studious': Icons.book,
-  'Fitness Freak': Icons.fitness_center,
-  'Sporty': Icons.sports_baseball,
-  'Wanderer': Icons.map,
-  'Party Lover': Icons.celebration,
-  'Vegan': Icons.eco,
-  'Music Lover': Icons.music_note,
-  'Artist': Icons.palette,
-  'Gamer': Icons.gamepad,
-  'Cook': Icons.restaurant,
-  // Add more as needed based on your actual preference options
+final Map<String, dynamic> _preferenceIcons = { // Changed to dynamic to hold IconData or Lottie paths
+  'Night Owl': 'assets/lottie/nightowl.json', // Assuming you have this Lottie file
+  'Early Bird': 'assets/lottie/earlyriserrr.json', // Reusing early_riser Lottie file
+  'Studious': 'assets/lottie/studious.json', // Example Lottie
+  'Fitness Freak': 'assets/lottie/fitness_freak.json', // Example Lottie
+  'Sporty': 'assets/lottie/sporty.json', // Example Lottie
+  'Wanderer': 'assets/lottie/wanderer.json', // Example Lottie
+  'Party Lover': 'assets/lottie/party_lover.json', // Example Lottie
+  'Vegan': 'assets/lottie/vegan.json', // Reusing
+  'Music Lover': 'assets/lottie/music_lover.json', // Example Lottie
+  'Artist': 'assets/lottie/artist.json', // Example Lottie
+  'Gamer': 'assets/lottie/gamer.json', // Example Lottie
+  'Cook': 'assets/lottie/cook.json', // Reusing
 };
 
 Widget _buildPreferenceGrid(String title, List<String>? preferences) {
@@ -425,7 +422,7 @@ Widget _buildPreferenceGrid(String title, List<String>? preferences) {
   }
 
   return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12), // Increased padding
+    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -437,38 +434,46 @@ Widget _buildPreferenceGrid(String title, List<String>? preferences) {
             color: Colors.redAccent,
           ),
         ),
-        const SizedBox(height: 10), // Increased spacing
+        const SizedBox(height: 10),
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent( // Changed to MaxCrossAxisExtent
-            maxCrossAxisExtent: 140.0, // Increased max width for each item
-            crossAxisSpacing: 10, // Increased spacing
-            mainAxisSpacing: 10, // Increased spacing
-            childAspectRatio: 1.0, // Adjusted to give more height for larger content
+          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+            maxCrossAxisExtent: 140.0, // Reverted max width for each item
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+            childAspectRatio: 0.9, // Reverted aspect ratio
           ),
           itemCount: preferences.length,
           itemBuilder: (context, index) {
             final preference = preferences[index];
-            final icon = _preferenceIcons[preference] ?? Icons.category;
-            final palette = _vibrantColorPalettes[index % _vibrantColorPalettes.length];
+            dynamic iconData = _preferenceIcons[preference]; // Get icon data (IconData or String)
 
-            return Column(
+            Widget iconWidget;
+            if (iconData is IconData) {
+              iconWidget = Icon(iconData, color: Colors.black87, size: 50); // Increased IconData size
+            } else if (iconData is String && iconData.endsWith('.json')) {
+              iconWidget = Lottie.asset(
+                iconData,
+                width: 80, // Increased Lottie width
+                height: 80, // Increased Lottie height
+                fit: BoxFit.contain,
+                repeat: true,
+              );
+            } else {
+              iconWidget = Icon(Icons.category, color: Colors.black87, size: 50); // Default, Increased size
+            }
+
+            return Column( // Directly use Column instead of Container
               mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: palette.key,
-                  ),
-                  padding: const EdgeInsets.all(10), // Increased padding
-                  child: Icon(icon, color: palette.value, size: 28), // Increased icon size
-                ),
-                const SizedBox(height: 6), // Increased spacing
+                iconWidget, // Icon widget
+                const SizedBox(height: 8), // Spacing
                 Text(
                   preference,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500), // Increased font
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.black87), // Text color black as per image
                 ),
               ],
             );
@@ -508,63 +513,63 @@ class SeekingFlatmateProfileDisplay extends StatelessWidget {
         children: [
           // Profile Header (similar to the image)
           Padding(
-            padding: const EdgeInsets.all(10.0), // Increased padding
+            padding: const EdgeInsets.all(10.0),
             child: Column(
               children: [
                 CircleAvatar(
-                  radius: 50, // Increased avatar size
+                  radius: 50,
                   backgroundColor: Colors.grey[200],
                   backgroundImage: profile.imageUrls != null && profile.imageUrls!.isNotEmpty
                       ? NetworkImage(profile.imageUrls![0])
                       : null,
                   child: profile.imageUrls == null || profile.imageUrls!.isEmpty
-                      ? Icon(Icons.person, size: 50, color: Colors.grey[600]) // Increased icon size
+                      ? Icon(Icons.person, size: 50, color: Colors.grey[600])
                       : null,
                 ),
-                const SizedBox(height: 8), // Increased spacing
+                const SizedBox(height: 8),
                 Text(
                   profile.name ?? 'N/A',
-                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold), // Increased font
+                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 ),
                 Text(
                   '${profile.age?.toString() ?? 'N/A'} years old, ${profile.occupation ?? 'N/A'}',
-                  style: TextStyle(fontSize: 14, color: Colors.grey[700]), // Increased font
+                  style: TextStyle(fontSize: 14, color: Colors.grey[700]),
                 ),
-                const SizedBox(height: 4), // Increased spacing
+                const SizedBox(height: 4),
                 Text(
                   'Looking in ${profile.desiredCity ?? 'N/A'}, ${profile.areaPreference ?? 'N/A'}',
-                  style: TextStyle(fontSize: 14, color: Colors.grey[700]), // Increased font
+                  style: TextStyle(fontSize: 14, color: Colors.grey[700]),
                 ),
-                const SizedBox(height: 8), // Increased spacing
+                const SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     ElevatedButton.icon(
                       onPressed: () { /* Handle chat */ },
-                      icon: const Icon(Icons.chat, size: 20), // Increased icon size
-                      label: const Text('Chat', style: TextStyle(fontSize: 14)), // Increased font
+                      icon: const Icon(Icons.chat, size: 20),
+                      label: const Text('Chat', style: TextStyle(fontSize: 14)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green,
                         foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), // Increased border radius
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8), // Increased padding
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       ),
                     ),
-                    const SizedBox(width: 8), // Increased spacing
+                    const SizedBox(width: 8),
                     ElevatedButton.icon(
                       onPressed: () { /* Handle call */ },
-                      icon: const Icon(Icons.call, size: 20), // Increased icon size
-                      label: const Text('Call', style: TextStyle(fontSize: 14)), // Increased font
+                      icon: const Icon(Icons.call, size: 20),
+                      label: const Text('Call', style: TextStyle(fontSize: 14)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blueAccent,
                         foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), // Increased border radius
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8), // Increased padding
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12), // Increased bottom spacing
+                const SizedBox(height: 12),
               ],
             ),
           ),
@@ -611,11 +616,6 @@ class SeekingFlatmateProfileDisplay extends StatelessWidget {
           ),
 
           // Preferences (using the new grid widget if there's a corresponding field)
-          // Assuming 'preferences' is a list of strings in your SeekingFlatmateProfile
-          // If you have a field like `profile.lifestylePreferences` that returns a List<String>
-          // you would use it here. For demonstration, I'll use a placeholder or modify an existing one.
-          // For now, I'll just put a dummy list for demonstration.
-          // You will need to map your specific profile fields to these categories.
           _buildPreferenceGrid(
             'Lifestyle Preferences',
             // Replace with your actual profile field that holds lifestyle preferences
@@ -657,25 +657,25 @@ class SeekingFlatmateProfileDisplay extends StatelessWidget {
               title: 'Profile Images',
               children: [
                 SizedBox(
-                  height: 150, // Increased height for image list
+                  height: 150,
                   child: ListView.builder(
                     scrollDirection: Axis.horizontal,
                     itemCount: profile.imageUrls!.length,
                     itemBuilder: (context, index) {
                       return Padding(
-                        padding: const EdgeInsets.only(right: 8.0), // Increased padding
+                        padding: const EdgeInsets.only(right: 8.0),
                         child: ClipRRect(
-                          borderRadius: BorderRadius.circular(10), // Increased border radius
+                          borderRadius: BorderRadius.circular(10),
                           child: Image.network(
                             profile.imageUrls![index],
-                            width: 150, // Increased width
-                            height: 150, // Increased height
+                            width: 150,
+                            height: 150,
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) => Container(
                               width: 150,
                               height: 150,
                               color: Colors.grey[300],
-                              child: const Icon(Icons.broken_image, color: Colors.grey, size: 40), // Increased icon size
+                              child: const Icon(Icons.broken_image, color: Colors.grey, size: 40),
                             ),
                           ),
                         ),
@@ -685,7 +685,7 @@ class SeekingFlatmateProfileDisplay extends StatelessWidget {
                 ),
               ],
             ),
-          const SizedBox(height: 20), // Increased bottom padding
+          const SizedBox(height: 20),
         ],
       ),
     );
@@ -710,63 +710,63 @@ class FlatListingProfileDisplay extends StatelessWidget {
         children: [
           // Profile Header (Owner Info)
           Padding(
-            padding: const EdgeInsets.all(10.0), // Increased padding
+            padding: const EdgeInsets.all(10.0),
             child: Column(
               children: [
                 CircleAvatar(
-                  radius: 50, // Increased avatar size
+                  radius: 50,
                   backgroundColor: Colors.grey[200],
                   backgroundImage: profile.imageUrls != null && profile.imageUrls!.isNotEmpty
                       ? NetworkImage(profile.imageUrls![0])
                       : null,
                   child: profile.imageUrls == null || profile.imageUrls!.isEmpty
-                      ? Icon(Icons.person, size: 50, color: Colors.grey[600]) // Increased icon size
+                      ? Icon(Icons.person, size: 50, color: Colors.grey[600])
                       : null,
                 ),
-                const SizedBox(height: 8), // Increased spacing
+                const SizedBox(height: 8),
                 Text(
                   profile.ownerName ?? 'N/A',
-                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold), // Increased font
+                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 ),
                 Text(
                   '${profile.ownerAge?.toString() ?? 'N/A'} years old, ${profile.ownerOccupation ?? 'N/A'}',
-                  style: TextStyle(fontSize: 14, color: Colors.grey[700]), // Increased font
+                  style: TextStyle(fontSize: 14, color: Colors.grey[700]),
                 ),
-                const SizedBox(height: 4), // Increased spacing
+                const SizedBox(height: 4),
                 Text(
                   'Flat in ${profile.desiredCity ?? 'N/A'}, ${profile.areaPreference ?? 'N/A'}',
-                  style: TextStyle(fontSize: 14, color: Colors.grey[700]), // Increased font
+                  style: TextStyle(fontSize: 14, color: Colors.grey[700]),
                 ),
-                const SizedBox(height: 8), // Increased spacing
+                const SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     ElevatedButton.icon(
                       onPressed: () { /* Handle chat */ },
-                      icon: const Icon(Icons.chat, size: 20), // Increased icon size
-                      label: const Text('Chat', style: TextStyle(fontSize: 14)), // Increased font
+                      icon: const Icon(Icons.chat, size: 20),
+                      label: const Text('Chat', style: TextStyle(fontSize: 14)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green,
                         foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), // Increased border radius
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8), // Increased padding
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       ),
                     ),
-                    const SizedBox(width: 8), // Increased spacing
+                    const SizedBox(width: 8),
                     ElevatedButton.icon(
                       onPressed: () { /* Handle call */ },
-                      icon: const Icon(Icons.call, size: 20), // Increased icon size
-                      label: const Text('Call', style: TextStyle(fontSize: 14)), // Increased font
+                      icon: const Icon(Icons.call, size: 20),
+                      label: const Text('Call', style: TextStyle(fontSize: 14)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blueAccent,
                         foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), // Increased border radius
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8), // Increased padding
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12), // Increased bottom spacing
+                const SizedBox(height: 12),
               ],
             ),
           ),
@@ -852,25 +852,25 @@ class FlatListingProfileDisplay extends StatelessWidget {
               title: 'Flat Images',
               children: [
                 SizedBox(
-                  height: 150, // Increased height for image list
+                  height: 150,
                   child: ListView.builder(
                     scrollDirection: Axis.horizontal,
                     itemCount: profile.imageUrls!.length,
                     itemBuilder: (context, index) {
                       return Padding(
-                        padding: const EdgeInsets.only(right: 8.0), // Increased padding
+                        padding: const EdgeInsets.only(right: 8.0),
                         child: ClipRRect(
-                          borderRadius: BorderRadius.circular(10), // Increased border radius
+                          borderRadius: BorderRadius.circular(10),
                           child: Image.network(
                             profile.imageUrls![index],
-                            width: 150, // Increased width
-                            height: 150, // Increased height
+                            width: 150,
+                            height: 150,
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) => Container(
                               width: 150,
                               height: 150,
                               color: Colors.grey[300],
-                              child: const Icon(Icons.broken_image, color: Colors.grey, size: 40), // Increased icon size
+                              child: const Icon(Icons.broken_image, color: Colors.grey, size: 40),
                             ),
                           ),
                         ),
@@ -880,7 +880,7 @@ class FlatListingProfileDisplay extends StatelessWidget {
                 ),
               ],
             ),
-          const SizedBox(height: 20), // Increased bottom padding
+          const SizedBox(height: 20),
         ],
       ),
     );
