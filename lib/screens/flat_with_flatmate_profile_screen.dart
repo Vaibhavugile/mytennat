@@ -551,7 +551,7 @@ class _FlatWithFlatmateProfileScreenState
         return section['title'];
       }
     }
-    return '';
+    return 'Unknown Section'; // Default title if no section matches
   }
 
   double _getCurrentSectionProgress() {
@@ -565,9 +565,9 @@ class _FlatWithFlatmateProfileScreenState
         return (currentPageInSection + 1) / pagesInSection;
       }
     }
+    // Return 0.0 or a sensible default if the current page is not in any defined section
     return 0.0;
   }
-
   @override
   void initState() {
     super.initState();
@@ -1487,6 +1487,7 @@ class _FlatWithFlatmateProfileScreenState
     setState(() {
       _isSubmitting = true; // Show loading
     });
+
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1498,11 +1499,15 @@ class _FlatWithFlatmateProfileScreenState
       return;
     }
 
-    // Prepare data for Firestore
-    final profileData = {
+    // Get a reference to the 'seekingFlatmateProfiles' subcollection for the current user
+    final CollectionReference seekingFlatmateProfilesCollection =
+    FirebaseFirestore.instance.collection('users').doc(user.uid).collection('seekingFlatmateProfiles');
+
+    // --- Use your provided profileData structure ---
+    final Map<String, dynamic> profileData = {
       "uid": user.uid,
-      "email": user.email,//
-      "displayName": _seekingFlatmateProfile.name,
+      "email": user.email,
+      "displayName": _seekingFlatmateProfile.name, // Using 'name' for displayName
       "age": _seekingFlatmateProfile.age ?? 0,
       "gender": _seekingFlatmateProfile.gender,
       "occupation": _seekingFlatmateProfile.occupation,
@@ -1520,22 +1525,21 @@ class _FlatWithFlatmateProfileScreenState
         "cleanliness": _seekingFlatmateProfile.cleanliness,
         "socialPreferences": _seekingFlatmateProfile.socialHabits,
         "workSchedule": _seekingFlatmateProfile.workSchedule,
-        "noiseTolerance": _seekingFlatmateProfile.noiseLevel,//
+        "noiseTolerance": _seekingFlatmateProfile.noiseLevel,
         "smoking": _seekingFlatmateProfile.smokingHabits,
         "drinking": _seekingFlatmateProfile.drinkingHabits,
         "food": _seekingFlatmateProfile.foodPreference,
-        "visitorsPolicy": _seekingFlatmateProfile.visitorsPolicy,//
+        "visitorsPolicy": _seekingFlatmateProfile.visitorsPolicy,
         "petOwnership": _seekingFlatmateProfile.petOwnership,
         "petTolerance": _seekingFlatmateProfile.petTolerance,
         "sleepingSchedule": _seekingFlatmateProfile.sleepingSchedule,
-        "sharingCommonSpaces": _seekingFlatmateProfile.sharingCommonSpaces,//
-        "guestOvernightStays": _seekingFlatmateProfile.guestsOvernightPolicy,//
-        "personalSpaceVsSocializing": _seekingFlatmateProfile.personalSpaceVsSocialization,//
+        "sharingCommonSpaces": _seekingFlatmateProfile.sharingCommonSpaces,
+        "guestOvernightStays": _seekingFlatmateProfile.guestsOvernightPolicy,
+        "personalSpaceVsSocialization": _seekingFlatmateProfile.personalSpaceVsSocialization,
       },
       "flatRequirements": {
         "preferredFlatType": _seekingFlatmateProfile.preferredFlatType,
-        "preferredFurnishedStatus":
-        _seekingFlatmateProfile.preferredFurnishedStatus,
+        "preferredFurnishedStatus": _seekingFlatmateProfile.preferredFurnishedStatus,
         "amenitiesDesired": _seekingFlatmateProfile.amenitiesDesired,
       },
       "flatmatePreferences": {
@@ -1547,24 +1551,41 @@ class _FlatWithFlatmateProfileScreenState
         "dealBreakers": _seekingFlatmateProfile.dealBreakers,
       },
       "isProfileComplete": true,
-      "createdAt": FieldValue.serverTimestamp(),
-      "lastUpdated": FieldValue.serverTimestamp(),
+      // Timestamps will be handled below based on new/update
+      // "createdAt": FieldValue.serverTimestamp(), // Removed from here
+      // "lastUpdated": FieldValue.serverTimestamp(), // Removed from here
     };
 
     try {
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .set(profileData, SetOptions(merge: true));
+      if (_seekingFlatmateProfile.documentId.isEmpty) {
+        // This is a new profile, add it to the subcollection
+        profileData['createdAt'] = FieldValue.serverTimestamp();
+        profileData['lastUpdated'] = FieldValue.serverTimestamp();
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Seeking Flatmate Profile Submitted Successfully!')),
-      );
+        DocumentReference newDocRef = await seekingFlatmateProfilesCollection.add(profileData);
+        // Update the local model with the new Firestore document ID
+        _seekingFlatmateProfile.documentId = newDocRef.id;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('New Seeking Flatmate Profile Created Successfully!')),
+        );
+      } else {
+        // This is an existing profile, update it
+        profileData['lastUpdated'] = FieldValue.serverTimestamp();
+        // Do not update 'createdAt' on existing documents
+        profileData.remove('createdAt');
+
+        await seekingFlatmateProfilesCollection.doc(_seekingFlatmateProfile.documentId).update(profileData);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Seeking Flatmate Profile Updated Successfully!')),
+        );
+      }
+
       if (mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const HomePage()),
+          MaterialPageRoute(builder: (context) => const HomePage()), // Consider MyProfilesScreen
         );
       }
     } catch (e) {
@@ -1617,7 +1638,10 @@ class _FlatWithFlatmateProfileScreenState
                 child: Column(
                   children: [
                     Text(
-                      'Section ${_sections.indexOf(_sections.firstWhere((s) => _currentPage >= s['startPage'] && _currentPage <= s['endPage'])) + 1} of ${_sections.length}: ${_getCurrentSectionTitle()}',
+                      'Section ${_sections.indexOf(_sections.firstWhere(
+                              (s) => _currentPage >= s['startPage'] && _currentPage <= s['endPage'],
+                          orElse: () => {'title': 'Unknown Section', 'startPage': 0, 'endPage': 0} // Provide a default/fallback
+                      )) + 1} of ${_sections.length}: ${_getCurrentSectionTitle()}',
                       style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                       textAlign: TextAlign.center,
                     ),

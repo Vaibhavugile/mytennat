@@ -3,8 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mytennat/widgets/profile_display_widgets.dart'; // Import the display widgets
-import 'package:mytennat/screens/flat_with_flatmate_profile_screen.dart'; // Import SeekingFlatmateProfile model
+// Corrected imports for profile models - assuming they are in a 'models' folder
 import 'package:mytennat/screens/flatmate_profile_screen.dart'; // Import FlatListingProfile model
+import 'package:mytennat/screens/flat_with_flatmate_profile_screen.dart'; // Import SeekingFlatmateProfile model
 
 class ViewProfileScreen extends StatefulWidget {
   // Make userId optional, allowing it to be null if viewing own profile
@@ -26,6 +27,11 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
   // Error message state
   String? _errorMessage;
 
+  // Variables to hold both profile types if they exist
+  FlatListingProfile? _flatListingProfileData;
+  SeekingFlatmateProfile? _seekingFlatmateProfileData;
+  String? _currentDisplayProfileType; // To manage which profile is currently shown
+
   @override
   void initState() {
     super.initState();
@@ -40,6 +46,11 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
     setState(() {
       _isLoading = true; // Set loading to true while fetching
       _errorMessage = null; // Clear any previous error messages
+      _userProfile = null; // Clear previous profile data
+      _userType = null; // Clear previous user type
+      _flatListingProfileData = null; // Clear previous flat listing profile data
+      _seekingFlatmateProfileData = null; // Clear previous seeking flatmate profile data
+      _currentDisplayProfileType = null; // Clear current display type
     });
 
     final User? currentUser = FirebaseAuth.instance.currentUser;
@@ -55,29 +66,38 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
     }
 
     try {
-      // Fetch the user's document directly from the 'users' collection
-      final userDoc = await FirebaseFirestore.instance.collection('users').doc(targetUserId).get();
+      final userDocRef = FirebaseFirestore.instance.collection('users').doc(targetUserId);
 
-      if (userDoc.exists && userDoc.data() != null) {
-        final userData = userDoc.data()!; // Get all data from the user document
+      // Try to fetch 'flatListings' profile
+      final flatListingsSnapshot = await userDocRef.collection('flatListings').limit(1).get();
+      if (flatListingsSnapshot.docs.isNotEmpty) {
+        final doc = flatListingsSnapshot.docs.first;
+        _flatListingProfileData = FlatListingProfile.fromMap(doc.data(), doc.id);
+      }
 
-        if (userData.containsKey('userType')) {
-          _userType = userData['userType']; // Get the user's profile type
+      // Try to fetch 'seekingFlatmateProfiles' profile
+      final seekingFlatmateProfilesSnapshot = await userDocRef.collection('seekingFlatmateProfiles').limit(1).get();
+      if (seekingFlatmateProfilesSnapshot.docs.isNotEmpty) {
+        final doc = seekingFlatmateProfilesSnapshot.docs.first;
+        _seekingFlatmateProfileData = SeekingFlatmateProfile.fromMap(doc.data(), doc.id);
+      }
 
-          // Based on userType, create the specific profile data object
-          // Pass the entire userData map and the document ID (targetUserId)
-          if (_userType == 'seeking_flatmate') {
-            _userProfile = SeekingFlatmateProfile.fromMap(userData, targetUserId);
-          } else if (_userType == 'flat_listing') {
-            _userProfile = FlatListingProfile.fromMap(userData, targetUserId);
-          } else {
-            _errorMessage = 'Unknown user profile type: $_userType for user ID: $targetUserId';
-          }
-        } else {
-          _errorMessage = 'User type not defined in profile for user ID: $targetUserId. Profile might be incomplete.';
-        }
+      // Determine which profile to display initially
+      if (_flatListingProfileData != null && _seekingFlatmateProfileData != null) {
+        // If both exist, default to Flat Listing or based on user preference
+        _userProfile = _flatListingProfileData;
+        _userType = 'flat_listing';
+        _currentDisplayProfileType = 'flat_listing';
+      } else if (_flatListingProfileData != null) {
+        _userProfile = _flatListingProfileData;
+        _userType = 'flat_listing';
+        _currentDisplayProfileType = 'flat_listing';
+      } else if (_seekingFlatmateProfileData != null) {
+        _userProfile = _seekingFlatmateProfileData;
+        _userType = 'seeking_flatmate';
+        _currentDisplayProfileType = 'seeking_flatmate';
       } else {
-        _errorMessage = 'User profile not found for user ID: $targetUserId. It might have been deleted or never created.';
+        _errorMessage = 'No profile found for user ID: $targetUserId. Profile might be incomplete or not created.';
       }
     } catch (e) {
       // Catch and display any errors during the fetch process
@@ -90,15 +110,55 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
     }
   }
 
+  // Method to switch the displayed profile
+  void _switchProfile(String profileType) {
+    setState(() {
+      _currentDisplayProfileType = profileType;
+      if (profileType == 'flat_listing') {
+        _userProfile = _flatListingProfileData;
+        _userType = 'flat_listing';
+      } else if (profileType == 'seeking_flatmate') {
+        _userProfile = _seekingFlatmateProfileData;
+        _userType = 'seeking_flatmate';
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        // Dynamically set title based on whether it's current user's profile or another's
         title: Text(widget.userId == null ? 'My Profile' : 'User Profile', style: const TextStyle(color: Colors.white)),
         backgroundColor: Colors.redAccent,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
+        actions: [
+          if (widget.userId == null && (_flatListingProfileData != null || _seekingFlatmateProfileData != null))
+            PopupMenuButton<String>(
+              onSelected: _switchProfile,
+              itemBuilder: (BuildContext context) {
+                List<PopupMenuEntry<String>> items = [];
+                if (_flatListingProfileData != null) {
+                  items.add(
+                    PopupMenuItem<String>(
+                      value: 'flat_listing',
+                      child: Text('My Flat Listing Profile'),
+                    ),
+                  );
+                }
+                if (_seekingFlatmateProfileData != null) {
+                  items.add(
+                    PopupMenuItem<String>(
+                      value: 'seeking_flatmate',
+                      child: Text('My Seeking Flatmate Profile'),
+                    ),
+                  );
+                }
+                return items;
+              },
+              icon: Icon(Icons.swap_horiz, color: Colors.white),
+            ),
+        ],
       ),
       body: _isLoading
           ? const Center(
@@ -125,8 +185,7 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
                   backgroundColor: Colors.redAccent,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
                 child: const Text('Retry'),
               ),
@@ -142,11 +201,9 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
           style: TextStyle(fontSize: 18, color: Colors.grey),
         ),
       )
-          : _userType == 'seeking_flatmate'
-          ? SeekingFlatmateProfileDisplay(
-          profile: _userProfile as SeekingFlatmateProfile) // Display seeking flatmate profile
-          : FlatListingProfileDisplay(
-          profile: _userProfile as FlatListingProfile), // Display flat listing profile
+          : _currentDisplayProfileType == 'seeking_flatmate'
+          ? SeekingFlatmateProfileDisplay(profile: _userProfile as SeekingFlatmateProfile) // Display seeking flatmate profile
+          : FlatListingProfileDisplay(profile: _userProfile as FlatListingProfile), // Display flat listing profile
     );
   }
 }

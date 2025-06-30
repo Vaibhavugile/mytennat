@@ -6,9 +6,9 @@ import 'package:mytennat/screens/edit_profile_screen.dart';
 import 'package:mytennat/screens/matching_screen.dart';
 import 'package:mytennat/screens/matches_list_screen.dart';
 import 'package:mytennat/screens/ActivityScreen.dart';
-import 'package:mytennat/widgets/profile_display_widgets.dart'; // NEW: Import the ViewProfileScreen
-
-import 'package:mytennat/screens/view_profile_screen.dart'; // Add this import
+import 'package:mytennat/widgets/profile_display_widgets.dart';
+import 'package:mytennat/screens/view_profile_screen.dart';
+import 'package:mytennat/screens/more_profile_screen.dart'; // Import the MoreProfileScreen
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -34,16 +34,25 @@ class _HomePageState extends State<HomePage> {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       try {
-        final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-        if (doc.exists && doc.data()!.containsKey('userType')) {
-          setState(() {
-            _userProfileType = doc.data()!['userType'];
-          });
-        } else {
-          setState(() {
-            _userProfileType = null;
-          });
-        }
+        final userDocRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
+
+        // Check for 'flatListings' subcollection
+        final flatListingsSnapshot = await userDocRef.collection('flatListings').limit(1).get();
+        final bool hasFlatListingProfile = flatListingsSnapshot.docs.isNotEmpty;
+
+        // Check for 'seekingFlatmateProfiles' subcollection
+        final seekingFlatmateProfilesSnapshot = await userDocRef.collection('seekingFlatmateProfiles').limit(1).get();
+        final bool hasSeekingFlatmateProfile = seekingFlatmateProfilesSnapshot.docs.isNotEmpty;
+
+        setState(() {
+          if (hasFlatListingProfile) {
+            _userProfileType = 'flat_listing';
+          } else if (hasSeekingFlatmateProfile) {
+            _userProfileType = 'seeking_flatmate';
+          } else {
+            _userProfileType = null; // No profile type found
+          }
+        });
       } catch (e) {
         print("Error fetching user profile type: $e");
         setState(() {
@@ -85,13 +94,23 @@ class _HomePageState extends State<HomePage> {
               );
             },
           ),
-          // NEW: View Profile button in AppBar actions
+          // Existing View Profile button
           IconButton(
             icon: const Icon(Icons.person, color: Colors.white, size: 28),
             onPressed: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const ViewProfileScreen()),
+              );
+            },
+          ),
+          // NEW: More Profiles button
+          IconButton(
+            icon: const Icon(Icons.menu, color: Colors.white, size: 28), // Or a different icon like Icons.more_horiz
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const MoreProfileScreen()),
               );
             },
           ),

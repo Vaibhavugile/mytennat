@@ -1666,6 +1666,7 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
     setState(() {
       _isSubmitting = true; // Show loading
     });
+
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1677,8 +1678,12 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
       return;
     }
 
-    // Prepare data for Firestore
-    final profileData = {
+    // Get a reference to the 'flatListings' subcollection for the current user
+    final CollectionReference flatListingsCollection =
+    FirebaseFirestore.instance.collection('users').doc(user.uid).collection('flatListings');
+
+    // --- Use your provided profileData structure ---
+    final Map<String, dynamic> profileData = {
       "uid": user.uid,
       "email": user.email,
       "displayName": _flatListingProfile.ownerName,
@@ -1703,7 +1708,7 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
         "workSchedule": _flatListingProfile.workSchedule,
         "sharingCommonSpaces": _flatListingProfile.sharingCommonSpaces,
         "guestOvernightStays": _flatListingProfile.guestsOvernightPolicy,
-        "personalSpaceVsSocializing": _flatListingProfile.personalSpaceVsSocialization,
+        "personalSpaceVsSocialization": _flatListingProfile.personalSpaceVsSocialization,
       },
       "flatDetails": {
         "flatType": _flatListingProfile.flatType,
@@ -1726,28 +1731,48 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
         "preferredFlatmateGender": _flatListingProfile.preferredGender,
         "preferredFlatmateAge": _flatListingProfile.preferredAgeGroup,
         "preferredOccupation": _flatListingProfile.preferredOccupation,
-        "preferredHabits": _flatListingProfile.preferredHabits,
         "idealQualities": _flatListingProfile.flatmateIdealQualities,
         "dealBreakers": _flatListingProfile.flatmateDealBreakers,
+        // Ensure preferredHabits is included if it's a field in your model,
+        // it was missing from your habits section in the provided `profileData`
+        // if you want it here: "preferredHabits": _flatListingProfile.preferredHabits,
       },
       "isProfileComplete": true,
-      "createdAt": FieldValue.serverTimestamp(),
-      "lastUpdated": FieldValue.serverTimestamp(),
+      // Timestamps will be handled below based on new/update
+      // "createdAt": FieldValue.serverTimestamp(), // Removed from here
+      // "lastUpdated": FieldValue.serverTimestamp(), // Removed from here
     };
 
     try {
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .set(profileData, SetOptions(merge: true));
+      if (_flatListingProfile.documentId.isEmpty) {
+        // This is a new listing, add it to the subcollection
+        profileData['createdAt'] = FieldValue.serverTimestamp();
+        profileData['lastUpdated'] = FieldValue.serverTimestamp();
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Flat Listing Profile Submitted Successfully!')),
-      );
+        DocumentReference newDocRef = await flatListingsCollection.add(profileData);
+        // Update the local model with the new Firestore document ID
+        _flatListingProfile.documentId = newDocRef.id;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('New Flat Listing Profile Created Successfully!')),
+        );
+      } else {
+        // This is an existing listing, update it
+        profileData['lastUpdated'] = FieldValue.serverTimestamp();
+        // Do not update 'createdAt' on existing documents
+        profileData.remove('createdAt');
+
+        await flatListingsCollection.doc(_flatListingProfile.documentId).update(profileData);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Flat Listing Profile Updated Successfully!')),
+        );
+      }
+
       if (mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const HomePage()),
+          MaterialPageRoute(builder: (context) => const HomePage()), // Consider MyProfilesScreen
         );
       }
     } catch (e) {
@@ -1761,6 +1786,7 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
       });
     }
   }
+
 
   void _submitProfile() {
     print('Submitting Flat Listing Profile:');

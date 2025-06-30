@@ -180,7 +180,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     }
   }
 
-  // New method to handle navigation based on user profile existence
+  // Updated method to handle navigation based on user profile existence
   Future<void> _navigateToNextScreen() async {
     setState(() {
       _loading = false;
@@ -188,26 +188,31 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
 
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      final userDocRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
 
-      if (userDoc.exists) {
-        debugPrint('User profile exists. Navigating to HomePage.'); // Log to console
-        // User exists in Firestore, navigate to HomePage
+      // Check for flatListings subcollection
+      final flatListingsSnapshot = await userDocRef.collection('flatListings').limit(1).get();
+      final bool hasFlatListingProfile = flatListingsSnapshot.docs.isNotEmpty;
+
+      // Check for seekingFlatmateProfiles subcollection
+      final seekingFlatmateProfilesSnapshot = await userDocRef.collection('seekingFlatmateProfiles').limit(1).get();
+      final bool hasSeekingFlatmateProfile = seekingFlatmateProfilesSnapshot.docs.isNotEmpty;
+
+      if (hasFlatListingProfile || hasSeekingFlatmateProfile) {
+        debugPrint('User has an existing profile (flat listing or seeking flatmate). Navigating to HomePage.');
         Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const HomePage()), // Replace with your HomePage
+          MaterialPageRoute(builder: (context) => const HomePage()),
               (Route<dynamic> route) => false,
         );
       } else {
-        debugPrint('New user. Navigating to profile creation (SelectionScreen).'); // Log to console
-        // New user, navigate to profile creation (SelectionScreen)
+        debugPrint('New user. No existing profiles found. Navigating to profile creation (SelectionScreen).');
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const SelectionScreen()),
               (Route<dynamic> route) => false,
         );
       }
     } else {
-      debugPrint('Authentication failed: No current user after sign-in attempt.'); // Log to console
-      // This case should ideally not happen if signInWithCredential was successful
+      debugPrint('Authentication failed: No current user after sign-in attempt.');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Authentication failed. Please try again.')),
       );
