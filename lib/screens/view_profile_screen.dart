@@ -6,6 +6,7 @@ import 'package:mytennat/widgets/profile_display_widgets.dart'; // Import the di
 // Corrected imports for profile models - assuming they are in a 'models' folder
 import 'package:mytennat/screens/flatmate_profile_screen.dart'; // Import FlatListingProfile model
 import 'package:mytennat/screens/flat_with_flatmate_profile_screen.dart'; // Import SeekingFlatmateProfile model
+import 'package:shared_preferences/shared_preferences.dart'; // Import SharedPreferences
 
 class ViewProfileScreen extends StatefulWidget {
   // Make userId optional, allowing it to be null if viewing own profile
@@ -18,19 +19,24 @@ class ViewProfileScreen extends StatefulWidget {
 }
 
 class _ViewProfileScreenState extends State<ViewProfileScreen> {
-  // Variable to store the fetched user profile data
+  // Variable to store the currently displayed user profile data
   dynamic _userProfile;
-  // Variable to store the user's profile type (e.g., 'seeking_flatmate', 'flat_listing')
+  // Variable to store the type of the currently displayed user's profile (e.g., 'seeking_flatmate', 'flat_listing')
   String? _userType;
   // Loading indicator state
   bool _isLoading = true;
   // Error message state
   String? _errorMessage;
 
-  // Variables to hold both profile types if they exist
-  FlatListingProfile? _flatListingProfileData;
-  SeekingFlatmateProfile? _seekingFlatmateProfileData;
-  String? _currentDisplayProfileType; // To manage which profile is currently shown
+  // Lists to hold multiple profiles of each type
+  List<FlatListingProfile> _flatListingProfiles = [];
+  List<SeekingFlatmateProfile> _seekingFlatmateProfiles = [];
+  // To keep track of the ID of the currently displayed profile
+  String? _currentDisplayProfileId;
+
+  // Key for SharedPreferences to store the last selected profile ID
+  // It's good practice to make this dynamic per user if multiple users can log in
+  static const String _lastSelectedProfileKey = 'lastSelectedProfileId_';
 
   @override
   void initState() {
@@ -48,14 +54,16 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
       _errorMessage = null; // Clear any previous error messages
       _userProfile = null; // Clear previous profile data
       _userType = null; // Clear previous user type
-      _flatListingProfileData = null; // Clear previous flat listing profile data
-      _seekingFlatmateProfileData = null; // Clear previous seeking flatmate profile data
-      _currentDisplayProfileType = null; // Clear current display type
+      _flatListingProfiles = []; // Clear previous flat listing profiles
+      _seekingFlatmateProfiles = []; // Clear previous seeking flatmate profiles
+      _currentDisplayProfileId = null; // Clear current display ID
     });
 
     final User? currentUser = FirebaseAuth.instance.currentUser;
     // Determine the target user ID: use the one passed via widget, or the current authenticated user's ID
     final String? targetUserId = widget.userId ?? currentUser?.uid;
+
+    print('[_fetchUserProfile] Target User ID: $targetUserId');
 
     if (targetUserId == null) {
       setState(() {
@@ -68,64 +76,159 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
     try {
       final userDocRef = FirebaseFirestore.instance.collection('users').doc(targetUserId);
 
-      // Try to fetch 'flatListings' profile
-      final flatListingsSnapshot = await userDocRef.collection('flatListings').limit(1).get();
-      if (flatListingsSnapshot.docs.isNotEmpty) {
-        final doc = flatListingsSnapshot.docs.first;
-        _flatListingProfileData = FlatListingProfile.fromMap(doc.data(), doc.id);
+      // Fetch all 'flatListings' profiles
+      final flatListingsSnapshot = await userDocRef.collection('flatListings').get();
+      _flatListingProfiles = flatListingsSnapshot.docs
+          .map((doc) => FlatListingProfile.fromMap(doc.data(), doc.id))
+          .toList();
+      print('[_fetchUserProfile] Fetched Flat Listing Profiles: ${_flatListingProfiles.length}');
+      for (var p in _flatListingProfiles) {
+        print('  - Flat Listing ID: ${p.documentId}, Owner Name: ${p.ownerName}');
       }
 
-      // Try to fetch 'seekingFlatmateProfiles' profile
-      final seekingFlatmateProfilesSnapshot = await userDocRef.collection('seekingFlatmateProfiles').limit(1).get();
-      if (seekingFlatmateProfilesSnapshot.docs.isNotEmpty) {
-        final doc = seekingFlatmateProfilesSnapshot.docs.first;
-        _seekingFlatmateProfileData = SeekingFlatmateProfile.fromMap(doc.data(), doc.id);
+      // Fetch all 'seekingFlatmateProfiles' profiles
+      final seekingFlatmateProfilesSnapshot = await userDocRef.collection('seekingFlatmateProfiles').get();
+      _seekingFlatmateProfiles = seekingFlatmateProfilesSnapshot.docs
+          .map((doc) => SeekingFlatmateProfile.fromMap(doc.data(), doc.id))
+          .toList();
+      print('[_fetchUserProfile] Fetched Seeking Flatmate Profiles: ${_seekingFlatmateProfiles.length}');
+      for (var p in _seekingFlatmateProfiles) {
+        print('  - Seeking Flatmate ID: ${p.documentId}, Name: ${p.name}');
       }
 
-      // Determine which profile to display initially
-      if (_flatListingProfileData != null && _seekingFlatmateProfileData != null) {
-        // If both exist, default to Flat Listing or based on user preference
-        _userProfile = _flatListingProfileData;
-        _userType = 'flat_listing';
-        _currentDisplayProfileType = 'flat_listing';
-      } else if (_flatListingProfileData != null) {
-        _userProfile = _flatListingProfileData;
-        _userType = 'flat_listing';
-        _currentDisplayProfileType = 'flat_listing';
-      } else if (_seekingFlatmateProfileData != null) {
-        _userProfile = _seekingFlatmateProfileData;
-        _userType = 'seeking_flatmate';
-        _currentDisplayProfileType = 'seeking_flatmate';
-      } else {
-        _errorMessage = 'No profile found for user ID: $targetUserId. Profile might be incomplete or not created.';
+      // --- Logic to load last selected profile from SharedPreferences ---
+      bool profileFoundAndSet = false;
+      if (currentUser != null) { // Only try to load if a current user is logged in
+        final prefs = await SharedPreferences.getInstance();
+        final lastSelectedId = prefs.getString(_lastSelectedProfileKey + currentUser.uid);
+        print('[_fetchUserProfile] Last selected profile ID from preferences: $lastSelectedId');
+
+        if (lastSelectedId != null) {
+          // Try to find the last selected profile in flat listings
+          try {
+            final foundFlatListing = _flatListingProfiles.firstWhere(
+                    (p) => p.documentId == lastSelectedId,
+                orElse: () => throw Exception('Not found'));
+            _userProfile = foundFlatListing;
+            _userType = 'flat_listing';
+            _currentDisplayProfileId = lastSelectedId;
+            profileFoundAndSet = true;
+            print('[_fetchUserProfile] Set initial display to last selected Flat Listing: $_currentDisplayProfileId');
+          } catch (_) {
+            // If not found in flat listings, try in seeking flatmate profiles
+            try {
+              final foundSeekingFlatmate = _seekingFlatmateProfiles.firstWhere(
+                      (p) => p.documentId == lastSelectedId,
+                  orElse: () => throw Exception('Not found'));
+              _userProfile = foundSeekingFlatmate;
+              _userType = 'seeking_flatmate';
+              _currentDisplayProfileId = lastSelectedId;
+              profileFoundAndSet = true;
+              print('[_fetchUserProfile] Set initial display to last selected Seeking Flatmate: $_currentDisplayProfileId');
+            } catch (__) {
+              print('[_fetchUserProfile] Last selected profile ID not found in fetched profiles (or was invalid).');
+              // Last selected ID not found in either, proceed to default logic
+            }
+          }
+        }
+      }
+
+      // If no last selected profile was found or it's not applicable, default to first available
+      if (!profileFoundAndSet) {
+        if (_flatListingProfiles.isNotEmpty) {
+          _userProfile = _flatListingProfiles.first;
+          _userType = 'flat_listing';
+          _currentDisplayProfileId = _flatListingProfiles.first.documentId;
+          print('[_fetchUserProfile] Default initial display: First Flat Listing - ID: $_currentDisplayProfileId');
+        } else if (_seekingFlatmateProfiles.isNotEmpty) {
+          _userProfile = _seekingFlatmateProfiles.first;
+          _userType = 'seeking_flatmate';
+          _currentDisplayProfileId = _seekingFlatmateProfiles.first.documentId;
+          print('[_fetchUserProfile] Default initial display: First Seeking Flatmate - ID: $_currentDisplayProfileId');
+        } else {
+          _errorMessage = 'No profile found for user ID: $targetUserId. Profile might be incomplete or not created.';
+          print('[_fetchUserProfile] Error: $_errorMessage');
+        }
       }
     } catch (e) {
       // Catch and display any errors during the fetch process
       _errorMessage = 'Error fetching profile for $targetUserId: ${e.toString()}';
-      print('Error fetching profile for $targetUserId: $e'); // Log the error for debugging
+      print('[_fetchUserProfile] Error fetching profile for $targetUserId: $e'); // Log the error for debugging
     } finally {
       setState(() {
         _isLoading = false; // Set loading to false once fetching is complete
+        print('[_fetchUserProfile] Loading complete. _userType: $_userType, _currentDisplayProfileId: $_currentDisplayProfileId');
       });
     }
   }
 
   // Method to switch the displayed profile
-  void _switchProfile(String profileType) {
+  void _switchProfile(String profileIdentifier) async { // Make async to use SharedPreferences
+    print('[_switchProfile] Attempting to switch to: $profileIdentifier');
     setState(() {
-      _currentDisplayProfileType = profileType;
+      _isLoading = true; // Show loading while switching
+    });
+
+    String profileType;
+    String profileId;
+
+    if (profileIdentifier.startsWith('flat_listing_')) {
+      profileType = 'flat_listing';
+      profileId = profileIdentifier.substring('flat_listing_'.length);
+    } else if (profileIdentifier.startsWith('seeking_flatmate_')) {
+      profileType = 'seeking_flatmate';
+      profileId = profileIdentifier.substring('seeking_flatmate_'.length);
+    } else {
+      print('[_switchProfile] Invalid profile identifier format: $profileIdentifier');
+      setState(() {
+        _errorMessage = 'Invalid profile selection.';
+        _isLoading = false;
+      });
+      return;
+    }
+
+    print('[_switchProfile] Parsed - Type: $profileType, ID: $profileId');
+
+    try {
+      dynamic selectedProfile;
       if (profileType == 'flat_listing') {
-        _userProfile = _flatListingProfileData;
+        selectedProfile = _flatListingProfiles.firstWhere((p) => p.documentId == profileId);
         _userType = 'flat_listing';
       } else if (profileType == 'seeking_flatmate') {
-        _userProfile = _seekingFlatmateProfileData;
+        selectedProfile = _seekingFlatmateProfiles.firstWhere((p) => p.documentId == profileId);
         _userType = 'seeking_flatmate';
       }
-    });
+
+      if (selectedProfile != null) {
+        _userProfile = selectedProfile;
+        _currentDisplayProfileId = profileId;
+
+        // Save the currently selected profile ID
+        final prefs = await SharedPreferences.getInstance();
+        final User? currentUser = FirebaseAuth.instance.currentUser;
+        if (currentUser != null) {
+          await prefs.setString(_lastSelectedProfileKey + currentUser.uid, profileId);
+          print('[_switchProfile] Saved last selected profile ID: $profileId for user ${currentUser.uid}');
+        }
+        print('[_switchProfile] Switched to $profileType - ID: $_currentDisplayProfileId');
+      } else {
+        throw Exception('Profile not found after parsing.');
+      }
+
+      _errorMessage = null; // Clear any previous error on successful switch
+    } catch (e) {
+      print('[_switchProfile] Error finding or setting profile with ID $profileId and type $profileType: $e');
+      _errorMessage = 'Could not find the selected profile. It might have been deleted.';
+    } finally {
+      setState(() {
+        _isLoading = false; // Stop loading
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    print('[build] Rebuilding ViewProfileScreen. IsLoading: $_isLoading, Error: $_errorMessage, UserType: $_userType');
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.userId == null ? 'My Profile' : 'User Profile', style: const TextStyle(color: Colors.white)),
@@ -133,30 +236,58 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
-          if (widget.userId == null && (_flatListingProfileData != null || _seekingFlatmateProfileData != null))
+          // Only show dropdown if it's the current user's profile and they have at least one profile
+          if (widget.userId == null && (_flatListingProfiles.isNotEmpty || _seekingFlatmateProfiles.isNotEmpty))
             PopupMenuButton<String>(
               onSelected: _switchProfile,
               itemBuilder: (BuildContext context) {
                 List<PopupMenuEntry<String>> items = [];
-                if (_flatListingProfileData != null) {
+
+                if (_flatListingProfiles.isNotEmpty) {
                   items.add(
-                    PopupMenuItem<String>(
-                      value: 'flat_listing',
-                      child: Text('My Flat Listing Profile'),
+                    const PopupMenuItem<String>(
+                      enabled: false, // Make this a non-selectable header
+                      child: Text('Flat Listing Profiles', style: TextStyle(fontWeight: FontWeight.bold)),
                     ),
                   );
+                  for (var profile in _flatListingProfiles) {
+                    // Use ownerName if available and not empty, otherwise fallback to truncated ID
+                    final String displayName = (profile.ownerName != null && profile.ownerName.isNotEmpty)
+                        ? profile.ownerName
+                        : 'Flat Listing (${profile.documentId.substring(0, 4)}...)';
+                    items.add(
+                      PopupMenuItem<String>(
+                        value: 'flat_listing_${profile.documentId}',
+                        child: Text(displayName),
+                      ),
+                    );
+                  }
                 }
-                if (_seekingFlatmateProfileData != null) {
+
+                if (_seekingFlatmateProfiles.isNotEmpty) {
                   items.add(
-                    PopupMenuItem<String>(
-                      value: 'seeking_flatmate',
-                      child: Text('My Seeking Flatmate Profile'),
+                    const PopupMenuItem<String>(
+                      enabled: false, // Make this a non-selectable header
+                      child: Text('Seeking Flatmate Profiles', style: TextStyle(fontWeight: FontWeight.bold)),
                     ),
                   );
+                  for (var profile in _seekingFlatmateProfiles) {
+                    // Use name if available and not empty, otherwise fallback to truncated ID
+                    final String displayName = (profile.name != null && profile.name.isNotEmpty)
+                        ? profile.name
+                        : 'Seeking Flatmate (${profile.documentId.substring(0, 4)}...)';
+                    items.add(
+                      PopupMenuItem<String>(
+                        value: 'seeking_flatmate_${profile.documentId}',
+                        child: Text(displayName),
+                      ),
+                    );
+                  }
                 }
+                print('[build] PopupMenuButton items generated. Total items: ${items.length}');
                 return items;
               },
-              icon: Icon(Icons.swap_horiz, color: Colors.white),
+              icon: const Icon(Icons.swap_horiz, color: Colors.white),
             ),
         ],
       ),
@@ -201,7 +332,7 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
           style: TextStyle(fontSize: 18, color: Colors.grey),
         ),
       )
-          : _currentDisplayProfileType == 'seeking_flatmate'
+          : _userType == 'seeking_flatmate'
           ? SeekingFlatmateProfileDisplay(profile: _userProfile as SeekingFlatmateProfile) // Display seeking flatmate profile
           : FlatListingProfileDisplay(profile: _userProfile as FlatListingProfile), // Display flat listing profile
     );
