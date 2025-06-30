@@ -271,14 +271,14 @@ final Map<String, dynamic> _characteristicIcons = {
   'Security': 'assets/lottie/security.json', // Example Lottie
 
   // Preferred Habits
-  'Non-smoker': 'assets/lottie/non_smoker.json', // Example Lottie
-  'Non-drinker': 'assets/lottie/no_alcohol.json', // Reusing
-  'Tidy': 'assets/lottie/cleaning_tidy.json', // Reusing
+  'Non-smoker': 'assets/lottie/nosmoker.json', // Example Lottie//
+  'Non-drinker': 'assets/lottie/nosmoker.json', // Reusing
+  'Tidy': 'assets/lottie/cleaniness.json', // Reusing
   'Quiet': 'assets/lottie/very_quiet.json', // Reusing
-  'Social': 'assets/lottie/social_outgoing.json', // Reusing
+  'Social': 'assets/lottie/socialization.json', // Reusing
   'Respectful': 'assets/lottie/respectful.json', // Example Lottie
-  'Financially responsible': 'assets/lottie/financial_responsible.json', // Example Lottie
-  'Pet-friendly': 'assets/lottie/comfortable_pets.json', // Reusing
+  'Financially responsible': 'assets/lottie/currency_rupee.json', // Example Lottie
+  'Pet-friendly': 'assets/lottie/pets.json', // Reusing
 
   // Ideal Qualities
   'Communicative': 'assets/lottie/communicative.json', // Example Lottie
@@ -290,13 +290,13 @@ final Map<String, dynamic> _characteristicIcons = {
   'Financially stable': 'assets/lottie/financially_stable.json', // Example Lottie
 
   // Deal Breakers
-  'Excessive Noise': 'assets/lottie/excessive_noise.json', // Example Lottie
-  'Untidiness': 'assets/lottie/untidiness.json', // Example Lottie
-  'Frequent Parties': 'assets/lottie/frequent_parties.json', // Example Lottie
-  'Smoking Indoors': 'assets/lottie/smoking_indoors.json', // Example Lottie
+  'Excessive Noise': 'assets/lottie/noise.json', // Example Lottie//
+  'Untidiness': 'assets/lottie/cleanlinessjson', // Example Lottie//
+  'Frequent Parties': 'assets/lottie/party.json', // Example Lottie//
+  'Smoking Indoors': 'assets/lottie/smoking.json', // Example Lottie
   'Unpaid Bills': 'assets/lottie/unpaid_bills.json', // Example Lottie
   'Lack of Communication': 'assets/lottie/no_communication.json', // Example Lottie
-  'Pets (if not allowed)': 'assets/lottie/no_pets_allowed.json', // Example Lottie
+  'Pets (if not allowed)': 'assets/lottie/nopets.json', // Example Lottie
   'Late Night Guests': 'assets/lottie/late_guests.json', // Example Lottie
   'Drugs': 'assets/lottie/drugs.json', // Example Lottie
   'Disrespectful behavior': 'assets/lottie/disrespectful.json', // Example Lottie
@@ -397,13 +397,13 @@ final Map<String, dynamic> _preferenceIcons = { // Changed to dynamic to hold Ic
   'Night Owl': 'assets/lottie/nightowl.json', // Assuming you have this Lottie file
   'Early Bird': 'assets/lottie/earlyriserrr.json', // Reusing early_riser Lottie file
   'Studious': 'assets/lottie/studious.json', // Example Lottie
-  'Fitness Freak': 'assets/lottie/fitness_freak.json', // Example Lottie
+  'Fitness Freak': 'assets/lottie/gym.json', // Example Lottie
   'Sporty': 'assets/lottie/sporty.json', // Example Lottie
   'Wanderer': 'assets/lottie/wanderer.json', // Example Lottie
-  'Party Lover': 'assets/lottie/party_lover.json', // Example Lottie
-  'Vegan': 'assets/lottie/vegan.json', // Reusing
-  'Music Lover': 'assets/lottie/music_lover.json', // Example Lottie
-  'Artist': 'assets/lottie/artist.json', // Example Lottie
+  'Party Lover': 'assets/lottie/party.json', // Example Lottie
+  'Vegan': 'assets/lottie/food.json', // Reusing
+  'Music Lover': 'assets/lottie/music.json', // Example Lottie
+  'Artist': 'assets/lottie/music.json', // Example Lottie
   'Gamer': 'assets/lottie/gamer.json', // Example Lottie
   'Cook': 'assets/lottie/cook.json', // Reusing
 };

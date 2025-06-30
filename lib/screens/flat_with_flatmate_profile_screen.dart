@@ -1501,7 +1501,7 @@ class _FlatWithFlatmateProfileScreenState
     // Prepare data for Firestore
     final profileData = {
       "uid": user.uid,
-      "email": user.email,
+      "email": user.email,//
       "displayName": _seekingFlatmateProfile.name,
       "age": _seekingFlatmateProfile.age ?? 0,
       "gender": _seekingFlatmateProfile.gender,
@@ -1520,17 +1520,17 @@ class _FlatWithFlatmateProfileScreenState
         "cleanliness": _seekingFlatmateProfile.cleanliness,
         "socialPreferences": _seekingFlatmateProfile.socialHabits,
         "workSchedule": _seekingFlatmateProfile.workSchedule,
-        "noiseTolerance": _seekingFlatmateProfile.noiseLevel,
+        "noiseTolerance": _seekingFlatmateProfile.noiseLevel,//
         "smoking": _seekingFlatmateProfile.smokingHabits,
         "drinking": _seekingFlatmateProfile.drinkingHabits,
         "food": _seekingFlatmateProfile.foodPreference,
-        "visitorsPolicy": _seekingFlatmateProfile.visitorsPolicy,
+        "visitorsPolicy": _seekingFlatmateProfile.visitorsPolicy,//
         "petOwnership": _seekingFlatmateProfile.petOwnership,
         "petTolerance": _seekingFlatmateProfile.petTolerance,
         "sleepingSchedule": _seekingFlatmateProfile.sleepingSchedule,
-        "sharingCommonSpaces": _seekingFlatmateProfile.sharingCommonSpaces,
-        "guestOvernightStays": _seekingFlatmateProfile.guestsOvernightPolicy,
-        "personalSpaceVsSocializing": _seekingFlatmateProfile.personalSpaceVsSocialization,
+        "sharingCommonSpaces": _seekingFlatmateProfile.sharingCommonSpaces,//
+        "guestOvernightStays": _seekingFlatmateProfile.guestsOvernightPolicy,//
+        "personalSpaceVsSocializing": _seekingFlatmateProfile.personalSpaceVsSocialization,//
       },
       "flatRequirements": {
         "preferredFlatType": _seekingFlatmateProfile.preferredFlatType,
