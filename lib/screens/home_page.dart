@@ -9,6 +9,11 @@ import 'package:mytennat/screens/ActivityScreen.dart';
 import 'package:mytennat/widgets/profile_display_widgets.dart';
 import 'package:mytennat/screens/view_profile_screen.dart';
 import 'package:mytennat/screens/more_profile_screen.dart'; // Import the MoreProfileScreen
+import 'package:shared_preferences/shared_preferences.dart'; // Import SharedPreferences
+
+// Assuming these models are accessible
+import 'package:mytennat/screens/flatmate_profile_screen.dart'; // For FlatListingProfile
+import 'package:mytennat/screens/flat_with_flatmate_profile_screen.dart'; // For SeekingFlatmateProfile
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -19,7 +24,11 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   String? _userProfileType;
+  String? _currentActiveProfileId; // New: To store the ID of the active profile
   bool _isLoadingProfileType = true;
+
+  // Key for SharedPreferences to store the last selected profile ID (must match ViewProfileScreen)
+  static const String _lastSelectedProfileKey = 'lastSelectedProfileId_';
 
   @override
   void initState() {
@@ -30,40 +39,104 @@ class _HomePageState extends State<HomePage> {
   Future<void> _fetchUserProfileType() async {
     setState(() {
       _isLoadingProfileType = true;
+      _userProfileType = null;
+      _currentActiveProfileId = null;
     });
+
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       try {
         final userDocRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
 
-        // Check for 'flatListings' subcollection
-        final flatListingsSnapshot = await userDocRef.collection('flatListings').limit(1).get();
-        final bool hasFlatListingProfile = flatListingsSnapshot.docs.isNotEmpty;
+        // Fetch all flat listing profiles
+        final flatListingsSnapshot = await userDocRef.collection('flatListings').get();
+        final List<FlatListingProfile> flatListings = flatListingsSnapshot.docs
+            .map((doc) => FlatListingProfile.fromMap(doc.data(), doc.id))
+            .toList();
 
-        // Check for 'seekingFlatmateProfiles' subcollection
-        final seekingFlatmateProfilesSnapshot = await userDocRef.collection('seekingFlatmateProfiles').limit(1).get();
-        final bool hasSeekingFlatmateProfile = seekingFlatmateProfilesSnapshot.docs.isNotEmpty;
+        // Fetch all seeking flatmate profiles
+        final seekingFlatmateProfilesSnapshot = await userDocRef.collection('seekingFlatmateProfiles').get();
+        final List<SeekingFlatmateProfile> seekingFlatmateProfiles = seekingFlatmateProfilesSnapshot.docs
+            .map((doc) => SeekingFlatmateProfile.fromMap(doc.data(), doc.id))
+            .toList();
 
-        setState(() {
-          if (hasFlatListingProfile) {
-            _userProfileType = 'flat_listing';
-          } else if (hasSeekingFlatmateProfile) {
-            _userProfileType = 'seeking_flatmate';
-          } else {
-            _userProfileType = null; // No profile type found
+        // Check if user has any profiles at all
+        if (flatListings.isEmpty && seekingFlatmateProfiles.isEmpty) {
+          setState(() {
+            _userProfileType = null; // Indicate no profiles exist
+          });
+          return;
+        }
+
+        // Try to load the last selected profile ID from SharedPreferences
+        final prefs = await SharedPreferences.getInstance();
+        final lastSelectedId = prefs.getString(_lastSelectedProfileKey + user.uid);
+        print('[HomePage][_fetchUserProfileType] Last selected profile ID: $lastSelectedId');
+
+        bool profileSet = false;
+
+        if (lastSelectedId != null) {
+          // Try to find the last selected profile among flat listings
+          try {
+            final activeFlatListing = flatListings.firstWhere((p) => p.documentId == lastSelectedId);
+            setState(() {
+              _userProfileType = 'flat_listing';
+              _currentActiveProfileId = activeFlatListing.documentId;
+            });
+            profileSet = true;
+            print('[HomePage][_fetchUserProfileType] Active profile set to Flat Listing: $_currentActiveProfileId');
+          } catch (_) {
+            // Not a flat listing, try to find it among seeking flatmate profiles
+            try {
+              final activeSeekingFlatmate = seekingFlatmateProfiles.firstWhere((p) => p.documentId == lastSelectedId);
+              setState(() {
+                _userProfileType = 'seeking_flatmate';
+                _currentActiveProfileId = activeSeekingFlatmate.documentId;
+              });
+              profileSet = true;
+              print('[HomePage][_fetchUserProfileType] Active profile set to Seeking Flatmate: $_currentActiveProfileId');
+            } catch (__) {
+              print('[HomePage][_fetchUserProfileType] Last selected profile ID ($lastSelectedId) not found in current profiles.');
+              // Last selected ID not found, proceed to default logic
+            }
           }
-        });
+        }
+
+        // If no specific profile was set (either no previous selection or invalid ID),
+        // default to the first available profile
+        if (!profileSet) {
+          if (flatListings.isNotEmpty) {
+            setState(() {
+              _userProfileType = 'flat_listing';
+              _currentActiveProfileId = flatListings.first.documentId;
+            });
+            print('[HomePage][_fetchUserProfileType] Defaulting to first Flat Listing: $_currentActiveProfileId');
+          } else if (seekingFlatmateProfiles.isNotEmpty) {
+            setState(() {
+              _userProfileType = 'seeking_flatmate';
+              _currentActiveProfileId = seekingFlatmateProfiles.first.documentId;
+            });
+            print('[HomePage][_fetchUserProfileType] Defaulting to first Seeking Flatmate: $_currentActiveProfileId');
+          } else {
+            // This case should ideally be caught by the initial empty check, but as a fallback:
+            setState(() {
+              _userProfileType = null; // Still no profiles
+            });
+          }
+        }
       } catch (e) {
-        print("Error fetching user profile type: $e");
+        print('[HomePage][_fetchUserProfileType] Error fetching user profile type: $e');
         setState(() {
-          _userProfileType = null;
+          _userProfileType = null; // Indicate error or no profile
         });
       }
     } else {
+      print('[HomePage][_fetchUserProfileType] No user logged in.');
       setState(() {
-        _userProfileType = null;
+        _userProfileType = null; // No user, so no profile
       });
     }
+
     setState(() {
       _isLoadingProfileType = false;
     });
@@ -73,40 +146,21 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('MyTennat'),
+        title: const Text('MyTennant', style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.redAccent,
-        foregroundColor: Colors.white,
+        elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              await FirebaseAuth.instance.signOut();
-              // Make sure '/login' route is defined in your MaterialApp or use pushReplacement
-              Navigator.of(context).pushReplacementNamed('/login');
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.favorite_border, color: Colors.white, size: 28),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const ActivityScreen()),
-              );
-            },
-          ),
-          // Existing View Profile button
-          IconButton(
-            icon: const Icon(Icons.person, color: Colors.white, size: 28),
+            icon: const Icon(Icons.person, color: Colors.white),
             onPressed: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const ViewProfileScreen()),
-              );
+              ).then((_) => _fetchUserProfileType()); // Refresh when returning from ViewProfileScreen
             },
           ),
-          // NEW: More Profiles button
           IconButton(
-            icon: const Icon(Icons.menu, color: Colors.white, size: 28), // Or a different icon like Icons.more_horiz
+            icon: const Icon(Icons.more_vert, color: Colors.white),
             onPressed: () {
               Navigator.push(
                 context,
@@ -116,89 +170,117 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
-      body: Center(
+      body: _isLoadingProfileType
+          ? const Center(child: CircularProgressIndicator(color: Colors.redAccent))
+          : Padding(
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'Welcome!',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Image.asset(
+              'assets/images/MyTennant.png',
+              height: 150,
             ),
-            const SizedBox(height: 20),
-            _isLoadingProfileType
-                ? const CircularProgressIndicator(color: Colors.redAccent)
-                : _userProfileType != null
+            const SizedBox(height: 30),
+            const Text(
+              'Welcome to MyTennant!',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'Find your perfect flatmate or flat with ease.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+            ),
+            const SizedBox(height: 40),
+            _userProfileType != null && _currentActiveProfileId != null
                 ? Column(
               children: [
-                Text(
-                  'Your profile type: ${_userProfileType == 'seeking_flatmate' ? 'Seeking a Flatmate' : 'Listing a Flat'}',
-                  style: const TextStyle(fontSize: 18, color: Colors.black87),
-                ),
-                const SizedBox(height: 30),
-                ElevatedButton.icon(
+                if (_userProfileType == 'flat_listing')
+                  const Text(
+                    'You are currently looking for flatmates for your flat.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 16, color: Colors.black54),
+                  )
+                else if (_userProfileType == 'seeking_flatmate')
+                  const Text(
+                    'You are currently looking for a flat.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 16, color: Colors.black54),
+                  ),
+                const SizedBox(height: 20),
+                ElevatedButton(
                   onPressed: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const MatchingScreen(),
+                        builder: (context) => MatchingScreen(
+                          profileType: _userProfileType!,
+                          profileId: _currentActiveProfileId!,
+                        ),
                       ),
                     );
                   },
-                  icon: const Icon(Icons.group),
-                  label: const Text('Find Matches'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.redAccent,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                    padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30),
                     ),
-                    textStyle: const TextStyle(fontSize: 18),
+                    textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
+                  child: const Text('Start Matching'),
                 ),
                 const SizedBox(height: 15),
-                ElevatedButton.icon(
+                ElevatedButton(
                   onPressed: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const MatchesListScreen(),
+                        builder: (context) => MatchesListScreen(
+                          profileType: _userProfileType!,
+                          profileId: _currentActiveProfileId!,
+                        ),
                       ),
                     );
                   },
-                  icon: const Icon(Icons.chat),
-                  label: const Text('My Chats'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.teal,
+                    backgroundColor: Colors.blueAccent,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                    padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30),
                     ),
                     textStyle: const TextStyle(fontSize: 18),
                   ),
+                  child: const Text('View Matches'),
                 ),
                 const SizedBox(height: 15),
-                ElevatedButton.icon(
+                ElevatedButton(
                   onPressed: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const EditProfileScreen(),
+                        builder: (context) => ActivityScreen(
+                          profileType: _userProfileType!, // Pass the active profile type
+                          profileId: _currentActiveProfileId!, // Pass the active profile ID
+                        ),
                       ),
-                    ).then((_) => _fetchUserProfileType());
+                    );
                   },
-                  icon: const Icon(Icons.edit),
-                  label: const Text('Edit Profile'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blueAccent,
+                    backgroundColor: Colors.green,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                    padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30),
                     ),
                     textStyle: const TextStyle(fontSize: 18),
                   ),
+                  child: const Text('View Activity'),
                 ),
               ],
             )
@@ -217,7 +299,7 @@ class _HomePageState extends State<HomePage> {
                       MaterialPageRoute(
                         builder: (context) => const EditProfileScreen(),
                       ),
-                    ).then((_) => _fetchUserProfileType());
+                    ).then((_) => _fetchUserProfileType()); // Refresh when returning from profile setup
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blueAccent,

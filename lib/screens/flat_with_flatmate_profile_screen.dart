@@ -11,6 +11,8 @@ import 'package:mytennat/data/location_data.dart'; // Adjust path as needed
 class SeekingFlatmateProfile {
   // Basic Info
   String documentId; // Added for Firestore document ID
+  String? uid; // Added: To store the user ID (UID)
+
   String name;
   int? age; // Changed to nullable int
   String gender;
@@ -58,6 +60,7 @@ class SeekingFlatmateProfile {
 
   SeekingFlatmateProfile({
     this.documentId = '', // Initialize documentId
+    this.uid, // Initialize uid
     this.name = '',
     this.age,
     this.gender = '',
@@ -108,6 +111,7 @@ class SeekingFlatmateProfile {
 
     return SeekingFlatmateProfile(
       documentId: documentId,
+      uid: data['uid'] as String?,
       name: data['displayName'] as String? ?? '', // Assuming 'displayName' at root level
       age: data['age'] is int ? data['age'] : (data['age'] is String ? int.tryParse(data['age']) : null),
       gender: data['gender'] as String? ?? '',
@@ -157,6 +161,7 @@ class SeekingFlatmateProfile {
   // Method to convert the object to a map for Firestore
   Map<String, dynamic> toMap() {
     return {
+      'uid': uid, // Include uid when converting to map
       'name': name, // This might need to be 'displayName' if that's how it's stored at root
       'age': age,
       'gender': gender,

@@ -8,7 +8,12 @@ import 'package:mytennat/screens/flat_with_flatmate_profile_screen.dart';
 import 'package:rxdart/rxdart.dart';
 
 class MatchesListScreen extends StatefulWidget {
-  const MatchesListScreen({super.key});
+  const MatchesListScreen({super.key,
+  required this.profileType, // Make it required
+  required this.profileId,   });
+
+  final String profileType; // Add this line
+  final String profileId;   // Add this line
 
   @override
   State<MatchesListScreen> createState() => _MatchesListScreenState();

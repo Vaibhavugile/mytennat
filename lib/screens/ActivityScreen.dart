@@ -4,7 +4,12 @@ import 'package:mytennat/screens/liked_by_me_list.dart'; // Import the new widge
 import 'package:mytennat/screens/who_liked_me_list.dart'; // Import the new widgets
 
 class ActivityScreen extends StatefulWidget {
-  const ActivityScreen({super.key});
+  final String profileType; // Add this line
+  final String profileId;
+  const ActivityScreen({  super.key,
+    required this.profileType, // Make it required
+    required this.profileId,   // Make it required
+  });
 
   @override
   State<ActivityScreen> createState() => _ActivityScreenState();

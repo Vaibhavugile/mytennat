@@ -10,6 +10,7 @@ import 'package:mytennat/data/location_data.dart'; // Adjust path as needed
 // Data model to hold all the answers for the user listing a flat
 class FlatListingProfile {
   String documentId; // Added: To store the Firestore document ID
+  String? uid; // Added: To store the user ID (UID)
 
   // Basic Info
   String ownerName;
@@ -64,6 +65,7 @@ class FlatListingProfile {
 
   FlatListingProfile({
     this.documentId = '',
+    this.uid, // Initialize uid
     this.ownerName = '',
     this.ownerAge,
     this.ownerGender = '',
@@ -118,6 +120,7 @@ class FlatListingProfile {
 
     return FlatListingProfile(
       documentId: documentId,
+      uid: data['uid'] as String?,
       ownerName: data['displayName'] ?? '', // Assuming ownerName is 'displayName' at root level
       ownerAge: data['age'] is int ? data['age'] : (data['age'] is String ? int.tryParse(data['age']) : null), // Assuming age is at root level
       ownerGender: data['gender'] ?? '', // Assuming gender is at root level
@@ -174,6 +177,7 @@ class FlatListingProfile {
   // Method to convert the object to a map for Firestore
   Map<String, dynamic> toMap() {
     return {
+      'uid': uid, // Include uid when converting to map
       'ownerName': ownerName,
       'ownerAge': ownerAge,
       'ownerGender': ownerGender,
@@ -228,6 +232,7 @@ class FlatListingProfile {
   String toString() {
     return 'FlatListingProfile(\n'
         '  documentId: $documentId,\n'
+        '  uid: $uid,\n'
         '  ownerName: $ownerName,\n'
         '  ownerAge: $ownerAge,\n'
         '  ownerGender: $ownerGender,\n'
