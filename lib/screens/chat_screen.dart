@@ -134,7 +134,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
         );
         Navigator.of(context).pop();
       }
-    } finally {
+    } if (mounted) {
       setState(() {
         _isLoadingChat = false; // Chat room initialization complete
       });

@@ -1,4 +1,3 @@
-// matching_screen.dart
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -346,77 +345,79 @@ class _MatchingScreenState extends State<MatchingScreen> {
     }
   }
 
-  Future<void> _processLike(String likedUserId) async {
+
+  Future<void> _processLike(String likedUserId, String likedProfileDocumentId) async {
     if (_currentUser == null) {
       print("_processLike: Current user is null. Aborting like process.");
       return;
     }
 
     final currentUserId = _currentUser!.uid;
-    print("_processLike: User $currentUserId attempting to like $likedUserId.");
+    print("_processLike: User $currentUserId (active profile ${widget.profileId}) attempting to like user $likedUserId's profile $likedProfileDocumentId."); // Add more detailed logging
 
     try {
-      print("_processLike (Op1): Attempting to record like for $currentUserId on $likedUserId.");
+      print("_processLike (Op1): Attempting to record like for $currentUserId on $likedProfileDocumentId.");
       try {
-        await _firestore.collection('user_likes').doc(currentUserId).collection('likes').doc(likedUserId).set({
+        await _firestore.collection('user_likes').doc(currentUserId).collection('likes').doc(likedProfileDocumentId).set({
           'timestamp': FieldValue.serverTimestamp(),
-          'likedUserId': likedUserId,
+          'likedUserId': likedUserId, // Still good to store the user ID
+          'likedProfileDocumentId': likedProfileDocumentId, // Explicitly store which profile was liked
+          'likingUserProfileId': widget.profileId, // Store the ID of the current user's profile that made the like
+          // It's crucial to also store the current user's profile type here if you need it later for match creation.
+          // For now, we'll get it from widget.profileType when calling _createMatchAndChatRoom.
         });
-        print("_processLike (Op1): Successfully recorded like for $currentUserId on $likedUserId.");
+        print("_processLike (Op1): Successfully recorded like for $currentUserId on profile $likedProfileDocumentId.");
       } catch (e) {
         print("_processLike (Op1) ERROR: Failed to SET like document: $e");
         _showAlertDialog('Error', 'Failed to record your like: ${e.toString()}', () {});
         return;
       }
 
-      print("_processLike (Op2): Checking if $likedUserId has liked $currentUserId.");
-      DocumentSnapshot otherUserLikesMe;
+      print("_processLike (Op2): Checking if user $likedUserId has liked our active profile ${widget.profileId}.");
+      QuerySnapshot otherUserLikesOurProfile;
       try {
-        otherUserLikesMe = await _firestore.collection('user_likes').doc(likedUserId).collection('likes').doc(currentUserId).get();
-        print("_processLike (Op2): Other user like check completed. Exists: ${otherUserLikesMe.exists}");
+        otherUserLikesOurProfile = await _firestore.collection('user_likes').doc(likedUserId).collection('likes')
+            .where('likedUserId', isEqualTo: currentUserId) // They liked *us*
+            .where('likedProfileDocumentId', isEqualTo: widget.profileId) // Specifically liked *our current active profile*
+            .get();
+        print("_processLike (Op2): Other user like check completed. Exists: ${otherUserLikesOurProfile.docs.isNotEmpty}");
       } catch (e) {
         print("_processLike (Op2) ERROR: Failed to GET other user's like: $e");
         _showAlertDialog('Error', 'Failed to check for mutual like: ${e.toString()}', () {});
         return;
       }
 
-      if (otherUserLikesMe.exists) {
+      if (otherUserLikesOurProfile.docs.isNotEmpty) {
         print("_processLike: Mutual like detected! IT'S A MATCH!");
         ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('It\'s a MATCH! 🎉'))
         );
         print("_processLike (Op3): Calling _createMatchAndChatRoom...");
 
-        // --- START NEW LOGIC FOR PROFILE IDS AND TYPES ---
-        String currentUserProfileId = widget.profileId;
-        String currentUserProfileType = widget.profileType;
-
-        String likedUserProfileId;
+        // --- NEW: Determine the profile type for the liked user ---
+        // This part assumes that _profiles contains the list of profiles being displayed.
+        // You need to find the specific profile that was liked to get its type.
         String likedUserProfileType;
-
-        final dismissedProfile = _profiles[_currentIndex]; // Assuming _currentIndex points to the liked profile
-        if (dismissedProfile is FlatListingProfile) {
-          likedUserProfileId = dismissedProfile.documentId!;
+        if (widget.profileType == 'seeking_flatmate') {
           likedUserProfileType = 'flat_listing';
-        } else if (dismissedProfile is SeekingFlatmateProfile) {
-          likedUserProfileId = dismissedProfile.documentId!;
+        } else if (widget.profileType == 'flat_listing') {
           likedUserProfileType = 'seeking_flatmate';
         } else {
-          print("Error: Unknown profile type for liked profile in _processLike.");
-          _showAlertDialog('Error', 'Unknown profile type for liked profile.', () {});
-          return;
+          // Fallback for unexpected profile types (consider logging an error or throwing)
+          print("Warning: Unknown current user profile type: ${widget.profileType}. Assigning 'unknown' to likedUserProfileType.");
+          likedUserProfileType = 'unknown';
         }
-        // --- END NEW LOGIC ---
+        print('likedusertype:$likedUserProfileType');
+        // --- END NEW ---
 
         try {
-          // Pass all necessary profile info to _createMatchAndChatRoom
           await _createMatchAndChatRoom(
-              currentUserId,
-              likedUserId,
-              currentUserProfileId,
-              currentUserProfileType,
-              likedUserProfileId,
-              likedUserProfileType
+            currentUserId,
+            widget.profileId,
+            widget.profileType, // Current user's profile type, passed from widget
+            likedUserId,
+            likedProfileDocumentId,
+            likedUserProfileType, // The newly determined liked user's profile type
           );
           print("_processLike (Op3): _createMatchAndChatRoom call completed successfully.");
         } catch (e) {
@@ -427,9 +428,13 @@ class _MatchingScreenState extends State<MatchingScreen> {
 
         String chatPartnerNameForDialog = 'that user';
         try {
-          // Use the actual liked profile object to get the name
-          final matchedProfile = dismissedProfile; // Already have it from above
-          chatPartnerNameForDialog = matchedProfile is FlatListingProfile ? matchedProfile.ownerName ?? 'Match' : (matchedProfile as SeekingFlatmateProfile).name ?? 'Match';
+          final matchedProfile = _profiles.firstWhere((p) =>
+          (p is FlatListingProfile && p.uid == likedUserId) ||
+              (p is SeekingFlatmateProfile && p.uid == likedUserId)
+          );
+          chatPartnerNameForDialog = matchedProfile is FlatListingProfile
+              ? matchedProfile.ownerName ?? 'Match'
+              : (matchedProfile as SeekingFlatmateProfile).name ?? 'Match';
         } catch (e) {
           print("_processLike: Could not find matched profile in _profiles for dialog. Error: $e");
         }
@@ -447,6 +452,8 @@ class _MatchingScreenState extends State<MatchingScreen> {
                     builder: (context) => ChatScreen(
                       chatPartnerId: likedUserId,
                       chatPartnerName: chatPartnerNameForDialog,
+                      // You might also want to pass the chatRoomId from the match document
+                      // if _createMatchAndChatRoom returns it or stores it in state.
                     ),
                   ),
                 );
@@ -465,34 +472,35 @@ class _MatchingScreenState extends State<MatchingScreen> {
       _showAlertDialog('Error', 'An unexpected error occurred: ${e.toString()}', () {});
     }
   }
-
-  // --- UPDATED _createMatchAndChatRoom FUNCTION SIGNATURE AND BODY ---
   Future<void> _createMatchAndChatRoom(
-      String user1Id,
-      String user2Id,
+      String user1Uid,
       String user1ProfileId,
-      String user1ProfileType,
+      String user1ProfileType, // Add this parameter
+      String user2Uid,
       String user2ProfileId,
-      String user2ProfileType,
+      String user2ProfileType, // Add this parameter
       ) async {
     if (_currentUser == null) {
       print("createMatchAndChatRoom: _currentUser is null.");
       return;
     }
 
-    // Sort UIDs to create a consistent document ID for the match
-    List<String> sortedUids = [user1Id, user2Id]..sort();
-    String matchDocId = '${sortedUids[0]}_${sortedUids[1]}';
-    print("createMatchAndChatRoom: Attempting to check existence of match: $matchDocId");
+    // Create a unique ID for the match based on the two *profile* IDs
+    // This ensures a unique match document for each profile pair.
+    List<String> sortedProfileIds = [user1ProfileId, user2ProfileId]..sort();
+    String matchDocId = '${sortedProfileIds[0]}_${sortedProfileIds[1]}';
+
+    print("createMatchAndChatRoom: Attempting to check existence of match for profiles: $matchDocId");
 
     try {
       DocumentSnapshot matchDoc = await _firestore.collection('matches').doc(matchDocId).get();
       print("createMatchAndChatRoom: Match document existence check result: ${matchDoc.exists}");
 
       if (!matchDoc.exists) {
-        print("createMatchAndChatRoom: Match document does not exist. Proceeding to create chat and match.");
+        print("createMatchAndChatRoom: Match document for profiles does not exist. Proceeding to create chat and match.");
         DocumentReference chatRef = await _firestore.collection('chats').add({
-          'participants': sortedUids,
+          'participants': [user1Uid, user2Uid], // Keep UIDs for general chat participants
+          'participants_profile_ids': sortedProfileIds, // Store specific profile IDs that matched
           'createdAt': FieldValue.serverTimestamp(),
           'lastMessage': '',
           'lastMessageSenderId': '',
@@ -500,49 +508,51 @@ class _MatchingScreenState extends State<MatchingScreen> {
         });
         String chatRoomId = chatRef.id;
         print("createMatchAndChatRoom: Chat room created with ID: $chatRoomId");
-
-        // Determine which profile belongs to which sorted UID
-        String finalUser1ProfileId = user1Id == sortedUids[0] ? user1ProfileId : user2ProfileId;
-        String finalUser1ProfileType = user1Id == sortedUids[0] ? user1ProfileType : user2ProfileType;
-        String finalUser2ProfileId = user2Id == sortedUids[1] ? user2ProfileId : user1ProfileId;
-        String finalUser2ProfileType = user2Id == sortedUids[1] ? user2ProfileType : user1ProfileType;
+        // The _userProfileType print here refers to a class member, not the function parameter.
+        // print("user1profiletyppe: $_userProfileType"); // This line might be using a class variable, remove if not intended for user1ProfileType param
 
         await _firestore.collection('matches').doc(matchDocId).set({
-          'user1_uid': sortedUids[0],
-          'user2_uid': sortedUids[1],
-          'user1_profile_id': finalUser1ProfileId,
-          'user1_profile_type': finalUser1ProfileType,
-          'user2_profile_id': finalUser2ProfileId,
-          'user2_profile_type': finalUser2ProfileType,
+          'user1_uid': user1Uid,
+          'user2_uid': user2Uid,
+          'user1_profile_id': user1ProfileId,
+          'user2_profile_id': user2ProfileId,
+          'user1_profile_type': user1ProfileType, // Add this line
+          'user2_profile_type': user2ProfileType, // Add this line
           'chatRoomId': chatRoomId,
           'createdAt': FieldValue.serverTimestamp(),
         });
-        print("createMatchAndChatRoom: Match document created successfully for $matchDocId");
+        print("createMatchAndChatRoom: Match document created successfully for profiles: $matchDocId");
 
         if (mounted) {
+          // Still pass the USER ID (uid) to ChatScreen as it typically chats between users.
+          // The ChatScreen itself would need to be adapted if it needs specific profile context.
           Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => ChatScreen(
-                chatPartnerId: (user1Id == _currentUser!.uid) ? user2Id : user1Id,
-                chatPartnerName: "Match!",
+                chatPartnerId: (user1Uid == _currentUser!.uid) ? user2Uid : user1Uid,
+                chatPartnerName: "Match!", // You might want to fetch and pass the specific profile name here
+                // You might also consider passing the specific chatRoomId if ChatScreen can use it
+                // to directly open the correct chat, especially if there are multiple chats between UIDs.
               ),
             ),
           );
         }
       } else {
-        print("createMatchAndChatRoom: Match document already exists for $matchDocId. Not creating.");
+        print("createMatchAndChatRoom: Match document already exists for profiles: $matchDocId. Not creating new chat.");
         final Map<String, dynamic>? matchData = matchDoc.data() as Map<String, dynamic>?;
         if (matchData != null && matchData['chatRoomId'] != null) {
           final existingChatRoomId = matchData['chatRoomId'] as String;
           print("createMatchAndChatRoom: Existing chatRoomId: $existingChatRoomId");
           if (mounted) {
+            // If a match already exists for these two profiles, navigate to their existing chat.
             Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (context) => ChatScreen(
-                  chatPartnerId: (user1Id == _currentUser!.uid) ? user2Id : user1Id,
+                  chatPartnerId: (user1Uid == _currentUser!.uid) ? user2Uid : user1Uid,
                   chatPartnerName: "Match!",
+                  // Potentially pass existingChatRoomId to ChatScreen
                 ),
               ),
             );
@@ -556,7 +566,6 @@ class _MatchingScreenState extends State<MatchingScreen> {
       );
     }
   }
-  // --- END UPDATED _createMatchAndChatRoom ---
 
   void _showMatchDialog(String title, String message, VoidCallback onChatPressed) {
     showDialog(
@@ -587,20 +596,25 @@ class _MatchingScreenState extends State<MatchingScreen> {
       if (_profiles.isNotEmpty) {
         final dismissedProfile = _profiles[_currentIndex];
         String likedOrPassedUserId;
+        String dismissedProfileDocId; // Declare variable for profile document ID
+
         if (dismissedProfile is FlatListingProfile) {
-          likedOrPassedUserId = dismissedProfile.uid!; // Use uid and assert non-null
+          likedOrPassedUserId = dismissedProfile.uid!;
+          dismissedProfileDocId = dismissedProfile.documentId!; // Get documentId
         } else if (dismissedProfile is SeekingFlatmateProfile) {
-          likedOrPassedUserId = dismissedProfile.uid!; // Use uid and assert non-null
+          likedOrPassedUserId = dismissedProfile.uid!;
+          dismissedProfileDocId = dismissedProfile.documentId!; // Get documentId
         } else {
           print("Error: Unknown profile type encountered in _handleProfileDismissed");
-          return; // Cannot proceed without a valid user ID
+          return;
         }
+
         if (direction == DismissDirection.endToStart) {
           ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Profile Passed'))
           );
         } else if (direction == DismissDirection.startToEnd) {
-          _processLike(likedOrPassedUserId);
+          _processLike(likedOrPassedUserId, dismissedProfileDocId); // Pass both IDs
         }
         _profiles.removeAt(_currentIndex);
         if (_profiles.isEmpty) {
@@ -610,6 +624,7 @@ class _MatchingScreenState extends State<MatchingScreen> {
       }
     });
   }
+
   double _calculateMatchPercentage(dynamic userProfile, dynamic otherProfile) {
     return 0.0;
   }
