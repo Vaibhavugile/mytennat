@@ -38,28 +38,42 @@ class _LikedByMeListState extends State<LikedByMeList> {
           .collection('likes')
           .get();
 
-      List<String> likedUserIds = likedSnapshot.docs.map((doc) => doc.id).toList();
-
-      if (likedUserIds.isEmpty) {
-        setState(() {
-          _likedProfiles = [];
-          _isLoading = false;
-        });
-        return;
-      }
-
-      // Fetch the full profiles for these liked user IDs from the 'users' collection
       List<dynamic> profiles = [];
-      for (String userId in likedUserIds) {
-        DocumentSnapshot userDoc = await _firestore.collection('users').doc(userId).get();
-        if (userDoc.exists && userDoc.data() != null) {
-          Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
-          if (userData['userType'] == 'flat_listing') {
-            // Pass the entire userData map and the document ID
-            profiles.add(FlatListingProfile.fromMap(userData, userDoc.id));
-          } else if (userData['userType'] == 'seeking_flatmate') {
-            // Pass the entire userData map and the document ID
-            profiles.add(SeekingFlatmateProfile.fromMap(userData, userDoc.id));
+      for (var doc in likedSnapshot.docs) {
+        String likedUserId = doc.id; // The document ID here is the ID of the liked user
+
+        // NEW: Fetch the liked user's actual profile from their subcollections
+        DocumentSnapshot? userProfileDoc;
+        Map<String, dynamic>? userData;
+        String? userProfileId; // This will hold the actual profile document ID
+
+        // Try to fetch from seekingFlatmateProfiles subcollection
+        DocumentSnapshot seekingFlatmateProfileDoc = await _firestore
+            .collection('users')
+            .doc(likedUserId)
+            .collection('seekingFlatmateProfiles')
+            .doc(likedUserId) // Assuming profileId is the same as userId
+            .get();
+
+        if (seekingFlatmateProfileDoc.exists && seekingFlatmateProfileDoc.data() != null) {
+          userProfileDoc = seekingFlatmateProfileDoc;
+          userData = userProfileDoc.data() as Map<String, dynamic>;
+          userProfileId = userProfileDoc.id; // Get the actual profile document ID
+          profiles.add(SeekingFlatmateProfile.fromMap(userData, userProfileId));
+        } else {
+          // If not found, try to fetch from flatListings subcollection
+          DocumentSnapshot flatListingProfileDoc = await _firestore
+              .collection('users')
+              .doc(likedUserId)
+              .collection('flatListings')
+              .doc(likedUserId) // Assuming profileId is the same as userId
+              .get();
+
+          if (flatListingProfileDoc.exists && flatListingProfileDoc.data() != null) {
+            userProfileDoc = flatListingProfileDoc;
+            userData = userProfileDoc.data() as Map<String, dynamic>;
+            userProfileId = userProfileDoc.id; // Get the actual profile document ID
+            profiles.add(FlatListingProfile.fromMap(userData, userProfileId));
           }
         }
       }
@@ -116,7 +130,7 @@ class _LikedByMeListState extends State<LikedByMeList> {
             ),
             const SizedBox(height: 10),
             const Text(
-              'Swipe right on profiles you like in the Matching tab.',
+              'Explore profiles on the Matching screen!',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 14, color: Colors.grey),
             ),
@@ -132,7 +146,7 @@ class _LikedByMeListState extends State<LikedByMeList> {
         String name = '';
         String imageUrl = '';
         String subtitle = '';
-        String profileId = profile.documentId;
+        String profileId = profile.documentId; // This is the userId of the liked profile
 
         if (profile is FlatListingProfile) {
           name = profile.ownerName ?? 'N/A';
@@ -171,9 +185,9 @@ class _LikedByMeListState extends State<LikedByMeList> {
                   );
                 }
                 if (snapshot.hasData && snapshot.data!.exists) {
+                  final chatRoomId = (snapshot.data!.data() as Map<String, dynamic>)['chatRoomId'];
                   return ElevatedButton.icon(
                     onPressed: () {
-                      final chatRoomId = (snapshot.data!.data() as Map<String, dynamic>)['chatRoomId'];
                       Navigator.push(
                         context,
                         MaterialPageRoute(

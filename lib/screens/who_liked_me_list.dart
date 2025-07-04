@@ -35,13 +35,10 @@ class _WhoLikedMeListState extends State<WhoLikedMeList> {
       // This means we are querying collections under other users' 'user_likes' document
       // and checking if they liked the current user.
 
-      // This is a more complex query and often requires a collection group query or
-      // a different data structure in Firestore if you want to scale this directly.
-      // For simplicity and assuming 'user_likes' structure, we will iterate
-      // through all 'users' and then check their 'likes' subcollection.
-      // NOTE: This approach can be inefficient for a very large number of users.
-      // A more scalable approach would be to have a 'likesReceived' subcollection
-      // under each user, or use Firebase Cloud Functions to denormalize this data.
+      // This approach can be inefficient for a very large number of users if not using
+      // collection group queries with appropriate indexing.
+      // Assuming for now, 'userId' is the document ID of the user's top-level document
+      // which contains the 'user_likes' subcollection.
 
       QuerySnapshot allUsersSnapshot = await _firestore.collection('users').get();
       List<String> potentialLikerIds = allUsersSnapshot.docs.map((doc) => doc.id).toList();
@@ -53,16 +50,38 @@ class _WhoLikedMeListState extends State<WhoLikedMeList> {
         DocumentSnapshot likeDoc = await _firestore.collection('user_likes').doc(userId).collection('likes').doc(widget.currentUserId).get();
 
         if (likeDoc.exists) {
-          // This user (userId) has liked the current user. Fetch their full profile.
-          DocumentSnapshot userProfileDoc = await _firestore.collection('users').doc(userId).get();
-          if (userProfileDoc.exists && userProfileDoc.data() != null) {
-            Map<String, dynamic> userData = userProfileDoc.data() as Map<String, dynamic>;
-            if (userData['userType'] == 'flat_listing') {
-              // Pass the entire userData map and the document ID
-              profiles.add(FlatListingProfile.fromMap(userData, userProfileDoc.id));
-            } else if (userData['userType'] == 'seeking_flatmate') {
-              // Pass the entire userData map and the document ID
-              profiles.add(SeekingFlatmateProfile.fromMap(userData, userProfileDoc.id));
+          // This user (userId) has liked the current user. Fetch their full profile from subcollections.
+          DocumentSnapshot? userProfileDoc;
+          Map<String, dynamic>? userData;
+          String? userProfileId; // This will hold the actual profile document ID
+
+          // Try to fetch from seekingFlatmateProfiles subcollection
+          DocumentSnapshot seekingFlatmateProfileDoc = await _firestore
+              .collection('users')
+              .doc(userId)
+              .collection('seekingFlatmateProfiles')
+              .doc(userId) // Assuming profileId is the same as userId
+              .get();
+
+          if (seekingFlatmateProfileDoc.exists && seekingFlatmateProfileDoc.data() != null) {
+            userProfileDoc = seekingFlatmateProfileDoc;
+            userData = userProfileDoc.data() as Map<String, dynamic>;
+            userProfileId = userProfileDoc.id; // Get the actual profile document ID
+            profiles.add(SeekingFlatmateProfile.fromMap(userData, userProfileId));
+          } else {
+            // If not found, try to fetch from flatListings subcollection
+            DocumentSnapshot flatListingProfileDoc = await _firestore
+                .collection('users')
+                .doc(userId)
+                .collection('flatListings')
+                .doc(userId) // Assuming profileId is the same as userId
+                .get();
+
+            if (flatListingProfileDoc.exists && flatListingProfileDoc.data() != null) {
+              userProfileDoc = flatListingProfileDoc;
+              userData = userProfileDoc.data() as Map<String, dynamic>;
+              userProfileId = userProfileDoc.id; // Get the actual profile document ID
+              profiles.add(FlatListingProfile.fromMap(userData, userProfileId));
             }
           }
         }
@@ -264,6 +283,9 @@ class _WhoLikedMeListState extends State<WhoLikedMeList> {
                     builder: (context) => ChatScreen(
                       chatPartnerId: likedUserId,
                       chatPartnerName: profileDisplayName(likedUserId),
+                      // The chatRoomId will be derived in ChatScreen itself now, or fetched from the newly created match.
+                      // However, the ChatScreen constructor handles null chatRoomId by creating one from sorted UIDs.
+                      // If ChatScreen relies *only* on a passed chatRoomId for existing chats, ensure it's passed here.
                     ),
                   ),
                 );
@@ -280,25 +302,26 @@ class _WhoLikedMeListState extends State<WhoLikedMeList> {
 
   Future<void> _createMatchAndChatRoom(String user1Id, String user2Id) async {
     List<String> sortedUids = [user1Id, user2Id]..sort();
-    String matchDocId = '${sortedUids[0]}_${sortedUids[1]}';
+    String matchDocId = '${sortedUids[0]}_${sortedUids[1]}'; // This is also the intended chatRoomId
 
     try {
       DocumentSnapshot matchDoc = await _firestore.collection('matches').doc(matchDocId).get();
 
       if (!matchDoc.exists) {
-        DocumentReference chatRef = await _firestore.collection('chats').add({
+        // Use matchDocId as the chat room ID for consistency
+        await _firestore.collection('chats').doc(matchDocId).set({ // Changed from .add()
           'participants': sortedUids,
           'createdAt': FieldValue.serverTimestamp(),
           'lastMessage': '',
           'lastMessageSenderId': '',
           'lastMessageTimestamp': null,
         });
-        String chatRoomId = chatRef.id;
+        String chatRoomId = matchDocId; // Explicitly assign for clarity
 
         await _firestore.collection('matches').doc(matchDocId).set({
           'user1_id': sortedUids[0],
           'user2_id': sortedUids[1],
-          'chatRoomId': chatRoomId,
+          'chatRoomId': chatRoomId, // This will now correctly be sorted_uid1_uid2
           'createdAt': FieldValue.serverTimestamp(),
         });
       }

@@ -9,6 +9,7 @@ import 'package:mytennat/screens/chat_screen.dart';
 import 'package:mytennat/screens/filter_screen.dart';
 import 'package:mytennat/screens/filter_options.dart';
 import 'dart:math' as math; // Import for math.min
+import 'package:mytennat/screens/view_profile_screen.dart'; // Import ViewProfileScreen
 
 class MatchingScreen extends StatefulWidget {
   // Add these final fields to receive the active profile details
@@ -345,7 +346,6 @@ class _MatchingScreenState extends State<MatchingScreen> {
     }
   }
 
-
   Future<void> _processLike(String likedUserId) async {
     if (_currentUser == null) {
       print("_processLike: Current user is null. Aborting like process.");
@@ -386,8 +386,38 @@ class _MatchingScreenState extends State<MatchingScreen> {
             const SnackBar(content: Text('It\'s a MATCH! 🎉'))
         );
         print("_processLike (Op3): Calling _createMatchAndChatRoom...");
+
+        // --- START NEW LOGIC FOR PROFILE IDS AND TYPES ---
+        String currentUserProfileId = widget.profileId;
+        String currentUserProfileType = widget.profileType;
+
+        String likedUserProfileId;
+        String likedUserProfileType;
+
+        final dismissedProfile = _profiles[_currentIndex]; // Assuming _currentIndex points to the liked profile
+        if (dismissedProfile is FlatListingProfile) {
+          likedUserProfileId = dismissedProfile.documentId!;
+          likedUserProfileType = 'flat_listing';
+        } else if (dismissedProfile is SeekingFlatmateProfile) {
+          likedUserProfileId = dismissedProfile.documentId!;
+          likedUserProfileType = 'seeking_flatmate';
+        } else {
+          print("Error: Unknown profile type for liked profile in _processLike.");
+          _showAlertDialog('Error', 'Unknown profile type for liked profile.', () {});
+          return;
+        }
+        // --- END NEW LOGIC ---
+
         try {
-          await _createMatchAndChatRoom(currentUserId, likedUserId);
+          // Pass all necessary profile info to _createMatchAndChatRoom
+          await _createMatchAndChatRoom(
+              currentUserId,
+              likedUserId,
+              currentUserProfileId,
+              currentUserProfileType,
+              likedUserProfileId,
+              likedUserProfileType
+          );
           print("_processLike (Op3): _createMatchAndChatRoom call completed successfully.");
         } catch (e) {
           print("_processLike (Op3) ERROR: _createMatchAndChatRoom failed: $e");
@@ -397,8 +427,8 @@ class _MatchingScreenState extends State<MatchingScreen> {
 
         String chatPartnerNameForDialog = 'that user';
         try {
-          final matchedProfile = _profiles.firstWhere((p) => (p is FlatListingProfile && p.uid == likedUserId) || (p is SeekingFlatmateProfile && p.uid == likedUserId)
-          );
+          // Use the actual liked profile object to get the name
+          final matchedProfile = dismissedProfile; // Already have it from above
           chatPartnerNameForDialog = matchedProfile is FlatListingProfile ? matchedProfile.ownerName ?? 'Match' : (matchedProfile as SeekingFlatmateProfile).name ?? 'Match';
         } catch (e) {
           print("_processLike: Could not find matched profile in _profiles for dialog. Error: $e");
@@ -436,12 +466,21 @@ class _MatchingScreenState extends State<MatchingScreen> {
     }
   }
 
-  Future<void> _createMatchAndChatRoom(String user1Id, String user2Id) async {
+  // --- UPDATED _createMatchAndChatRoom FUNCTION SIGNATURE AND BODY ---
+  Future<void> _createMatchAndChatRoom(
+      String user1Id,
+      String user2Id,
+      String user1ProfileId,
+      String user1ProfileType,
+      String user2ProfileId,
+      String user2ProfileType,
+      ) async {
     if (_currentUser == null) {
       print("createMatchAndChatRoom: _currentUser is null.");
       return;
     }
 
+    // Sort UIDs to create a consistent document ID for the match
     List<String> sortedUids = [user1Id, user2Id]..sort();
     String matchDocId = '${sortedUids[0]}_${sortedUids[1]}';
     print("createMatchAndChatRoom: Attempting to check existence of match: $matchDocId");
@@ -462,9 +501,19 @@ class _MatchingScreenState extends State<MatchingScreen> {
         String chatRoomId = chatRef.id;
         print("createMatchAndChatRoom: Chat room created with ID: $chatRoomId");
 
+        // Determine which profile belongs to which sorted UID
+        String finalUser1ProfileId = user1Id == sortedUids[0] ? user1ProfileId : user2ProfileId;
+        String finalUser1ProfileType = user1Id == sortedUids[0] ? user1ProfileType : user2ProfileType;
+        String finalUser2ProfileId = user2Id == sortedUids[1] ? user2ProfileId : user1ProfileId;
+        String finalUser2ProfileType = user2Id == sortedUids[1] ? user2ProfileType : user1ProfileType;
+
         await _firestore.collection('matches').doc(matchDocId).set({
-          'user1_id': sortedUids[0],
-          'user2_id': sortedUids[1],
+          'user1_uid': sortedUids[0],
+          'user2_uid': sortedUids[1],
+          'user1_profile_id': finalUser1ProfileId,
+          'user1_profile_type': finalUser1ProfileType,
+          'user2_profile_id': finalUser2ProfileId,
+          'user2_profile_type': finalUser2ProfileType,
           'chatRoomId': chatRoomId,
           'createdAt': FieldValue.serverTimestamp(),
         });
@@ -507,6 +556,7 @@ class _MatchingScreenState extends State<MatchingScreen> {
       );
     }
   }
+  // --- END UPDATED _createMatchAndChatRoom ---
 
   void _showMatchDialog(String title, String message, VoidCallback onChatPressed) {
     showDialog(
@@ -560,7 +610,6 @@ class _MatchingScreenState extends State<MatchingScreen> {
       }
     });
   }
-
   double _calculateMatchPercentage(dynamic userProfile, dynamic otherProfile) {
     return 0.0;
   }
@@ -660,38 +709,53 @@ class _MatchingScreenState extends State<MatchingScreen> {
           // Main Matching Content
           Expanded(
             child: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: _profiles.isNotEmpty
-                    ? Dismissible(
-                  key: ValueKey(_profiles[_currentIndex].documentId),
-                  direction: DismissDirection.horizontal,
-                  onDismissed: _handleProfileDismissed,
-                  background: Container(
-                    color: Colors.green,
-                    alignment: Alignment.centerLeft,
-                    padding: const EdgeInsets.only(left: 20),
-                    child: const Icon(Icons.favorite, color: Colors.white, size: 40),
-                  ),
-                  secondaryBackground: Container(
-                    color: Colors.red,
-                    alignment: Alignment.centerRight,
-                    padding: const EdgeInsets.only(right: 20),
-                    child: const Icon(Icons.close, color: Colors.white, size: 40),
-                  ),
-                  child: _profiles[_currentIndex] is FlatListingProfile
-                      ? FlatListingProfileCard(
-                    profile: _profiles[_currentIndex],
-                    matchPercentage: _calculateMatchPercentage(_currentUserParsedProfile, _profiles[_currentIndex]),
-                    imageUrls: (_profiles[_currentIndex] as FlatListingProfile).imageUrls ?? [],
-                  )
-                      : SeekingFlatmateProfileCard(
-                    profile: _profiles[_currentIndex],
-                    matchPercentage: _calculateMatchPercentage(_currentUserParsedProfile, _profiles[_currentIndex]),
-                    imageUrls: (_profiles[_currentIndex] as SeekingFlatmateProfile).imageUrls ?? [],
-                  ),
-                )
-                    : const SizedBox.shrink(),
+              child: Column( // This is the Column at 664:22
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Expanded( // ADDED Expanded here
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: _profiles.isNotEmpty
+                          ? Dismissible(
+                        key: ValueKey(_profiles[_currentIndex].documentId),
+                        direction: DismissDirection.horizontal,
+                        onDismissed: _handleProfileDismissed,
+                        background: Container(
+                          color: Colors.green,
+                          alignment: Alignment.centerLeft,
+                          padding: const EdgeInsets.only(left: 20),
+                          child: const Icon(Icons.favorite, color: Colors.white, size: 40),
+                        ),
+                        secondaryBackground: Container(
+                          color: Colors.red,
+                          alignment: Alignment.centerRight,
+                          padding: const EdgeInsets.only(right: 20),
+                          child: const Icon(Icons.close, color: Colors.white, size: 40),
+                        ),
+                        child: _profiles[_currentIndex] is FlatListingProfile
+                            ? FlatListingProfileCard(
+                          profile: _profiles[_currentIndex],
+                          matchPercentage: _calculateMatchPercentage(_currentUserParsedProfile, _profiles[_currentIndex]),
+                          imageUrls: (_profiles[_currentIndex] as FlatListingProfile).imageUrls ?? [],
+                          profileType: 'flat_listing', // Pass profile type
+                        )
+                            : SeekingFlatmateProfileCard(
+                          profile: _profiles[_currentIndex],
+                          matchPercentage: _calculateMatchPercentage(_currentUserParsedProfile, _profiles[_currentIndex]),
+                          imageUrls: (_profiles[_currentIndex] as SeekingFlatmateProfile).imageUrls ?? [],
+                          profileType: 'seeking_flatmate', // Pass profile type
+                        ),
+                      )
+                          : const SizedBox.shrink(),
+                    ),
+                  ), // END of Expanded
+                  if (_profiles.isNotEmpty)
+                    _buildActionButtons(
+                        _profiles[_currentIndex] is FlatListingProfile
+                            ? (_profiles[_currentIndex] as FlatListingProfile).uid!
+                            : (_profiles[_currentIndex] as SeekingFlatmateProfile).uid!
+                    ),
+                ],
               ),
             ),
           ),
@@ -725,11 +789,13 @@ class _MatchingScreenState extends State<MatchingScreen> {
                     profile: _profiles[_currentIndex],
                     matchPercentage: _calculateMatchPercentage(_currentUserParsedProfile, _profiles[_currentIndex]),
                     imageUrls: (_profiles[_currentIndex] as FlatListingProfile).imageUrls ?? [],
+                    profileType: 'flat_listing', // Pass profile type
                   )
                       : SeekingFlatmateProfileCard(
                     profile: _profiles[_currentIndex],
                     matchPercentage: _calculateMatchPercentage(_currentUserParsedProfile, _profiles[_currentIndex]),
                     imageUrls: (_profiles[_currentIndex] as SeekingFlatmateProfile).imageUrls ?? [],
+                    profileType: 'seeking_flatmate', // Pass profile type
                   ),
                 )
                     : const SizedBox.shrink(),
@@ -782,13 +848,15 @@ class _MatchingScreenState extends State<MatchingScreen> {
 class FlatListingProfileCard extends StatelessWidget {
   final FlatListingProfile profile;
   final double matchPercentage;
-  final List<String> imageUrls; // NEW PARAMETER
+  final List<String> imageUrls;
+  final String profileType; // NEW PARAMETER
 
   const FlatListingProfileCard({
     super.key,
     required this.profile,
     required this.matchPercentage,
-    required this.imageUrls, // NEW PARAMETER
+    required this.imageUrls,
+    required this.profileType, // NEW PARAMETER
   });
 
   @override
@@ -798,253 +866,266 @@ class FlatListingProfileCard extends StatelessWidget {
         ? List<String>.from(imageUrls)
         : ['https://via.placeholder.com/400x300?text=No+Flat+Images'];
 
-    return Card(
-      margin: const EdgeInsets.all(16.0),
-      elevation: 8.0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      // Wrap the Column with SingleChildScrollView
-      child: SingleChildScrollView( // Added SingleChildScrollView here
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Image Carousel with Indicators
-            StatefulBuilder(
-              builder: (BuildContext context, StateSetter setState) {
-                final PageController pageController = PageController();
-                int currentImageLocalIndex = 0;
+    return GestureDetector( // Wrap with GestureDetector
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ViewProfileScreen(
+              userId: profile.uid, // Use uid for userId
+              profileDocumentId: profile.documentId!, // Use documentId for profileDocumentId
+            ),
+          ),
+        );
+      },
+      child: Card(
+        margin: const EdgeInsets.all(16.0),
+        elevation: 8.0,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        // Wrap the Column with SingleChildScrollView
+        child: SingleChildScrollView( // Added SingleChildScrollView here
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Image Carousel with Indicators
+              StatefulBuilder(
+                builder: (BuildContext context, StateSetter setState) {
+                  final PageController pageController = PageController();
+                  int currentImageLocalIndex = 0;
 
-                // Listener to update the index for dot indicators
-                pageController.addListener(() {
-                  if (pageController.page != null) {
-                    setState(() {
-                      currentImageLocalIndex = pageController.page!.round();
-                    });
-                  }
-                });
+                  // Listener to update the index for dot indicators
+                  pageController.addListener(() {
+                    if (pageController.page != null) {
+                      setState(() {
+                        currentImageLocalIndex = pageController.page!.round();
+                      });
+                    }
+                  });
 
-                return Column(
-                  children: [
-                    SizedBox(
-                      height: 300, // Fixed height for the image carousel
-                      child: PageView.builder(
-                        controller: pageController,
-                        itemCount: imagesToDisplay.length,
-                        itemBuilder: (context, index) {
-                          return ClipRRect(
-                            borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
-                            child: Image.network(
-                              imagesToDisplay[index],
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) =>
-                              const Center(child: Icon(Icons.broken_image, size: 100)),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    if (imagesToDisplay.length > 1) // Show indicators only if more than one image
-                      Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: List.generate(imagesToDisplay.length, (index) {
-                            return Container(
-                              width: 8.0,
-                              height: 8.0,
-                              margin: const EdgeInsets.symmetric(horizontal: 4.0),
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: currentImageLocalIndex == index
-                                    ? Colors.redAccent
-                                    : Colors.grey.withOpacity(0.5),
+                  return Column(
+                    children: [
+                      SizedBox(
+                        height: 300, // Fixed height for the image carousel
+                        child: PageView.builder(
+                          controller: pageController,
+                          itemCount: imagesToDisplay.length,
+                          itemBuilder: (context, index) {
+                            return ClipRRect(
+                              borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
+                              child: Image.network(
+                                imagesToDisplay[index],
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                const Center(child: Icon(Icons.broken_image, size: 100)),
                               ),
                             );
-                          }),
+                          },
                         ),
                       ),
-                  ],
-                );
-              },
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    profile.ownerName ?? 'N/A',
-                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    '${profile.ownerAge ?? 'N/A'} years old, ${profile.ownerGender ?? 'N/A'}',
-                    style: const TextStyle(fontSize: 16, color: Colors.grey),
-                  ),
-                  const SizedBox(height: 20),
-                  _buildInfoSection(
-                    title: 'Match Score',
-                    value: '${matchPercentage.toStringAsFixed(0)}%',
-                    icon: Icons.percent,
-                    isMatchScore: true,
-                  ),
-                  _buildInfoSection(
-                    title: 'Flat Details',
-                    icon: Icons.home,
-                    children: [
-                      _buildChipList(
-                        title: 'Type:',
-                        items: [profile.flatType],
-                        backgroundColor: Colors.lightBlue.shade100,
-                        textColor: Colors.lightBlue.shade800,
-                      ),
-                      _buildChipList(
-                        title: 'Furnishing:',
-                        items: [profile.furnishedStatus],
-                        backgroundColor: Colors.lightGreen.shade100,
-                        textColor: Colors.lightGreen.shade800,
-                      ),
-                      _buildChipList(
-                        title: 'Available For:',
-                        items: [profile.availableFor],
-                        backgroundColor: Colors.pink.shade100,
-                        textColor: Colors.pink.shade800,
-                      ),
-                      _buildChipList(
-                        title: 'Rent:',
-                        items: [profile.rentPrice != null ? '₹${profile.rentPrice!.toStringAsFixed(0)}' : null],
-                        backgroundColor: Colors.deepPurple.shade100,
-                        textColor: Colors.deepPurple.shade800,
-                      ),
-
-                      _buildChipList(
-                        title: 'Availability Date:',
-                        items: [profile.availabilityDate != null ? DateFormat('dd MMM yyyy').format(profile.availabilityDate!) : null],
-                        backgroundColor: Colors.indigo.shade100,
-                        textColor: Colors.indigo.shade800,
-                      ),
+                      if (imagesToDisplay.length > 1) // Show indicators only if more than one image
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: List.generate(imagesToDisplay.length, (index) {
+                              return Container(
+                                width: 8.0,
+                                height: 8.0,
+                                margin: const EdgeInsets.symmetric(horizontal: 4.0),
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: currentImageLocalIndex == index
+                                      ? Colors.redAccent
+                                      : Colors.grey.withOpacity(0.5),
+                                ),
+                              );
+                            }),
+                          ),
+                        ),
                     ],
-                  ),
-                  _buildInfoSection(
-                    title: 'Amenities',
-                    icon: Icons.spa,
-                    children: [
-                      _buildChipList(
-                        items: profile.amenities,
-                        backgroundColor: Colors.green.shade100,
-                        textColor: Colors.green.shade800,
-                      ),
-                    ],
-                  ),
-                  _buildInfoSection(
-                    title: 'About the Flat',
-                    value: profile.flatDescription,
-                    icon: Icons.description,
-                  ),
-                  _buildInfoSection(
-                    title: 'Owner Bio',
-                    value: profile.ownerBio,
-                    icon: Icons.person,
-                  ),
-                  _buildInfoSection(
-                    title: 'Lifestyle & Habits',
-                    icon: Icons.self_improvement,
-                    children: [
-                      _buildChipList(
-                        title: 'Occupation:',
-                        items: [profile.ownerOccupation],
-                        backgroundColor: Colors.purple.shade100,
-                        textColor: Colors.purple.shade800,
-                      ),
-                      _buildChipList(
-                        title: 'Smoking:',
-                        items: [profile.smokingHabit],
-                        backgroundColor: Colors.deepOrange.shade100,
-                        textColor: Colors.deepOrange.shade800,
-                      ),
-                      _buildChipList(
-                        title: 'Drinking:',
-                        items: [profile.drinkingHabit],
-                        backgroundColor: Colors.cyan.shade100,
-                        textColor: Colors.cyan.shade800,
-                      ),
-                      _buildChipList(
-                        title: 'Food:',
-                        items: [profile.foodPreference],
-                        backgroundColor: Colors.amber.shade100,
-                        textColor: Colors.amber.shade800,
-                      ),
-                      _buildChipList(
-                        title: 'Cleanliness:',
-                        items: [profile.cleanlinessLevel],
-                        backgroundColor: Colors.blue.shade100,
-                        textColor: Colors.blue.shade800,
-                      ),
-                      _buildChipList(
-                        title: 'Noise:',
-                        items: [profile.noiseLevel],
-                        backgroundColor: Colors.red.shade100,
-                        textColor: Colors.red.shade800,
-                      ),
-                      _buildChipList(
-                        title: 'Social:',
-                        items: [profile.socialPreferences],
-                        backgroundColor: Colors.pink.shade100,
-                        textColor: Colors.pink.shade800,
-                      ),
-                      _buildChipList(
-                        title: 'Visitors:',
-                        items: [profile.visitorsPolicy],
-                        backgroundColor: Colors.brown.shade100,
-                        textColor: Colors.brown.shade800,
-                      ),
-                      _buildChipList(
-                        title: 'Pets (Owner):',
-                        items: [profile.petOwnership],
-                        backgroundColor: Colors.lightGreen.shade100,
-                        textColor: Colors.lightGreen.shade800,
-                      ),
-                      _buildChipList(
-                        title: 'Pets (Tolerance):',
-                        items: [profile.petTolerance],
-                        backgroundColor: Colors.teal.shade100,
-                        textColor: Colors.teal.shade800,
-                      ),
-                      _buildChipList(
-                        title: 'Sleeping:',
-                        items: [profile.sleepingSchedule],
-                        backgroundColor: Colors.indigo.shade100,
-                        textColor: Colors.indigo.shade800,
-                      ),
-                      _buildChipList(
-                        title: 'Work:',
-                        items: [profile.workSchedule],
-                        backgroundColor: Colors.grey.shade300,
-                        textColor: Colors.grey.shade800,
-                      ),
-                      _buildChipList(
-                        title: 'Common Spaces:',
-                        items: [profile.sharingCommonSpaces],
-                        backgroundColor: Colors.deepPurple.shade100,
-                        textColor: Colors.deepPurple.shade800,
-                      ),
-                      _buildChipList(
-                        title: 'Overnight Guests:',
-                        items: [profile.guestsOvernightPolicy],
-                        backgroundColor: Colors.lime.shade100,
-                        textColor: Colors.lime.shade800,
-                      ),
-                      _buildChipList(
-                        title: 'Personal Space:',
-                        items: [profile.personalSpaceVsSocialization],
-                        backgroundColor: Colors.amber.shade100,
-                        textColor: Colors.amber.shade800,
-                      ),
-                    ],
-                  ),
-                ],
+                  );
+                },
               ),
-            ),
-          ],
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      profile.ownerName ?? 'N/A',
+                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      '${profile.ownerAge ?? 'N/A'} years old, ${profile.ownerGender ?? 'N/A'}',
+                      style: const TextStyle(fontSize: 16, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 20),
+                    _buildInfoSection(
+                      title: 'Match Score',
+                      value: '${matchPercentage.toStringAsFixed(0)}%',
+                      icon: Icons.percent,
+                      isMatchScore: true,
+                    ),
+                    _buildInfoSection(
+                      title: 'Flat Details',
+                      icon: Icons.home,
+                      children: [
+                        _buildChipList(
+                          title: 'Type:',
+                          items: [profile.flatType],
+                          backgroundColor: Colors.lightBlue.shade100,
+                          textColor: Colors.lightBlue.shade800,
+                        ),
+                        _buildChipList(
+                          title: 'Furnishing:',
+                          items: [profile.furnishedStatus],
+                          backgroundColor: Colors.lightGreen.shade100,
+                          textColor: Colors.lightGreen.shade800,
+                        ),
+                        _buildChipList(
+                          title: 'Available For:',
+                          items: [profile.availableFor],
+                          backgroundColor: Colors.pink.shade100,
+                          textColor: Colors.pink.shade800,
+                        ),
+                        _buildChipList(
+                          title: 'Rent:',
+                          items: [profile.rentPrice != null ? '₹${profile.rentPrice!.toStringAsFixed(0)}' : null],
+                          backgroundColor: Colors.deepPurple.shade100,
+                          textColor: Colors.deepPurple.shade800,
+                        ),
+
+                        _buildChipList(
+                          title: 'Availability Date:',
+                          items: [profile.availabilityDate != null ? DateFormat('dd MMM,YYYY').format(profile.availabilityDate!) : null],
+                          backgroundColor: Colors.indigo.shade100,
+                          textColor: Colors.indigo.shade800,
+                        ),
+                      ],
+                    ),
+                    _buildInfoSection(
+                      title: 'Amenities',
+                      icon: Icons.spa,
+                      children: [
+                        _buildChipList(
+                          items: profile.amenities,
+                          backgroundColor: Colors.green.shade100,
+                          textColor: Colors.green.shade800,
+                        ),
+                      ],
+                    ),
+                    _buildInfoSection(
+                      title: 'About the Flat',
+                      value: profile.flatDescription,
+                      icon: Icons.description,
+                    ),
+                    _buildInfoSection(
+                      title: 'Owner Bio',
+                      value: profile.ownerBio,
+                      icon: Icons.person,
+                    ),
+                    _buildInfoSection(
+                      title: 'Lifestyle & Habits',
+                      icon: Icons.self_improvement,
+                      children: [
+                        _buildChipList(
+                          title: 'Occupation:',
+                          items: [profile.ownerOccupation],
+                          backgroundColor: Colors.purple.shade100,
+                          textColor: Colors.purple.shade800,
+                        ),
+                        _buildChipList(
+                          title: 'Smoking:',
+                          items: [profile.smokingHabit],
+                          backgroundColor: Colors.deepOrange.shade100,
+                          textColor: Colors.deepOrange.shade800,
+                        ),
+                        _buildChipList(
+                          title: 'Drinking:',
+                          items: [profile.drinkingHabit],
+                          backgroundColor: Colors.cyan.shade100,
+                          textColor: Colors.cyan.shade800,
+                        ),
+                        _buildChipList(
+                          title: 'Food:',
+                          items: [profile.foodPreference],
+                          backgroundColor: Colors.amber.shade100,
+                          textColor: Colors.amber.shade800,
+                        ),
+                        _buildChipList(
+                          title: 'Cleanliness:',
+                          items: [profile.cleanlinessLevel],
+                          backgroundColor: Colors.blue.shade100,
+                          textColor: Colors.blue.shade800,
+                        ),
+                        _buildChipList(
+                          title: 'Noise:',
+                          items: [profile.noiseLevel],
+                          backgroundColor: Colors.red.shade100,
+                          textColor: Colors.red.shade800,
+                        ),
+                        _buildChipList(
+                          title: 'Social:',
+                          items: [profile.socialPreferences],
+                          backgroundColor: Colors.pink.shade100,
+                          textColor: Colors.pink.shade800,
+                        ),
+                        _buildChipList(
+                          title: 'Visitors:',
+                          items: [profile.visitorsPolicy],
+                          backgroundColor: Colors.brown.shade100,
+                          textColor: Colors.brown.shade800,
+                        ),
+                        _buildChipList(
+                          title: 'Pets (Owner):',
+                          items: [profile.petOwnership],
+                          backgroundColor: Colors.lightGreen.shade100,
+                          textColor: Colors.lightGreen.shade800,
+                        ),
+                        _buildChipList(
+                          title: 'Pets (Tolerance):',
+                          items: [profile.petTolerance],
+                          backgroundColor: Colors.teal.shade100,
+                          textColor: Colors.teal.shade800,
+                        ),
+                        _buildChipList(
+                          title: 'Sleeping:',
+                          items: [profile.sleepingSchedule],
+                          backgroundColor: Colors.indigo.shade100,
+                          textColor: Colors.indigo.shade800,
+                        ),
+                        _buildChipList(
+                          title: 'Work:',
+                          items: [profile.workSchedule],
+                          backgroundColor: Colors.grey.shade300,
+                          textColor: Colors.grey.shade800,
+                        ),
+                        _buildChipList(
+                          title: 'Common Spaces:',
+                          items: [profile.sharingCommonSpaces],
+                          backgroundColor: Colors.deepPurple.shade100,
+                          textColor: Colors.deepPurple.shade800,
+                        ),
+                        _buildChipList(
+                          title: 'Overnight Guests:',
+                          items: [profile.guestsOvernightPolicy],
+                          backgroundColor: Colors.lime.shade100,
+                          textColor: Colors.lime.shade800,
+                        ),
+                        _buildChipList(
+                          title: 'Personal Space:',
+                          items: [profile.personalSpaceVsSocialization],
+                          backgroundColor: Colors.amber.shade100,
+                          textColor: Colors.amber.shade800,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1159,13 +1240,15 @@ class FlatListingProfileCard extends StatelessWidget {
 class SeekingFlatmateProfileCard extends StatelessWidget {
   final SeekingFlatmateProfile profile;
   final double matchPercentage;
-  final List<String> imageUrls; // NEW PARAMETER
+  final List<String> imageUrls;
+  final String profileType; // NEW PARAMETER
 
   const SeekingFlatmateProfileCard({
     super.key,
     required this.profile,
     required this.matchPercentage,
-    required this.imageUrls, // NEW PARAMETER
+    required this.imageUrls,
+    required this.profileType, // NEW PARAMETER
   });
 
   @override
@@ -1175,226 +1258,239 @@ class SeekingFlatmateProfileCard extends StatelessWidget {
         ? List<String>.from(imageUrls)
         : ['https://via.placeholder.com/400x300?text=No+Profile+Images'];
 
-    return Card(
-      margin: const EdgeInsets.all(16.0),
-      elevation: 8.0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      // Wrap the Column with SingleChildScrollView
-      child: SingleChildScrollView( // Added SingleChildScrollView here
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Image Carousel with Indicators
-            StatefulBuilder(
-              builder: (BuildContext context, StateSetter setState) {
-                final PageController pageController = PageController();
-                int currentImageLocalIndex = 0;
+    return GestureDetector( // Wrap with GestureDetector
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ViewProfileScreen(
+              userId: profile.uid, // Use uid for userId
+              profileDocumentId: profile.documentId!, // Use documentId for profileDocumentId
+            ),
+          ),
+        );
+      },
+      child: Card(
+        margin: const EdgeInsets.all(16.0),
+        elevation: 8.0,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        // Wrap the Column with SingleChildScrollView
+        child: SingleChildScrollView( // Added SingleChildScrollView here
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Image Carousel with Indicators
+              StatefulBuilder(
+                builder: (BuildContext context, StateSetter setState) {
+                  final PageController pageController = PageController();
+                  int currentImageLocalIndex = 0;
 
-                // Listener to update the index for dot indicators
-                pageController.addListener(() {
-                  if (pageController.page != null) {
-                    setState(() {
-                      currentImageLocalIndex = pageController.page!.round();
-                    });
-                  }
-                });
+                  // Listener to update the index for dot indicators
+                  pageController.addListener(() {
+                    if (pageController.page != null) {
+                      setState(() {
+                        currentImageLocalIndex = pageController.page!.round();
+                      });
+                    }
+                  });
 
-                return Column(
-                  children: [
-                    SizedBox(
-                      height: 300, // Fixed height for the image carousel
-                      child: PageView.builder(
-                        controller: pageController,
-                        itemCount: imagesToDisplay.length,
-                        itemBuilder: (context, index) {
-                          return ClipRRect(
-                            borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
-                            child: Image.network(
-                              imagesToDisplay[index],
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) =>
-                              const Center(child: Icon(Icons.broken_image, size: 100)),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    if (imagesToDisplay.length > 1) // Show indicators only if more than one image
-                      Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: List.generate(imagesToDisplay.length, (index) {
-                            return Container(
-                              width: 8.0,
-                              height: 8.0,
-                              margin: const EdgeInsets.symmetric(horizontal: 4.0),
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: currentImageLocalIndex == index
-                                    ? Colors.redAccent
-                                    : Colors.grey.withOpacity(0.5),
+                  return Column(
+                    children: [
+                      SizedBox(
+                        height: 300, // Fixed height for the image carousel
+                        child: PageView.builder(
+                          controller: pageController,
+                          itemCount: imagesToDisplay.length,
+                          itemBuilder: (context, index) {
+                            return ClipRRect(
+                              borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
+                              child: Image.network(
+                                imagesToDisplay[index],
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                const Center(child: Icon(Icons.broken_image, size: 100)),
                               ),
                             );
-                          }),
+                          },
                         ),
                       ),
-                  ],
-                );
-              },
-            ),
-            Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    profile.name ?? 'N/A',
-                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    '${profile.age ?? 'N/A'} years old, ${profile.gender ?? 'N/A'}',
-                    style: const TextStyle(fontSize: 16, color: Colors.grey),
-                  ),
-                  const SizedBox(height: 20),
-                  _buildInfoSection(
-                    title: 'Match Score',
-                    value: '${matchPercentage.toStringAsFixed(0)}%',
-                    icon: Icons.percent,
-                    isMatchScore: true,
-                  ),
-                  _buildInfoSection(
-                    title: 'Looking For',
-                    icon: Icons.search,
-                    children: [
-                      _buildChipList(
-                        title: 'Desired City:',
-                        items: [profile.desiredCity],
-                        backgroundColor: Colors.blue.shade100,
-                        textColor: Colors.blue.shade800,
-                      ),
-                      _buildChipList(
-                        title: 'Area Preference:',
-                        items: [profile.areaPreference],
-                        backgroundColor: Colors.green.shade100,
-                        textColor: Colors.green.shade800,
-                      ),
-                      _buildChipList(
-                        title: 'Move-in Date:',
-                        items: [
-                          profile.moveInDate != null
-                              ? DateFormat('MMM dd, yyyy').format(profile.moveInDate!)
-                              : 'Flexible'
-                        ],
-                        backgroundColor: Colors.orange.shade100,
-                        textColor: Colors.orange.shade800,
-                      ),
-                      _buildChipList(
-                        title: 'Budget:',
-                        items: [
-                          profile.budgetMin != null && profile.budgetMax != null
-                              ? '₹${NumberFormat('#,##0').format(profile.budgetMin)} - ₹${NumberFormat('#,##0').format(profile.budgetMax)}'
-                              : 'N/A'
-                        ],
-                        backgroundColor: Colors.red.shade100,
-                        textColor: Colors.red.shade800,
-                      ),
+                      if (imagesToDisplay.length > 1) // Show indicators only if more than one image
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: List.generate(imagesToDisplay.length, (index) {
+                              return Container(
+                                width: 8.0,
+                                height: 8.0,
+                                margin: const EdgeInsets.symmetric(horizontal: 4.0),
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: currentImageLocalIndex == index
+                                      ? Colors.redAccent
+                                      : Colors.grey.withOpacity(0.5),
+                                ),
+                              );
+                            }),
+                          ),
+                        ),
                     ],
-                  ),
-                  _buildInfoSection(
-                    title: 'Bio',
-                    value: profile.bio,
-                    icon: Icons.info,
-                  ),
-                  _buildInfoSection(
-                    title: 'Lifestyle & Habits',
-                    icon: Icons.self_improvement,
-                    children: [
-                      _buildChipList(
-                        title: 'Occupation:',
-                        items: [profile.occupation],
-                        backgroundColor: Colors.purple.shade100,
-                        textColor: Colors.purple.shade800,
-                      ),
-                      _buildChipList(
-                        title: 'Cleanliness:',
-                        items: [profile.cleanliness],
-                        backgroundColor: Colors.blue.shade100,
-                        textColor: Colors.blue.shade800,
-                      ),
-                      _buildChipList(
-                        title: 'Social Habits:',
-                        items: [profile.socialHabits],
-                        backgroundColor: Colors.pink.shade100,
-                        textColor: Colors.pink.shade800,
-                      ),
-                      _buildChipList(
-                        title: 'Work Schedule:',
-                        items: [profile.workSchedule],
-                        backgroundColor: Colors.grey.shade300,
-                        textColor: Colors.grey.shade800,
-                      ),
-                      _buildChipList(
-                        title: 'Noise Level:',
-                        items: [profile.noiseLevel],
-                        backgroundColor: Colors.red.shade100,
-                        textColor: Colors.red.shade800,
-                      ),
-                      _buildChipList(
-                        title: 'Smoking Habits:',
-                        items: [profile.smokingHabits],
-                        backgroundColor: Colors.deepOrange.shade100,
-                        textColor: Colors.deepOrange.shade800,
-                      ),
-                      _buildChipList(
-                        title: 'Drinking Habits:',
-                        items: [profile.drinkingHabits],
-                        backgroundColor: Colors.cyan.shade100,
-                        textColor: Colors.cyan.shade800,
-                      ),
-                      _buildChipList(
-                        title: 'Food Preference:',
-                        items: [profile.foodPreference],
-                        backgroundColor: Colors.amber.shade100,
-                        textColor: Colors.amber.shade800,
-                      ),
-                      _buildChipList(
-                        title: 'Guests Frequency:',
-                        items: [profile.guestsFrequency],
-                        backgroundColor: Colors.brown.shade100,
-                        textColor: Colors.brown.shade800,
-                      ),
-                      _buildChipList(
-                        title: 'Visitors Policy:',
-                        items: [profile.visitorsPolicy],
-                        backgroundColor: Colors.teal.shade100,
-                        textColor: Colors.teal.shade800,
-                      ),
-                      _buildChipList(
-                        title: 'Pet Ownership:',
-                        items: [profile.petOwnership],
-                        backgroundColor: Colors.lightGreen.shade100,
-                        textColor: Colors.lightGreen.shade800,
-                      ),
-                      _buildChipList(
-                        title: 'Pet Tolerance:',
-                        items: [profile.petTolerance],
-                        backgroundColor: Colors.teal.shade100,
-                        textColor: Colors.teal.shade800,
-                      ),
-                      _buildChipList(
-                        title: 'Sleeping Schedule:',
-                        items: [profile.sleepingSchedule],
-                        backgroundColor: Colors.indigo.shade100,
-                        textColor: Colors.indigo.shade800,
-                      ),
-                    ],
-                  ),
-                ],
+                  );
+                },
               ),
-            ),
-          ],
+              Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      profile.name ?? 'N/A',
+                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      '${profile.age ?? 'N/A'} years old, ${profile.gender ?? 'N/A'}',
+                      style: const TextStyle(fontSize: 16, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 20),
+                    _buildInfoSection(
+                      title: 'Match Score',
+                      value: '${matchPercentage.toStringAsFixed(0)}%',
+                      icon: Icons.percent,
+                      isMatchScore: true,
+                    ),
+                    _buildInfoSection(
+                      title: 'Looking For',
+                      icon: Icons.search,
+                      children: [
+                        _buildChipList(
+                          title: 'Desired City:',
+                          items: [profile.desiredCity],
+                          backgroundColor: Colors.blue.shade100,
+                          textColor: Colors.blue.shade800,
+                        ),
+                        _buildChipList(
+                          title: 'Area Preference:',
+                          items: [profile.areaPreference],
+                          backgroundColor: Colors.green.shade100,
+                          textColor: Colors.green.shade800,
+                        ),
+                        _buildChipList(
+                          title: 'Move-in Date:',
+                          items: [
+                            profile.moveInDate != null
+                                ? DateFormat('MMM dd,YYYY').format(profile.moveInDate!)
+                                : 'Flexible'
+                          ],
+                          backgroundColor: Colors.orange.shade100,
+                          textColor: Colors.orange.shade800,
+                        ),
+                        _buildChipList(
+                          title: 'Budget:',
+                          items: [
+                            profile.budgetMin != null && profile.budgetMax != null
+                                ? '₹${NumberFormat('#,##0').format(profile.budgetMin)} - ₹${NumberFormat('#,##0').format(profile.budgetMax)}'
+                                : 'N/A'
+                          ],
+                          backgroundColor: Colors.red.shade100,
+                          textColor: Colors.red.shade800,
+                        ),
+                      ],
+                    ),
+                    _buildInfoSection(
+                      title: 'Bio',
+                      value: profile.bio,
+                      icon: Icons.info,
+                    ),
+                    _buildInfoSection(
+                      title: 'Lifestyle & Habits',
+                      icon: Icons.self_improvement,
+                      children: [
+                        _buildChipList(
+                          title: 'Occupation:',
+                          items: [profile.occupation],
+                          backgroundColor: Colors.purple.shade100,
+                          textColor: Colors.purple.shade800,
+                        ),
+                        _buildChipList(
+                          title: 'Cleanliness:',
+                          items: [profile.cleanliness],
+                          backgroundColor: Colors.blue.shade100,
+                          textColor: Colors.blue.shade800,
+                        ),
+                        _buildChipList(
+                          title: 'Social Habits:',
+                          items: [profile.socialHabits],
+                          backgroundColor: Colors.pink.shade100,
+                          textColor: Colors.pink.shade800,
+                        ),
+                        _buildChipList(
+                          title: 'Work Schedule:',
+                          items: [profile.workSchedule],
+                          backgroundColor: Colors.grey.shade300,
+                          textColor: Colors.grey.shade800,
+                        ),
+                        _buildChipList(
+                          title: 'Noise Level:',
+                          items: [profile.noiseLevel],
+                          backgroundColor: Colors.red.shade100,
+                          textColor: Colors.red.shade800,
+                        ),
+                        _buildChipList(
+                          title: 'Smoking Habits:',
+                          items: [profile.smokingHabits],
+                          backgroundColor: Colors.deepOrange.shade100,
+                          textColor: Colors.deepOrange.shade800,
+                        ),
+                        _buildChipList(
+                          title: 'Drinking Habits:',
+                          items: [profile.drinkingHabits],
+                          backgroundColor: Colors.cyan.shade100,
+                          textColor: Colors.cyan.shade800,
+                        ),
+                        _buildChipList(
+                          title: 'Food Preference:',
+                          items: [profile.foodPreference],
+                          backgroundColor: Colors.amber.shade100,
+                          textColor: Colors.amber.shade800,
+                        ),
+                        _buildChipList(
+                          title: 'Guests Frequency:',
+                          items: [profile.guestsFrequency],
+                          backgroundColor: Colors.brown.shade100,
+                          textColor: Colors.brown.shade800,
+                        ),
+                        _buildChipList(
+                          title: 'Visitors Policy:',
+                          items: [profile.visitorsPolicy],
+                          backgroundColor: Colors.teal.shade100,
+                          textColor: Colors.teal.shade800,
+                        ),
+                        _buildChipList(
+                          title: 'Pet Ownership:',
+                          items: [profile.petOwnership],
+                          backgroundColor: Colors.lightGreen.shade100,
+                          textColor: Colors.lightGreen.shade800,
+                        ),
+                        _buildChipList(
+                          title: 'Pet Tolerance:',
+                          items: [profile.petTolerance],
+                          backgroundColor: Colors.teal.shade100,
+                          textColor: Colors.teal.shade800,
+                        ),
+                        _buildChipList(
+                          title: 'Sleeping Schedule:',
+                          items: [profile.sleepingSchedule],
+                          backgroundColor: Colors.indigo.shade100,
+                          textColor: Colors.indigo.shade800,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

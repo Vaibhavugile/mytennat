@@ -13,10 +13,10 @@ const Color kDarkGrey = Color(0xFF6B7280); // For text and icons
 const Color kReadTickColor = Color(0xFF3B82F6); // Blue for read ticks
 
 class ChatScreen extends StatefulWidget {
-  final String chatPartnerId;
+  final String chatPartnerId; // The UID of the chat partner
   final String chatPartnerName;
   final String? chatPartnerImageUrl;
-  final String? chatRoomId; // Make it nullable
+  final String? chatRoomId; // This might be null if it's a new chat, we will create it
 
   const ChatScreen({
     Key? key,
@@ -36,25 +36,23 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   User? _currentUser;
-  String? _chatRoomId;
-  bool _showScrollToBottomButton = false; // New state for scroll button visibility
+  String? _chatRoomId; // This will hold the actual chat room ID, confirmed after creation/finding
+  bool _showScrollToBottomButton = false;
+  bool _isLoadingChat = true; // New state to indicate chat room loading/creation
 
   @override
   void initState() {
     super.initState();
     _currentUser = _auth.currentUser;
-    _findOrCreateChatRoom();
     WidgetsBinding.instance.addObserver(this);
+    _initializeChatRoom(); // Call the new initialization method
 
-    // Listener for scroll button visibility
     _scrollController.addListener(() {
       if (_scrollController.position.pixels < _scrollController.position.maxScrollExtent - 200 && !_showScrollToBottomButton) {
-        // If scrolled up significantly and button is not shown
         setState(() {
           _showScrollToBottomButton = true;
         });
       } else if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200 && _showScrollToBottomButton) {
-        // If scrolled near bottom and button is shown
         setState(() {
           _showScrollToBottomButton = false;
         });
@@ -77,30 +75,84 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     }
   }
 
-  Future<void> _findOrCreateChatRoom() async {
-    if (_currentUser == null) return;
+  // NEW: Function to find or create the chat room document
+  Future<void> _initializeChatRoom() async {
+    if (_currentUser == null) {
+      print('[_initializeChatRoom] Current user is null. Cannot initialize chat.');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('User not logged in. Please log in again.')),
+        );
+        Navigator.of(context).pop();
+      }
+      return;
+    }
 
-    List<String> participants = [_currentUser!.uid, widget.chatPartnerId]..sort();
-    final potentialChatRoomId = '${participants[0]}_${participants[1]}';
+    // Determine a consistent chat room ID based on both UIDs
+    List<String> participants = [_currentUser!.uid, widget.chatPartnerId];
+    participants.sort(); // Sort to ensure consistent ID regardless of who initiated
+    String generatedChatRoomId = participants.join('_'); // e.g., 'uid1_uid2'
 
-    DocumentSnapshot matchDoc = await _firestore.collection('matches').doc(potentialChatRoomId).get();
+    setState(() {
+      _chatRoomId = widget.chatRoomId ?? generatedChatRoomId; // Use provided ID if available, else generate
+    });
 
-    if (matchDoc.exists && matchDoc.data() != null) {
+    print('[_initializeChatRoom] Initializing chat room. Proposed ID: $_chatRoomId');
+
+    try {
+      // Check if the chat room document already exists
+      DocumentSnapshot chatDoc = await _firestore.collection('chats').doc(_chatRoomId).get();
+
+      if (!chatDoc.exists) {
+        // If it doesn't exist, create it with initial data
+        print('[_initializeChatRoom] Chat room $_chatRoomId does not exist. Creating...');
+        await _firestore.collection('chats').doc(_chatRoomId).set({
+          'createdAt': FieldValue.serverTimestamp(),
+          'participants': participants, // Initialize with both UIDs
+          'lastMessage': '',
+          'lastMessageTimestamp': null,
+          'lastMessageSenderId': '',
+        });
+        print('[_initializeChatRoom] Chat room $_chatRoomId created successfully.');
+      } else {
+        print('[_initializeChatRoom] Chat room $_chatRoomId already exists. Merging participants if needed.');
+        // If it exists, ensure the participants array is correct (merge in case it was old or missing participants)
+        await _firestore.collection('chats').doc(_chatRoomId).set(
+          {
+            'participants': FieldValue.arrayUnion(participants), // Ensure both UIDs are in the array
+          },
+          SetOptions(merge: true),
+        );
+        print('[_initializeChatRoom] Chat room $_chatRoomId participants ensured.');
+      }
+      _markVisibleMessagesAsRead(); // Mark messages as read after chat room is confirmed
+    } catch (e) {
+      print('[_initializeChatRoom] Error initializing chat room: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error setting up chat: $e')),
+        );
+        Navigator.of(context).pop();
+      }
+    } finally {
       setState(() {
-        _chatRoomId = (matchDoc.data() as Map<String, dynamic>)['chatRoomId'];
+        _isLoadingChat = false; // Chat room initialization complete
       });
-      _markVisibleMessagesAsRead();
-    } else {
-      print('Error: Match document not found for chat room creation.');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to load chat. Please try again.')),
-      );
-      Navigator.of(context).pop();
     }
   }
 
+
   void _sendMessage() async {
+    // Add these print statements at the very beginning to capture current state
+    print('[_sendMessage] Attempting to send message...');
+    print('[_sendMessage] Current User UID: ${_currentUser?.uid}');
+    print('[_sendMessage] Chat Room ID: $_chatRoomId');
+    print('[_sendMessage] Message Text: ${_messageController.text.trim()}');
+    print('[_sendMessage] Chat Partner ID (receiver): ${widget.chatPartnerId}');
+
+
     if (_messageController.text.trim().isEmpty || _currentUser == null || _chatRoomId == null) {
+      print('[_sendMessage] Pre-check failed: Message empty, currentUser null, or chatRoomId null. Aborting send.');
       return;
     }
 
@@ -108,11 +160,8 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     _messageController.clear();
 
     try {
-      await _firestore
-          .collection('chats')
-          .doc(_chatRoomId)
-          .collection('messages')
-          .add({
+      // Define the message data map here to print it before sending
+      final Map<String, dynamic> messageData = {
         'senderId': _currentUser!.uid,
         'receiverId': widget.chatPartnerId,
         'content': messageText,
@@ -120,23 +169,41 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
         'type': 'text',
         'readBy': [_currentUser!.uid],
         'delivered': false, // Placeholder
-      });
+      };
+      print('[_sendMessage] Message data being added: $messageData');
 
+      await _firestore
+          .collection('chats')
+          .doc(_chatRoomId)
+          .collection('messages')
+          .add(messageData);
+
+      print('[_sendMessage] Message added to subcollection successfully.');
+
+      // Update the chat document with the last message and participants
+      // This part is now redundant for 'participants' because it's handled in _initializeChatRoom,
+      // but keeping it for 'lastMessage' and 'lastMessageTimestamp' for convenience.
       await _firestore.collection('chats').doc(_chatRoomId).set(
         {
           'lastMessage': messageText,
           'lastMessageTimestamp': FieldValue.serverTimestamp(),
-          'participants': [_currentUser!.uid, widget.chatPartnerId],
+          // 'participants': [_currentUser!.uid, widget.chatPartnerId], // Removed from here as handled in _initializeChatRoom
+          'lastMessageSenderId': _currentUser!.uid, // Add this to track last message sender
         },
         SetOptions(merge: true),
       );
+
+      print('[_sendMessage] Chat document updated successfully (last message).');
 
       _scrollController.animateTo(
         0.0, // Scroll to the top of the reversed list (latest message)
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOut,
       );
+      print('[_sendMessage] Scroll animation initiated.');
+
     } catch (e) {
+      print('[_sendMessage] *** ERROR SENDING MESSAGE: $e ***'); // More prominent error log
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to send message: $e')),
       );
@@ -144,7 +211,14 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   }
 
   void _markMessageAsRead(String messageId) async {
-    if (_currentUser == null || _chatRoomId == null) return;
+    print('[_markMessageAsRead] Attempting to mark message $messageId as read.');
+    print('[_markMessageAsRead] Current User UID: ${_currentUser?.uid}');
+    print('[_markMessageAsRead] Chat Room ID: $_chatRoomId');
+
+    if (_currentUser == null || _chatRoomId == null) {
+      print('[_markMessageAsRead] Pre-check failed: currentUser null or chatRoomId null. Aborting.');
+      return;
+    }
 
     try {
       await _firestore
@@ -155,33 +229,50 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
           .update({
         'readBy': FieldValue.arrayUnion([_currentUser!.uid]),
       });
+      print('[_markMessageAsRead] Successfully marked message $messageId as read.');
     } catch (e) {
-      print('Error marking message as read: $e');
+      print('[_markMessageAsRead] Error marking message $messageId as read: $e'); // Added messageId to log
     }
   }
 
   void _markVisibleMessagesAsRead() {
-    if (_chatRoomId == null || _currentUser == null) return;
+    print('[_markVisibleMessagesAsRead] Checking for visible messages to mark as read...');
+    print('[_markVisibleMessagesAsRead] Current User UID: ${_currentUser?.uid}');
+    print('[_markVisibleMessagesAsRead] Chat Room ID: $_chatRoomId');
 
-    // Schedule the marking after the current frame to ensure messages are rendered
+
+    if (_chatRoomId == null || _currentUser == null) {
+      print('[_markVisibleMessagesAsRead] Pre-check failed: chatRoomId null or currentUser null. Aborting.');
+      return;
+    }
+
     SchedulerBinding.instance.addPostFrameCallback((_) {
+      print('[_markVisibleMessagesAsRead] Post-frame callback triggered. Fetching messages.');
       _firestore
           .collection('chats')
           .doc(_chatRoomId)
           .collection('messages')
           .where('receiverId', isEqualTo: _currentUser!.uid)
-          .limit(20) // Limit to a reasonable number to avoid too many writes
+          .limit(20) // Consider increasing limit if many messages might be unread
           .get()
           .then((snapshot) {
+        if (snapshot.docs.isEmpty) {
+          print('[_markVisibleMessagesAsRead] No messages found for current user to mark as read.');
+          return;
+        }
+        print('[_markVisibleMessagesAsRead] Found ${snapshot.docs.length} messages to check.');
         for (var doc in snapshot.docs) {
           final messageData = doc.data();
           final List<dynamic> readByList = (messageData['readBy'] as List<dynamic>?) ?? [];
           if (!readByList.contains(_currentUser!.uid)) {
+            print('[_markVisibleMessagesAsRead] Message ${doc.id} not yet read by current user. Marking...');
             _markMessageAsRead(doc.id);
+          } else {
+            print('[_markVisibleMessagesAsRead] Message ${doc.id} already read by current user.');
           }
         }
       }).catchError((e) {
-        print("Error fetching messages to mark as read: $e");
+        print("[_markVisibleMessagesAsRead] Error fetching messages to mark as read: $e");
       });
     });
   }
@@ -204,7 +295,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
         ),
         title: Row(
           children: [
-            if (widget.chatPartnerImageUrl != null)
+            if (widget.chatPartnerImageUrl != null && widget.chatPartnerImageUrl!.isNotEmpty) // Check for empty string too
               Padding(
                 padding: const EdgeInsets.only(right: 8.0),
                 child: CircleAvatar(
@@ -249,9 +340,9 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
           ),
         ],
       ),
-      body: _chatRoomId == null
+      body: _isLoadingChat // Show loading indicator while chat room is being initialized
           ? const Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(kAccentColor)))
-          : Stack( // Use Stack to position the scroll-to-bottom button
+          : Stack(
         children: [
           Column(
             children: [
@@ -291,7 +382,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                       itemCount: messages.length,
                       itemBuilder: (context, index) {
                         final message = messages[index];
-                        final messageData = message.data() as Map<String, dynamic>; // Cast here
+                        final messageData = message.data() as Map<String, dynamic>;
                         final bool isMe = messageData['senderId'] == _currentUser!.uid;
                         final Timestamp? timestamp = messageData['timestamp'] as Timestamp?;
                         final List<dynamic> readBy = messageData['readBy'] as List<dynamic>? ?? [];
@@ -304,13 +395,11 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                           timeFormatted = DateFormat('hh:mm a').format(messageDateTime);
                         }
 
-                        // Determine if a date separator is needed
                         bool showDateSeparator = false;
-                        if (index == messages.length - 1) { // First message in reversed list is the oldest
+                        if (index == messages.length - 1) {
                           showDateSeparator = true;
                         } else {
-                          final prevMessage = messages[index + 1]; // Next message in reversed list is older
-                          // Corrected line: Explicitly cast data() to Map<String, dynamic>
+                          final prevMessage = messages[index + 1];
                           final prevTimestamp = (prevMessage.data() as Map<String, dynamic>)['timestamp'] as Timestamp?;
                           if (messageDateTime != null && prevTimestamp != null) {
                             final prevDateTime = prevTimestamp.toDate();
@@ -328,14 +417,14 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                               _DateSeparator(date: messageDateTime),
                             Row(
                               mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
-                              crossAxisAlignment: CrossAxisAlignment.end, // Align avatar and bubble bottom
+                              crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
-                                if (!isMe && widget.chatPartnerImageUrl != null)
+                                if (!isMe && widget.chatPartnerImageUrl != null && widget.chatPartnerImageUrl!.isNotEmpty)
                                   Padding(
                                     padding: const EdgeInsets.only(right: 8.0, bottom: 4.0),
                                     child: CircleAvatar(
                                       backgroundImage: NetworkImage(widget.chatPartnerImageUrl!),
-                                      radius: 14, // Smaller avatar next to messages
+                                      radius: 14,
                                     ),
                                   ),
                                 _MessageBubble(
@@ -359,15 +448,14 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
               ),
             ],
           ),
-          // Scroll to Bottom Button
           if (_showScrollToBottomButton)
             Positioned(
-              bottom: 80.0, // Adjust position above the input field
+              bottom: 80.0,
               right: 20.0,
               child: FloatingActionButton(
                 onPressed: () {
                   _scrollController.animateTo(
-                    0.0, // Scroll to the very bottom (top of reversed list)
+                    0.0,
                     duration: const Duration(milliseconds: 300),
                     curve: Curves.easeOut,
                   );
@@ -376,9 +464,9 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                   });
                 },
                 backgroundColor: kAccentColor.withOpacity(0.9),
-                mini: true, // Make it smaller
+                mini: true,
                 child: const Icon(Icons.arrow_downward_rounded, color: Colors.white),
-                shape: const CircleBorder(), // Ensure it's perfectly round
+                shape: const CircleBorder(),
                 elevation: 4,
               ),
             ),
@@ -388,7 +476,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   }
 }
 
-// Extracted Message Bubble Widget
+// Extracted Message Bubble Widget (no changes needed)
 class _MessageBubble extends StatelessWidget {
   final String message;
   final String time;
@@ -462,7 +550,7 @@ class _MessageBubble extends StatelessWidget {
   }
 }
 
-// New Date Separator Widget
+// New Date Separator Widget (no changes needed)
 class _DateSeparator extends StatelessWidget {
   final DateTime date;
 
@@ -490,7 +578,7 @@ class _DateSeparator extends StatelessWidget {
 }
 
 
-// Extracted Message Input Widget
+// Extracted Message Input Widget (no changes needed)
 class _MessageInput extends StatelessWidget {
   final TextEditingController controller;
   final VoidCallback onSendMessage;

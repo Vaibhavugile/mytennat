@@ -3,17 +3,19 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mytennat/screens/chat_screen.dart';
-import 'package:mytennat/screens/flatmate_profile_screen.dart';
-import 'package:mytennat/screens/flat_with_flatmate_profile_screen.dart';
+import 'package:mytennat/screens/flatmate_profile_screen.dart'; // Import FlatListingProfile model
+import 'package:mytennat/screens/flat_with_flatmate_profile_screen.dart'; // Import SeekingFlatmateProfile model
 import 'package:rxdart/rxdart.dart';
 
 class MatchesListScreen extends StatefulWidget {
-  const MatchesListScreen({super.key,
-  required this.profileType, // Make it required
-  required this.profileId,   });
+  const MatchesListScreen({
+    super.key,
+    required this.profileType, // Make it required
+    required this.profileId,
+  });
 
   final String profileType; // Add this line
-  final String profileId;   // Add this line
+  final String profileId; // Add this line
 
   @override
   State<MatchesListScreen> createState() => _MatchesListScreenState();
@@ -36,284 +38,220 @@ class _MatchesListScreenState extends State<MatchesListScreen> {
   @override
   Widget build(BuildContext context) {
     if (_currentUser == null) {
-      return Scaffold(
-        appBar: AppBar(
-          title: const Text('My Matches'),
-          backgroundColor: Colors.redAccent,
-          foregroundColor: Colors.white,
-        ),
-        body: const Center(
-          child: Text('Please log in to view your matches.'),
-        ),
-      );
+      return const Center(child: Text('Please log in to view matches.'));
     }
 
-    final Stream<QuerySnapshot> matchesAsUser1Stream = _firestore
-        .collection('matches')
-        .where('user1_id', isEqualTo: _currentUser!.uid)
-        .snapshots();
-
-    final Stream<QuerySnapshot> matchesAsUser2Stream = _firestore
-        .collection('matches')
-        .where('user2_id', isEqualTo: _currentUser!.uid)
-        .snapshots();
-
-    final combinedMatchesStream = Rx.combineLatest2(
-      matchesAsUser1Stream,
-      matchesAsUser2Stream,
-          (QuerySnapshot user1Matches, QuerySnapshot user2Matches) {
-        final List<DocumentSnapshot> allDocs = [];
-        allDocs.addAll(user1Matches.docs);
-        allDocs.addAll(user2Matches.docs);
-        return allDocs;
-      },
-    );
+    final currentUserId = _currentUser!.uid;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Matches'),
+        title: const Text('Matches', style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.redAccent,
-        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
+        elevation: 0,
       ),
-      body: StreamBuilder<List<DocumentSnapshot>>(
-        stream: combinedMatchesStream,
-        builder: (context, AsyncSnapshot<List<DocumentSnapshot>> snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            print("Matches Stream: Connection waiting...");
+      body: StreamBuilder<List<QuerySnapshot>>(
+        // Combine streams for matches and chat rooms
+        stream: Rx.combineLatest2(
+          _firestore
+              .collection('matches')
+              .where('user1_uid', isEqualTo: currentUserId)
+              .snapshots(),
+          _firestore
+              .collection('matches')
+              .where('user2_uid', isEqualTo: currentUserId)
+              .snapshots(),
+              (QuerySnapshot snapshot1, QuerySnapshot snapshot2) {
+            return [snapshot1, snapshot2];
+          },
+        ),
+        builder: (context, AsyncSnapshot<List<QuerySnapshot>> snapshots) {
+          if (snapshots.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-
-          if (snapshot.hasError) {
-            print("Matches Stream Error: ${snapshot.error}");
-            return Center(child: Text('Error: ${snapshot.error}'));
+          if (snapshots.hasError) {
+            print('Matches Stream Error: ${snapshots.error}');
+            return Center(child: Text('Error loading matches: ${snapshots.error}'));
           }
 
-          if (!snapshot.hasData) {
-            print("Matches Stream: Snapshot has no data despite combineLatest.");
-            return const Center(child: Text('No matches yet.'));
+          final List<DocumentSnapshot> allMatchDocs = [];
+          if (snapshots.hasData) {
+            allMatchDocs.addAll(snapshots.data![0].docs);
+            allMatchDocs.addAll(snapshots.data![1].docs);
           }
 
-          print("Matches Stream: Snapshot hasData: ${snapshot.hasData}");
-          print("Matches Stream: Raw documents received from combineLatest: ${snapshot.data!.length}");
-          for (var doc in snapshot.data!) {
-            print("  - Raw Doc ID: ${doc.id}, user1_id: ${doc['user1_id']}, user2_id: ${doc['user2_id']}");
+          final Map<String, DocumentSnapshot> uniqueMatchesMap = {};
+          for (var doc in allMatchDocs) {
+            uniqueMatchesMap[doc.id] = doc;
           }
+          final List<DocumentSnapshot> uniqueMatches = uniqueMatchesMap.values.toList();
 
-          final List<DocumentSnapshot> allUniqueMatches = [];
-          final Set<String> processedMatchIds = {};
-
-          for (var doc in snapshot.data!) {
-            if (!processedMatchIds.contains(doc.id)) {
-              allUniqueMatches.add(doc);
-              processedMatchIds.add(doc.id);
-            }
+          print('Matches Stream: Snapshot hasData: ${snapshots.hasData}');
+          print('Matches Stream: Raw documents received from combineLatest: ${allMatchDocs.length}');
+          for (var doc in allMatchDocs) {
+            print('  - Raw Doc ID: ${doc.id}, user1_uid: ${doc['user1_uid']}, user2_uid: ${doc['user2_uid']}');
           }
+          print('Matches Stream: Total unique matches after processing: ${uniqueMatches.length}');
 
-          print("Matches Stream: Total unique matches after processing: ${allUniqueMatches.length}");
 
-          if (allUniqueMatches.isEmpty) {
-            return const Center(child: Text('No matches yet.'));
+          if (uniqueMatches.isEmpty) {
+            return const Center(
+              child: Text(
+                'No matches yet. Keep swiping to find your ideal match!',
+                style: TextStyle(fontSize: 16, color: Colors.grey),
+                textAlign: TextAlign.center,
+              ),
+            );
           }
 
           return ListView.builder(
-            itemCount: allUniqueMatches.length,
+            itemCount: uniqueMatches.length,
             itemBuilder: (context, index) {
-              final matchDoc = allUniqueMatches[index];
+              final matchDoc = uniqueMatches[index];
               final matchData = matchDoc.data() as Map<String, dynamic>;
 
-              final String user1Id = matchData['user1_id'] ?? '';
-              final String user2Id = matchData['user2_id'] ?? '';
+              final partnerId = (matchData['user1_uid'] == currentUserId)
+                  ? matchData['user2_uid']
+                  : matchData['user1_uid'];
 
-              final String partnerId = user1Id == _currentUser!.uid ? user2Id : user1Id;
+              // Extract partner's specific profile ID and type from the match document
+              final partnerProfileId = (matchData['user1_uid'] == currentUserId)
+                  ? matchData['user2_profile_id']
+                  : matchData['user1_profile_id'];
 
+              final partnerProfileType = (matchData['user1_uid'] == currentUserId)
+                  ? matchData['user2_profile_type']
+                  : matchData['user1_profile_type'];
+
+              final chatRoomId = matchData['chatRoomId'] as String?;
+
+              if (partnerProfileId == null || partnerProfileType == null) {
+                print('Error: Partner profile ID or type is null for match ${matchDoc.id}');
+                return const SizedBox.shrink(); // Hide problematic matches
+              }
+
+              // Use FutureBuilder to fetch the partner's specific profile data from the subcollection
               return FutureBuilder<DocumentSnapshot>(
-                future: _firestore.collection('users').doc(partnerId).get(),
-                builder: (context, partnerSnapshot) {
-                  if (partnerSnapshot.connectionState == ConnectionState.waiting) {
+                future: _firestore
+                    .collection('users')
+                    .doc(partnerId)
+                    .collection(partnerProfileType == 'flat_listing' ? 'flatListings' : 'seekingFlatmateProfiles')
+                    .doc(partnerProfileId)
+                    .get(),
+                builder: (context, partnerProfileSnapshot) {
+                  if (partnerProfileSnapshot.connectionState == ConnectionState.waiting) {
                     return const ListTile(
-                      title: Text('Loading match...'),
-                      leading: CircularProgressIndicator(),
+                      title: Text('Loading partner profile...'),
+                      subtitle: LinearProgressIndicator(),
                     );
                   }
-
-                  if (partnerSnapshot.hasError) {
-                    print("Partner Profile Error: ${partnerSnapshot.error}");
-                    return ListTile(
-                      title: Text('Error loading partner: ${partnerSnapshot.error}'),
+                  if (partnerProfileSnapshot.hasError) {
+                    print('Partner Profile Error: ${partnerProfileSnapshot.error}');
+                    return const ListTile(
+                      title: Text('Error loading partner profile'),
+                      subtitle: Text('Could not fetch details for this match.'),
                     );
                   }
-
-                  if (!partnerSnapshot.hasData || !partnerSnapshot.data!.exists) {
-                    return const SizedBox.shrink();
+                  if (!partnerProfileSnapshot.hasData || !partnerProfileSnapshot.data!.exists) {
+                    print('Partner Profile not found for UID: $partnerId, ProfileID: $partnerProfileId, Type: $partnerProfileType');
+                    return const SizedBox.shrink(); // Hide this match if profile is truly missing
                   }
 
-                  final partnerProfileData = partnerSnapshot.data!.data() as Map<String, dynamic>;
-                  String partnerName = '';
-                  String partnerProfileImageUrl = '';
+                  String partnerName = 'Unknown';
+                  String partnerProfileImageUrl = 'https://via.placeholder.com/150'; // Default placeholder image
 
-                  final String partnerUserType = partnerProfileData['userType'] ?? '';
+                  final profileData = partnerProfileSnapshot.data!.data() as Map<String, dynamic>;
 
-                  if (partnerUserType == 'flat_listing') {
-                    partnerName = partnerProfileData['displayName'] ?? 'Flat Owner';
-                    List<dynamic>? flatImages = partnerProfileData['flatImages'];
-                    if (flatImages != null && flatImages.isNotEmpty) {
-                      partnerProfileImageUrl = flatImages[0]['url'] ?? '';
+                  // Determine name and image based on profile type
+                  if (partnerProfileType == 'flat_listing') {
+                    final profile = FlatListingProfile.fromMap(profileData, partnerProfileId);
+                    partnerName = profile.ownerName ?? 'Flat Owner';
+                    if (profile.imageUrls != null && profile.imageUrls!.isNotEmpty) {
+                      partnerProfileImageUrl = profile.imageUrls![0];
                     }
-                  } else if (partnerUserType == 'seeking_flatmate') {
-                    partnerName = partnerProfileData['displayName'] ?? 'Flatmate Seeker';
-                    partnerProfileImageUrl = partnerProfileData['profilePictureUrl'] ?? '';
-                  } else {
-                    partnerName = 'Unknown User';
+                  } else if (partnerProfileType == 'seeking_flatmate') {
+                    final profile = SeekingFlatmateProfile.fromMap(profileData, partnerProfileId);
+                    partnerName = profile.name ?? 'Flatmate Seeker';
+                    if (profile.imageUrls != null && profile.imageUrls!.isNotEmpty) {
+                      partnerProfileImageUrl = profile.imageUrls![0];
+                    }
                   }
 
-                  final String currentUid = _currentUser!.uid;
-                  final List<String> sortedChatUids = [currentUid, partnerId]..sort();
-                  final String chatRoomId = '${sortedChatUids[0]}_${sortedChatUids[1]}';
-
-                  print('ChatStreamDebug: Current User ID: $currentUid');
-                  print('ChatStreamDebug: Partner ID: $partnerId');
-                  print('ChatStreamDebug: Calculated chatRoomId: $chatRoomId');
-
-                  // --- NEW FutureBuilder for initial get ---
-                  return FutureBuilder<DocumentSnapshot>(
-                    future: _firestore.collection('chats').doc(chatRoomId).get(),
-                    builder: (context, initialChatSnapshot) {
-                      print('InitialChatGetDebug: For chatRoomId: $chatRoomId');
-                      print('InitialChatGetDebug: Connection State: ${initialChatSnapshot.connectionState}');
-                      print('InitialChatGetDebug: Has Error: ${initialChatSnapshot.hasError}');
-
-                      if (initialChatSnapshot.connectionState == ConnectionState.done) {
-                        if (initialChatSnapshot.hasData) {
-                          print('InitialChatGetDebug: Has Data: true');
-                          print('InitialChatGetDebug: Data Exists: ${initialChatSnapshot.data!.exists}');
-                          if (initialChatSnapshot.data!.exists) {
-                            print('InitialChatGetDebug: Raw Initial Chat Data: ${initialChatSnapshot.data!.data()}');
-                            final initialChatDocData = initialChatSnapshot.data!.data() as Map<String, dynamic>;
-                            final initialLastMessage = initialChatDocData['lastMessage'] as String? ?? 'No messages yet (initial)';
-                            print('InitialChatGetDebug: Initial lastMessage string: "$initialLastMessage"');
-                          } else {
-                            print('InitialChatGetDebug: Initial get: Data exists, but document does not exist!');
-                          }
-                        } else {
-                          print('InitialChatGetDebug: Has Data: false (initial get)');
-                        }
+                  // Fetch the last message from the chat room
+                  return StreamBuilder<QuerySnapshot>(
+                    stream: _firestore
+                        .collection('chats')
+                        .doc(chatRoomId)
+                        .collection('messages')
+                        .orderBy('timestamp', descending: true)
+                        .limit(1)
+                        .snapshots(),
+                    builder: (context, chatSnapshot) {
+                      String lastMessage = 'No messages yet';
+                      if (chatSnapshot.hasData && chatSnapshot.data!.docs.isNotEmpty) {
+                        lastMessage = chatSnapshot.data!.docs.first['content'] as String;
                       }
-                      // --- END NEW FutureBuilder for initial get ---
 
-                      return StreamBuilder<DocumentSnapshot>(
-                        stream: _firestore.collection('chats').doc(chatRoomId).snapshots(),
-                        builder: (context, chatSnapshot) {
-                          print('ChatSnapshotDebug: For chatRoomId: $chatRoomId');
-                          print('ChatSnapshotDebug: Connection State: ${chatSnapshot.connectionState}');
-                          print('ChatSnapshotDebug: Has Error: ${chatSnapshot.hasError}');
-                          if (chatSnapshot.hasData) {
-                            print('ChatSnapshotDebug: Has Data: true');
-                            print('ChatSnapshotDebug: Data Exists: ${chatSnapshot.data!.exists}');
-                            if (chatSnapshot.data!.exists) {
-                              print('ChatSnapshotDebug: Raw Chat Data: ${chatSnapshot.data!.data()}');
-                            } else {
-                              print('ChatSnapshotDebug: Data exists, but document does not exist!');
-                            }
-                          } else {
-                            print('ChatSnapshotDebug: Has Data: false');
-                          }
-
-                          if (chatSnapshot.connectionState == ConnectionState.waiting) {
-                            return Card(
-                              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                              child: ListTile(
-                                leading: CircleAvatar(
-                                  backgroundImage: partnerProfileImageUrl.isNotEmpty
-                                      ? NetworkImage(partnerProfileImageUrl)
-                                      : null,
-                                  child: partnerProfileImageUrl.isEmpty
-                                      ? const Icon(Icons.person, color: Colors.white)
-                                      : null,
-                                  backgroundColor: Colors.grey[300],
-                                ),
-                                title: Text(partnerName),
-                                subtitle: const Text('Loading chat info...'),
-                              ),
-                            );
-                          }
-
-                          if (chatSnapshot.hasError) {
-                            print("Chat Stream Error for chatRoomId $chatRoomId: ${chatSnapshot.error}");
-                            return Card(
-                              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                              child: ListTile(
-                                title: Text(partnerName),
-                                subtitle: Text('Chat error: ${chatSnapshot.error}'),
-                              ),
-                            );
-                          }
-
-                          final bool chatExists = chatSnapshot.hasData && chatSnapshot.data!.exists;
-                          final chatDocData = chatExists ? chatSnapshot.data!.data() as Map<String, dynamic> : null;
-                          final lastMessage = chatDocData?['lastMessage'] as String? ?? 'No messages yet';
-
-                          print('ChatSnapshotDebug: Final lastMessage string: "$lastMessage"');
-
-                          return Card(
-                            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                            elevation: 4,
-                            child: InkWell(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => ChatScreen(
-                                      chatPartnerId: partnerId,
-                                      chatPartnerName: partnerName,
-                                    ),
-                                  ),
-                                );
-                              },
-                              child: Padding(
-                                padding: const EdgeInsets.all(12.0),
-                                child: Row(
-                                  children: [
-                                    CircleAvatar(
-                                      radius: 30,
-                                      backgroundImage: partnerProfileImageUrl.isNotEmpty
-                                          ? NetworkImage(partnerProfileImageUrl)
-                                          : null,
-                                      child: partnerProfileImageUrl.isEmpty
-                                          ? const Icon(Icons.person, size: 30, color: Colors.white)
-                                          : null,
-                                      backgroundColor: Colors.grey[300],
-                                    ),
-                                    const SizedBox(width: 15),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            partnerName,
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 18,
-                                              color: Colors.black87,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            lastMessage,
-                                            style: const TextStyle(fontSize: 14, color: Colors.grey),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 18),
-                                  ],
-                                ),
+                      return GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ChatScreen(
+                                chatPartnerId: partnerId,
+                                chatPartnerName: partnerName,
+                                chatPartnerImageUrl: partnerProfileImageUrl, // Pass image URL
+                                chatRoomId: chatRoomId, // Pass chatRoomId
                               ),
                             ),
                           );
                         },
+                        child: Card(
+                          margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                          elevation: 4.0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12.0),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Row(
+                              children: [
+                                CircleAvatar(
+                                  radius: 30,
+                                  backgroundImage: NetworkImage(partnerProfileImageUrl),
+                                  onBackgroundImageError: (exception, stackTrace) {
+                                    print('Image loading error: $exception');
+                                  },
+                                  backgroundColor: Colors.grey.shade200,
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        partnerName,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 18,
+                                          color: Colors.black87,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        lastMessage,
+                                        style: const TextStyle(fontSize: 14, color: Colors.grey),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 18),
+                              ],
+                            ),
+                          ),
+                        ),
                       );
                     },
                   );
