@@ -319,6 +319,7 @@ class _MatchingScreenState extends State<MatchingScreen> {
     }
   }
 
+// matching_screen.dart
 
   Future<void> _processLike(String likedUserId, String likedProfileDocumentId) async {
     if (_currentUser == null) {
@@ -356,7 +357,8 @@ class _MatchingScreenState extends State<MatchingScreen> {
           'likedUserId': likedUserId, // Still good to store the user ID
           'likedProfileDocumentId': likedProfileDocumentId, // Explicitly store which profile was liked
           'likingUserProfileId': widget.profileId, // Store the ID of the current user's profile that made the like
-          // ADD THESE TWO LINES:
+          // IMPORTANT: ADD THIS LINE TO SAVE THE LIKING USER'S UID
+          'likingUserId': currentUserId, // <--- THIS IS THE KEY FIX!
           'likingUserProfileType': currentUserProfileType, // The type of the current user's profile
           'likedUserProfileType': likedUserProfileType,   // The type of the profile that was liked
         });
