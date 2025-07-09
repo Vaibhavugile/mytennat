@@ -1690,30 +1690,30 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
     // --- Use your provided profileData structure ---
     final Map<String, dynamic> profileData = {
       "uid": user.uid,
-      "email": user.email,
+      "email": user.email, //
       "displayName": _flatListingProfile.ownerName,
       "age": _flatListingProfile.ownerAge ?? 0,
       "gender": _flatListingProfile.ownerGender,
       "occupation": _flatListingProfile.ownerOccupation,
       "bio": _flatListingProfile.ownerBio,
-      "desiredCity": _flatListingProfile.desiredCity,
-      "areaPreference": _flatListingProfile.areaPreference,
+      "desiredCity": _flatListingProfile.desiredCity,//
+      "areaPreference": _flatListingProfile.areaPreference,//
       "userType": "flat_listing",
       "habits": {
         "smoking": _flatListingProfile.smokingHabit,
         "drinking": _flatListingProfile.drinkingHabit,
         "food": _flatListingProfile.foodPreference,
         "cleanliness": _flatListingProfile.cleanlinessLevel,
-        "noiseTolerance": _flatListingProfile.noiseLevel,
+        "noiseTolerance": _flatListingProfile.noiseLevel,//
         "socialPreferences": _flatListingProfile.socialPreferences,
-        "visitorsPolicy": _flatListingProfile.visitorsPolicy,
+        "visitorsPolicy": _flatListingProfile.visitorsPolicy,//
         "petOwnership": _flatListingProfile.petOwnership,
         "petTolerance": _flatListingProfile.petTolerance,
-        "sleepingSchedule": _flatListingProfile.sleepingSchedule,
-        "workSchedule": _flatListingProfile.workSchedule,
-        "sharingCommonSpaces": _flatListingProfile.sharingCommonSpaces,
-        "guestOvernightStays": _flatListingProfile.guestsOvernightPolicy,
-        "personalSpaceVsSocialization": _flatListingProfile.personalSpaceVsSocialization,
+        "sleepingSchedule": _flatListingProfile.sleepingSchedule,//
+        "workSchedule": _flatListingProfile.workSchedule,//
+        "sharingCommonSpaces": _flatListingProfile.sharingCommonSpaces,//
+        "guestOvernightStays": _flatListingProfile.guestsOvernightPolicy,//
+        "personalSpaceVsSocialization": _flatListingProfile.personalSpaceVsSocialization,//
       },
       "flatDetails": {
         "flatType": _flatListingProfile.flatType,
@@ -1725,8 +1725,8 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
         "rentPrice": _flatListingProfile.rentPrice ?? 0,
         "depositAmount": _flatListingProfile.depositAmount ?? 0,
         "bathroomType": _flatListingProfile.bathroomType,
-        "balconyAvailability": _flatListingProfile.balconyAvailability,
-        "parkingAvailability": _flatListingProfile.parkingAvailability,
+        "balconyAvailability": _flatListingProfile.balconyAvailability,//
+        "parkingAvailability": _flatListingProfile.parkingAvailability,//
         "amenities": _flatListingProfile.amenities,
         "address": _flatListingProfile.address,
         "landmark": _flatListingProfile.landmark,
