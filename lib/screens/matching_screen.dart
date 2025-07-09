@@ -182,9 +182,7 @@ class _MatchingScreenState extends State<MatchingScreen> {
         if (_currentFilters.socialHabits != null && _currentFilters.socialHabits!.isNotEmpty) {
           query = query.where('socialPreferences', isEqualTo: _currentFilters.socialHabits);
         }
-        if (_currentFilters.noiseLevel != null && _currentFilters.noiseLevel!.isNotEmpty) {
-          query = query.where('noiseLevel', isEqualTo: _currentFilters.noiseLevel);
-        }
+
         if (_currentFilters.smokingHabit != null && _currentFilters.smokingHabit!.isNotEmpty) {
           query = query.where('smokingHabit', isEqualTo: _currentFilters.smokingHabit);
         }
@@ -200,18 +198,7 @@ class _MatchingScreenState extends State<MatchingScreen> {
         if (_currentFilters.petTolerance != null && _currentFilters.petTolerance!.isNotEmpty) {
           query = query.where('petTolerance', isEqualTo: _currentFilters.petTolerance);
         }
-        if (_currentFilters.workSchedule != null && _currentFilters.workSchedule!.isNotEmpty) {
-          query = query.where('workSchedule', isEqualTo: _currentFilters.workSchedule);
-        }
-        if (_currentFilters.sleepingSchedule != null && _currentFilters.sleepingSchedule!.isNotEmpty) {
-          query = query.where('sleepingSchedule', isEqualTo: _currentFilters.sleepingSchedule);
-        }
-        if (_currentFilters.visitorsPolicy != null && _currentFilters.visitorsPolicy!.isNotEmpty) {
-          query = query.where('visitorsPolicy', isEqualTo: _currentFilters.visitorsPolicy);
-        }
-        if (_currentFilters.guestsOvernightPolicy != null && _currentFilters.guestsOvernightPolicy!.isNotEmpty) {
-          query = query.where('guestsOvernightPolicy', isEqualTo: _currentFilters.guestsOvernightPolicy);
-        }
+
         if (_currentFilters.occupation != null && _currentFilters.occupation!.isNotEmpty) {
           query = query.where('ownerOccupation', isEqualTo: _currentFilters.occupation);
         }
@@ -266,9 +253,7 @@ class _MatchingScreenState extends State<MatchingScreen> {
         if (_currentFilters.socialHabits != null && _currentFilters.socialHabits!.isNotEmpty) {
           query = query.where('socialHabits', isEqualTo: _currentFilters.socialHabits);
         }
-        if (_currentFilters.noiseLevel != null && _currentFilters.noiseLevel!.isNotEmpty) {
-          query = query.where('noiseLevel', isEqualTo: _currentFilters.noiseLevel);
-        }
+
         if (_currentFilters.smokingHabit != null && _currentFilters.smokingHabit!.isNotEmpty) {
           query = query.where('smokingHabits', isEqualTo: _currentFilters.smokingHabit);
         }
@@ -284,18 +269,7 @@ class _MatchingScreenState extends State<MatchingScreen> {
         if (_currentFilters.petTolerance != null && _currentFilters.petTolerance!.isNotEmpty) {
           query = query.where('petTolerance', isEqualTo: _currentFilters.petTolerance);
         }
-        if (_currentFilters.workSchedule != null && _currentFilters.workSchedule!.isNotEmpty) {
-          query = query.where('workSchedule', isEqualTo: _currentFilters.workSchedule);
-        }
-        if (_currentFilters.sleepingSchedule != null && _currentFilters.sleepingSchedule!.isNotEmpty) {
-          query = query.where('sleepingSchedule', isEqualTo: _currentFilters.sleepingSchedule);
-        }
-        if (_currentFilters.visitorsPolicy != null && _currentFilters.visitorsPolicy!.isNotEmpty) {
-          query = query.where('visitorsPolicy', isEqualTo: _currentFilters.visitorsPolicy);
-        }
-        if (_currentFilters.guestsOvernightPolicy != null && _currentFilters.guestsOvernightPolicy!.isNotEmpty) {
-          query = query.where('guestsFrequency', isEqualTo: _currentFilters.guestsOvernightPolicy);
-        }
+
         if (_currentFilters.occupation != null && _currentFilters.occupation!.isNotEmpty) {
           query = query.where('occupation', isEqualTo: _currentFilters.occupation);
         }
@@ -353,7 +327,26 @@ class _MatchingScreenState extends State<MatchingScreen> {
     }
 
     final currentUserId = _currentUser!.uid;
+    // Get the current user's profile type directly from widget.profileType
+    final String currentUserProfileType = widget.profileType;
+
+
     print("_processLike: User $currentUserId (active profile ${widget.profileId}) attempting to like user $likedUserId's profile $likedProfileDocumentId."); // Add more detailed logging
+
+    // --- NEW: Determine the profile type for the liked user (reused from your existing logic) ---
+    String likedUserProfileType;
+    if (currentUserProfileType == 'seeking_flatmate') { // If YOUR profile is seeking_flatmate, then the one you're liking must be flat_listing
+      likedUserProfileType = 'flat_listing';
+    } else if (currentUserProfileType == 'flat_listing') { // If YOUR profile is flat_listing, then the one you're liking must be seeking_flatmate
+      likedUserProfileType = 'seeking_flatmate';
+    } else {
+      // Fallback for unexpected profile types (consider logging an error or throwing)
+      print("Warning: Unknown current user profile type: ${currentUserProfileType}. Assigning 'unknown' to likedUserProfileType.");
+      likedUserProfileType = 'unknown';
+    }
+    print('Determined likedUserProfileType: $likedUserProfileType');
+    // --- END NEW ---
+
 
     try {
       print("_processLike (Op1): Attempting to record like for $currentUserId on $likedProfileDocumentId.");
@@ -363,8 +356,9 @@ class _MatchingScreenState extends State<MatchingScreen> {
           'likedUserId': likedUserId, // Still good to store the user ID
           'likedProfileDocumentId': likedProfileDocumentId, // Explicitly store which profile was liked
           'likingUserProfileId': widget.profileId, // Store the ID of the current user's profile that made the like
-          // It's crucial to also store the current user's profile type here if you need it later for match creation.
-          // For now, we'll get it from widget.profileType when calling _createMatchAndChatRoom.
+          // ADD THESE TWO LINES:
+          'likingUserProfileType': currentUserProfileType, // The type of the current user's profile
+          'likedUserProfileType': likedUserProfileType,   // The type of the profile that was liked
         });
         print("_processLike (Op1): Successfully recorded like for $currentUserId on profile $likedProfileDocumentId.");
       } catch (e) {
@@ -394,27 +388,16 @@ class _MatchingScreenState extends State<MatchingScreen> {
         );
         print("_processLike (Op3): Calling _createMatchAndChatRoom...");
 
-        // --- NEW: Determine the profile type for the liked user ---
-        // This part assumes that _profiles contains the list of profiles being displayed.
-        // You need to find the specific profile that was liked to get its type.
-        String likedUserProfileType;
-        if (widget.profileType == 'seeking_flatmate') {
-          likedUserProfileType = 'flat_listing';
-        } else if (widget.profileType == 'flat_listing') {
-          likedUserProfileType = 'seeking_flatmate';
-        } else {
-          // Fallback for unexpected profile types (consider logging an error or throwing)
-          print("Warning: Unknown current user profile type: ${widget.profileType}. Assigning 'unknown' to likedUserProfileType.");
-          likedUserProfileType = 'unknown';
-        }
-        print('likedusertype:$likedUserProfileType');
-        // --- END NEW ---
+        // The determination of likedUserProfileType is now moved up,
+        // so it's available when we record the like and when we create the match.
+        // print('likedusertype:$likedUserProfileType'); // This can remain for debugging
+
 
         try {
           await _createMatchAndChatRoom(
             currentUserId,
             widget.profileId,
-            widget.profileType, // Current user's profile type, passed from widget
+            currentUserProfileType, // Current user's profile type, passed from widget
             likedUserId,
             likedProfileDocumentId,
             likedUserProfileType, // The newly determined liked user's profile type
@@ -1074,24 +1057,14 @@ class FlatListingProfileCard extends StatelessWidget {
                           backgroundColor: Colors.blue.shade100,
                           textColor: Colors.blue.shade800,
                         ),
-                        _buildChipList(
-                          title: 'Noise:',
-                          items: [profile.noiseLevel],
-                          backgroundColor: Colors.red.shade100,
-                          textColor: Colors.red.shade800,
-                        ),
+
                         _buildChipList(
                           title: 'Social:',
                           items: [profile.socialPreferences],
                           backgroundColor: Colors.pink.shade100,
                           textColor: Colors.pink.shade800,
                         ),
-                        _buildChipList(
-                          title: 'Visitors:',
-                          items: [profile.visitorsPolicy],
-                          backgroundColor: Colors.brown.shade100,
-                          textColor: Colors.brown.shade800,
-                        ),
+
                         _buildChipList(
                           title: 'Pets (Owner):',
                           items: [profile.petOwnership],
@@ -1104,36 +1077,8 @@ class FlatListingProfileCard extends StatelessWidget {
                           backgroundColor: Colors.teal.shade100,
                           textColor: Colors.teal.shade800,
                         ),
-                        _buildChipList(
-                          title: 'Sleeping:',
-                          items: [profile.sleepingSchedule],
-                          backgroundColor: Colors.indigo.shade100,
-                          textColor: Colors.indigo.shade800,
-                        ),
-                        _buildChipList(
-                          title: 'Work:',
-                          items: [profile.workSchedule],
-                          backgroundColor: Colors.grey.shade300,
-                          textColor: Colors.grey.shade800,
-                        ),
-                        _buildChipList(
-                          title: 'Common Spaces:',
-                          items: [profile.sharingCommonSpaces],
-                          backgroundColor: Colors.deepPurple.shade100,
-                          textColor: Colors.deepPurple.shade800,
-                        ),
-                        _buildChipList(
-                          title: 'Overnight Guests:',
-                          items: [profile.guestsOvernightPolicy],
-                          backgroundColor: Colors.lime.shade100,
-                          textColor: Colors.lime.shade800,
-                        ),
-                        _buildChipList(
-                          title: 'Personal Space:',
-                          items: [profile.personalSpaceVsSocialization],
-                          backgroundColor: Colors.amber.shade100,
-                          textColor: Colors.amber.shade800,
-                        ),
+
+
                       ],
                     ),
                   ],
@@ -1439,18 +1384,8 @@ class SeekingFlatmateProfileCard extends StatelessWidget {
                           backgroundColor: Colors.pink.shade100,
                           textColor: Colors.pink.shade800,
                         ),
-                        _buildChipList(
-                          title: 'Work Schedule:',
-                          items: [profile.workSchedule],
-                          backgroundColor: Colors.grey.shade300,
-                          textColor: Colors.grey.shade800,
-                        ),
-                        _buildChipList(
-                          title: 'Noise Level:',
-                          items: [profile.noiseLevel],
-                          backgroundColor: Colors.red.shade100,
-                          textColor: Colors.red.shade800,
-                        ),
+
+
                         _buildChipList(
                           title: 'Smoking Habits:',
                           items: [profile.smokingHabits],
@@ -1475,12 +1410,7 @@ class SeekingFlatmateProfileCard extends StatelessWidget {
                           backgroundColor: Colors.brown.shade100,
                           textColor: Colors.brown.shade800,
                         ),
-                        _buildChipList(
-                          title: 'Visitors Policy:',
-                          items: [profile.visitorsPolicy],
-                          backgroundColor: Colors.teal.shade100,
-                          textColor: Colors.teal.shade800,
-                        ),
+
                         _buildChipList(
                           title: 'Pet Ownership:',
                           items: [profile.petOwnership],
@@ -1493,12 +1423,7 @@ class SeekingFlatmateProfileCard extends StatelessWidget {
                           backgroundColor: Colors.teal.shade100,
                           textColor: Colors.teal.shade800,
                         ),
-                        _buildChipList(
-                          title: 'Sleeping Schedule:',
-                          items: [profile.sleepingSchedule],
-                          backgroundColor: Colors.indigo.shade100,
-                          textColor: Colors.indigo.shade800,
-                        ),
+
                       ],
                     ),
                   ],

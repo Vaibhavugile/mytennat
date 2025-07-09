@@ -17,6 +17,7 @@ class SeekingFlatmateProfile {
   int? age; // Changed to nullable int
   String gender;
   String occupation;
+  String religion;
   String currentLocation;
   String desiredCity; // New field
   DateTime? moveInDate;
@@ -28,22 +29,23 @@ class SeekingFlatmateProfile {
   // Habits
   String cleanliness;
   String socialHabits;
-  String workSchedule;
-  String noiseLevel;
+  // String workSchedule;
+  // String noiseLevel;
   String smokingHabits; // Updated from isSmoker
   String drinkingHabits; // Updated from drinkingHabit
   String foodPreference; // Updated from dietaryPreference
   String guestsFrequency;
-  String visitorsPolicy; // New field
+  // String visitorsPolicy; // New field
   String petOwnership; // Updated from hasPets
   String petTolerance; // New field
-  String sleepingSchedule; // New field
-  String sharingCommonSpaces; // New field
-  String guestsOvernightPolicy; // New field
-  String personalSpaceVsSocialization; // New field
+  // String sleepingSchedule; // New field
+  // String sharingCommonSpaces; // New field
+  // String guestsOvernightPolicy; // New field
+  // String personalSpaceVsSocialization; // New field
 
   // Flat Requirements
   String preferredFlatType;
+  String preferredRoomType;
   String preferredFurnishedStatus;
   List<String> amenitiesDesired;
 
@@ -65,6 +67,7 @@ class SeekingFlatmateProfile {
     this.age,
     this.gender = '',
     this.occupation = '',
+    this.religion='',
     this.currentLocation = '',
     this.desiredCity = '',
     this.moveInDate,
@@ -74,20 +77,21 @@ class SeekingFlatmateProfile {
     this.bio = '',
     this.cleanliness = '',
     this.socialHabits = '',
-    this.workSchedule = '',
-    this.noiseLevel = '',
+    // this.workSchedule = '',
+    // this.noiseLevel = '',
     this.smokingHabits = '',
     this.drinkingHabits = '',
     this.foodPreference = '',
     this.guestsFrequency = '',
-    this.visitorsPolicy = '',
+    // this.visitorsPolicy = '',
     this.petOwnership = '',
     this.petTolerance = '',
-    this.sleepingSchedule = '',
-    this.sharingCommonSpaces = '',
-    this.guestsOvernightPolicy = '',
-    this.personalSpaceVsSocialization = '',
+    // this.sleepingSchedule = '',
+    // this.sharingCommonSpaces = '',
+    // this.guestsOvernightPolicy = '',
+    // this.personalSpaceVsSocialization = '',
     this.preferredFlatType = '',
+    this.preferredRoomType='',
     this.preferredFurnishedStatus = '',
     List<String>? amenitiesDesired,
     this.preferredFlatmateGender = '',
@@ -116,6 +120,7 @@ class SeekingFlatmateProfile {
       age: data['age'] is int ? data['age'] : (data['age'] is String ? int.tryParse(data['age']) : null),
       gender: data['gender'] as String? ?? '',
       occupation: data['occupation'] as String? ?? '',
+      religion: data['religion'] as String? ?? '',
       currentLocation: data['currentLocation'] as String? ?? '',
       desiredCity: data['desiredCity'] as String? ?? '',
       moveInDate: (data['moveInDate'] as Timestamp?)?.toDate(),
@@ -127,22 +132,23 @@ class SeekingFlatmateProfile {
       // Habits
       cleanliness: habitsData['cleanliness'] as String? ?? '',
       socialHabits: habitsData['socialPreferences'] as String? ?? '', // Mapped from 'socialPreferences'
-      workSchedule: habitsData['workSchedule'] as String? ?? '',
-      noiseLevel: habitsData['noiseTolerance'] as String? ?? '', // Mapped from 'noiseTolerance'
+      // workSchedule: habitsData['workSchedule'] as String? ?? '',
+      // noiseLevel: habitsData['noiseTolerance'] as String? ?? '', // Mapped from 'noiseTolerance'
       smokingHabits: habitsData['smoking'] as String? ?? '', // Mapped from 'smoking'
       drinkingHabits: habitsData['drinking'] as String? ?? '', // Mapped from 'drinking'
       foodPreference: habitsData['food'] as String? ?? '', // Mapped from 'food'
       guestsFrequency: habitsData['guestsFrequency'] as String? ?? '',
-      visitorsPolicy: habitsData['visitorsPolicy'] as String? ?? '',
+      // visitorsPolicy: habitsData['visitorsPolicy'] as String? ?? '',
       petOwnership: habitsData['petOwnership'] as String? ?? '',
       petTolerance: habitsData['petTolerance'] as String? ?? '',
-      sleepingSchedule: habitsData['sleepingSchedule'] as String? ?? '',
-      sharingCommonSpaces: habitsData['sharingCommonSpaces'] as String? ?? '',
-      guestsOvernightPolicy: habitsData['guestOvernightStays'] as String? ?? '', // Mapped from 'guestOvernightStays'
-      personalSpaceVsSocialization: habitsData['personalSpaceVsSocializing'] as String? ?? '',
+      // sleepingSchedule: habitsData['sleepingSchedule'] as String? ?? '',
+      // sharingCommonSpaces: habitsData['sharingCommonSpaces'] as String? ?? '',
+      // guestsOvernightPolicy: habitsData['guestOvernightStays'] as String? ?? '', // Mapped from 'guestOvernightStays'
+      // personalSpaceVsSocialization: habitsData['personalSpaceVsSocializing'] as String? ?? '',
 
       // Flat Requirements
       preferredFlatType: flatRequirementsData['preferredFlatType'] as String? ?? '',
+      preferredRoomType: flatRequirementsData['preferredRoomType'] as String? ?? '',
       preferredFurnishedStatus: flatRequirementsData['preferredFurnishedStatus'] as String? ?? '',
       amenitiesDesired: List<String>.from(flatRequirementsData['amenitiesDesired'] as List? ?? []),
 
@@ -166,6 +172,7 @@ class SeekingFlatmateProfile {
       'age': age,
       'gender': gender,
       'occupation': occupation,
+      'religion' :religion,
       'currentLocation': currentLocation,
       'desiredCity': desiredCity,
       'moveInDate': moveInDate != null ? Timestamp.fromDate(moveInDate!) : null,
@@ -176,22 +183,23 @@ class SeekingFlatmateProfile {
       'habits': {
         'cleanliness': cleanliness,
         'socialPreferences': socialHabits, // Mapped to 'socialPreferences'
-        'workSchedule': workSchedule,
-        'noiseTolerance': noiseLevel, // Mapped to 'noiseTolerance'
+        // 'workSchedule': workSchedule,
+        // 'noiseTolerance': noiseLevel, // Mapped to 'noiseTolerance'
         'smoking': smokingHabits, // Mapped to 'smoking'
         'drinking': drinkingHabits, // Mapped to 'drinking'
         'food': foodPreference, // Mapped to 'food'
         'guestsFrequency': guestsFrequency,
-        'visitorsPolicy': visitorsPolicy,
+        // 'visitorsPolicy': visitorsPolicy,
         'petOwnership': petOwnership,
         'petTolerance': petTolerance,
-        'sleepingSchedule': sleepingSchedule,
-        'sharingCommonSpaces': sharingCommonSpaces,
-        'guestOvernightStays': guestsOvernightPolicy, // Mapped to 'guestOvernightStays'
-        'personalSpaceVsSocializing': personalSpaceVsSocialization,
+        // 'sleepingSchedule': sleepingSchedule,
+        // 'sharingCommonSpaces': sharingCommonSpaces,
+        // 'guestOvernightStays': guestsOvernightPolicy, // Mapped to 'guestOvernightStays'
+        // 'personalSpaceVsSocializing': personalSpaceVsSocialization,
       },
       'flatRequirements': {
         'preferredFlatType': preferredFlatType,
+        'preferredRoomType':preferredRoomType,
         'preferredFurnishedStatus': preferredFurnishedStatus,
         'amenitiesDesired': amenitiesDesired,
       },
@@ -922,6 +930,18 @@ class _FlatWithFlatmateProfileScreenState
         hintText: "e.g., Software Engineer, Student, Freelancer",
         controller: _occupationController,
       ),
+      SingleChoiceQuestionWidget(
+        title: "What's your Religion?",
+        subtitle: "This helps potential flatmates relate to you.",
+        options: ['Hindu', 'Muslim', 'Christian','Sikh','Buddhism','Prefer not to say'],
+        onSelected: (value) {
+          setState(() {
+            _seekingFlatmateProfile.religion = value;
+          });
+        },
+        initialValue: _seekingFlatmateProfile.religion,
+      ),
+
 
       // Page 4: Current Location
       _buildTextQuestion(
@@ -1045,36 +1065,36 @@ class _FlatWithFlatmateProfileScreenState
       ),
 
       // Page 13: Work Schedule
-      SingleChoiceQuestionWidget(
-        title: "What's your typical work/study schedule?",
-        subtitle: "This helps in understanding common space usage.",
-        options: [
-          '9-5 Office hours',
-          'Freelance/Flexible hours',
-          'Night shifts',
-          'Student schedule',
-          'Mixed'
-        ],
-        onSelected: (value) {
-          setState(() {
-            _seekingFlatmateProfile.workSchedule = value;
-          });
-        },
-        initialValue: _seekingFlatmateProfile.workSchedule,
-      ),
+      // SingleChoiceQuestionWidget(
+      //   title: "What's your typical work/study schedule?",
+      //   subtitle: "This helps in understanding common space usage.",
+      //   options: [
+      //     '9-5 Office hours',
+      //     'Freelance/Flexible hours',
+      //     'Night shifts',
+      //     'Student schedule',
+      //     'Mixed'
+      //   ],
+      //   onSelected: (value) {
+      //     setState(() {
+      //       _seekingFlatmateProfile.workSchedule = value;
+      //     });
+      //   },
+      //   initialValue: _seekingFlatmateProfile.workSchedule,
+      // ),
 
       // Page 14: Noise Level
-      SingleChoiceQuestionWidget(
-        title: "What's your preferred noise level in a flat?",
-        subtitle: "How quiet or lively do you like the home to be?",
-        options: ['Very quiet', 'Moderate noise', 'Lively', 'Flexible'],
-        onSelected: (value) {
-          setState(() {
-            _seekingFlatmateProfile.noiseLevel = value;
-          });
-        },
-        initialValue: _seekingFlatmateProfile.noiseLevel,
-      ),
+      // SingleChoiceQuestionWidget(
+      //   title: "What's your preferred noise level in a flat?",
+      //   subtitle: "How quiet or lively do you like the home to be?",
+      //   options: ['Very quiet', 'Moderate noise', 'Lively', 'Flexible'],
+      //   onSelected: (value) {
+      //     setState(() {
+      //       _seekingFlatmateProfile.noiseLevel = value;
+      //     });
+      //   },
+      //   initialValue: _seekingFlatmateProfile.noiseLevel,
+      // ),
 
       // Page 15: Smoking Habits
       SingleChoiceQuestionWidget(
@@ -1141,29 +1161,29 @@ class _FlatWithFlatmateProfileScreenState
       ),
 
       // Page 19: Visitors Policy
-      SingleChoiceQuestionWidget(
-        title: "What's your policy on visitors staying overnight?",
-        subtitle: "How often do you expect to have guests stay overnight?",
-        options: ['Frequently', 'Occasionally', 'Rarely', 'Never'],
-        onSelected: (value) {
-          setState(() {
-            _seekingFlatmateProfile.guestsOvernightPolicy = value;
-          });
-        },
-        initialValue: _seekingFlatmateProfile.guestsOvernightPolicy,
-      ),
+      // SingleChoiceQuestionWidget(
+      //   title: "What's your policy on visitors staying overnight?",
+      //   subtitle: "How often do you expect to have guests stay overnight?",
+      //   options: ['Frequently', 'Occasionally', 'Rarely', 'Never'],
+      //   onSelected: (value) {
+      //     setState(() {
+      //       _seekingFlatmateProfile.guestsOvernightPolicy = value;
+      //     });
+      //   },
+      //   initialValue: _seekingFlatmateProfile.guestsOvernightPolicy,
+      // ),
 
-      SingleChoiceQuestionWidget(
-        title: "What's your policy on visitors?",
-        subtitle: "How often do you plan to have guests over?",
-        options: ['Frequent visitors', 'Occasional visitors', 'Rarely have visitors', 'No visitors'],
-        onSelected: (value) {
-          setState(() {
-            _seekingFlatmateProfile.visitorsPolicy = value;
-          });
-        },
-        initialValue: _seekingFlatmateProfile.visitorsPolicy,
-      ),
+      // SingleChoiceQuestionWidget(
+      //   title: "What's your policy on visitors?",
+      //   subtitle: "How often do you plan to have guests over?",
+      //   options: ['Frequent visitors', 'Occasional visitors', 'Rarely have visitors', 'No visitors'],
+      //   onSelected: (value) {
+      //     setState(() {
+      //       _seekingFlatmateProfile.visitorsPolicy = value;
+      //     });
+      //   },
+      //   initialValue: _seekingFlatmateProfile.visitorsPolicy,
+      // ),
 
       // Page 20: Pet Ownership
       SingleChoiceQuestionWidget(
@@ -1197,54 +1217,54 @@ class _FlatWithFlatmateProfileScreenState
       ),
 
       // Page 22: Sleeping Schedule
-      SingleChoiceQuestionWidget(
-        title: "What's your typical sleeping schedule?",
-        subtitle: "Are you an early bird or a night owl?",
-        options: ['Early riser', 'Night Owl', 'Flexible', 'Irregular'],
-        onSelected: (value) {
-          setState(() {
-            _seekingFlatmateProfile.sleepingSchedule = value;
-          });
-        },
-        initialValue: _seekingFlatmateProfile.sleepingSchedule,
-      ),
+      // SingleChoiceQuestionWidget(
+      //   title: "What's your typical sleeping schedule?",
+      //   subtitle: "Are you an early bird or a night owl?",
+      //   options: ['Early riser', 'Night Owl', 'Flexible', 'Irregular'],
+      //   onSelected: (value) {
+      //     setState(() {
+      //       _seekingFlatmateProfile.sleepingSchedule = value;
+      //     });
+      //   },
+      //   initialValue: _seekingFlatmateProfile.sleepingSchedule,
+      // ),
 
       // Page 23: Sharing Common Spaces
-      SingleChoiceQuestionWidget(
-        title: "How do you prefer sharing common spaces?",
-        subtitle: "Do you like to share everything or prefer separate items?",
-        options: [
-          'Share everything',
-          'Share some items',
-          'Prefer separate items',
-          'Flexible'
-        ],
-        onSelected: (value) {
-          setState(() {
-            _seekingFlatmateProfile.sharingCommonSpaces = value;
-          });
-        },
-        initialValue: _seekingFlatmateProfile.sharingCommonSpaces,
-      ),
+      // SingleChoiceQuestionWidget(
+      //   title: "How do you prefer sharing common spaces?",
+      //   subtitle: "Do you like to share everything or prefer separate items?",
+      //   options: [
+      //     'Share everything',
+      //     'Share some items',
+      //     'Prefer separate items',
+      //     'Flexible'
+      //   ],
+      //   onSelected: (value) {
+      //     setState(() {
+      //       _seekingFlatmateProfile.sharingCommonSpaces = value;
+      //     });
+      //   },
+      //   initialValue: _seekingFlatmateProfile.sharingCommonSpaces,
+      // ),
 
       // Page 24: Personal Space vs Socialization
-      SingleChoiceQuestionWidget(
-        title: "How do you balance personal space and socialization?",
-        subtitle:
-        "Do you value quiet personal time or enjoy interactive common spaces?",
-        options: [
-          'Value personal space highly',
-          'Enjoy a balance',
-          'Prefer more socialization',
-          'Flexible'
-        ],
-        onSelected: (value) {
-          setState(() {
-            _seekingFlatmateProfile.personalSpaceVsSocialization = value;
-          });
-        },
-        initialValue: _seekingFlatmateProfile.personalSpaceVsSocialization,
-      ),
+      // SingleChoiceQuestionWidget(
+      //   title: "How do you balance personal space and socialization?",
+      //   subtitle:
+      //   "Do you value quiet personal time or enjoy interactive common spaces?",
+      //   options: [
+      //     'Value personal space highly',
+      //     'Enjoy a balance',
+      //     'Prefer more socialization',
+      //     'Flexible'
+      //   ],
+      //   onSelected: (value) {
+      //     setState(() {
+      //       _seekingFlatmateProfile.personalSpaceVsSocialization = value;
+      //     });
+      //   },
+      //   initialValue: _seekingFlatmateProfile.personalSpaceVsSocialization,
+      // ),
 
       // --- Section 3: Flat Requirements (Pages 25-27) ---
       // Page 25: Preferred Flat Type
@@ -1258,6 +1278,17 @@ class _FlatWithFlatmateProfileScreenState
           });
         },
         initialValue: _seekingFlatmateProfile.preferredFlatType,
+      ),
+      SingleChoiceQuestionWidget(
+        title: "What type of flat are you looking?",
+        subtitle: "single, double, triple, etc.",
+        options: ['Single Occupancy', 'Double Occupancy', 'Triple Occupancy', 'Other'],
+        onSelected: (value) {
+          setState(() {
+            _seekingFlatmateProfile.preferredRoomType = value;
+          });
+        },
+        initialValue: _seekingFlatmateProfile.preferredRoomType,
       ),
 
       // Page 26: Preferred Furnished Status
@@ -1516,6 +1547,7 @@ class _FlatWithFlatmateProfileScreenState
       "age": _seekingFlatmateProfile.age ?? 0,
       "gender": _seekingFlatmateProfile.gender,
       "occupation": _seekingFlatmateProfile.occupation,
+      "religion": _seekingFlatmateProfile.religion,
       "currentLocation": _seekingFlatmateProfile.currentLocation,//
       "desiredCity": _seekingFlatmateProfile.desiredCity,
       "moveInDate": _seekingFlatmateProfile.moveInDate != null
@@ -1529,21 +1561,22 @@ class _FlatWithFlatmateProfileScreenState
       "habits": {
         "cleanliness": _seekingFlatmateProfile.cleanliness,
         "socialPreferences": _seekingFlatmateProfile.socialHabits,
-        "workSchedule": _seekingFlatmateProfile.workSchedule,//
-        "noiseTolerance": _seekingFlatmateProfile.noiseLevel,//
+        // "workSchedule": _seekingFlatmateProfile.workSchedule,//
+        // "noiseTolerance": _seekingFlatmateProfile.noiseLevel,//
         "smoking": _seekingFlatmateProfile.smokingHabits,
         "drinking": _seekingFlatmateProfile.drinkingHabits,
         "food": _seekingFlatmateProfile.foodPreference,
-        "visitorsPolicy": _seekingFlatmateProfile.visitorsPolicy,//
+        // "visitorsPolicy": _seekingFlatmateProfile.visitorsPolicy,//
         "petOwnership": _seekingFlatmateProfile.petOwnership,
         "petTolerance": _seekingFlatmateProfile.petTolerance,
-        "sleepingSchedule": _seekingFlatmateProfile.sleepingSchedule,//
-        "sharingCommonSpaces": _seekingFlatmateProfile.sharingCommonSpaces,//
-        "guestOvernightStays": _seekingFlatmateProfile.guestsOvernightPolicy,//
-        "personalSpaceVsSocialization": _seekingFlatmateProfile.personalSpaceVsSocialization,//
+        // "sleepingSchedule": _seekingFlatmateProfile.sleepingSchedule,//
+        // "sharingCommonSpaces": _seekingFlatmateProfile.sharingCommonSpaces,//
+        // "guestOvernightStays": _seekingFlatmateProfile.guestsOvernightPolicy,//
+        //"personalSpaceVsSocialization": _seekingFlatmateProfile.personalSpaceVsSocialization,//
       },
       "flatRequirements": {
         "preferredFlatType": _seekingFlatmateProfile.preferredFlatType,
+        "preferredRoomType":_seekingFlatmateProfile.preferredRoomType,
         "preferredFurnishedStatus": _seekingFlatmateProfile.preferredFurnishedStatus,
         "amenitiesDesired": _seekingFlatmateProfile.amenitiesDesired,
       },

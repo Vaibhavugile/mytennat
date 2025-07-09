@@ -451,12 +451,7 @@ class _FilterScreenState extends State<FilterScreen> with SingleTickerProviderSt
                             items: _socialHabitsOptions,
                             onChanged: (value) => setState(() => _filters.socialHabits = value == 'Any' ? null : value),
                           ),
-                          _buildDropdownFilter(
-                            label: 'Noise Level',
-                            value: _filters.noiseLevel,
-                            items: _noiseLevels,
-                            onChanged: (value) => setState(() => _filters.noiseLevel = value == 'Any' ? null : value),
-                          ),
+
                           _buildDropdownFilter(
                             label: 'Smoking Habits',
                             value: _filters.smokingHabit,
@@ -487,30 +482,8 @@ class _FilterScreenState extends State<FilterScreen> with SingleTickerProviderSt
                             items: _petToleranceOptions,
                             onChanged: (value) => setState(() => _filters.petTolerance = value == 'Any' ? null : value),
                           ),
-                          _buildDropdownFilter(
-                            label: 'Work Schedule',
-                            value: _filters.workSchedule,
-                            items: _workScheduleOptions,
-                            onChanged: (value) => setState(() => _filters.workSchedule = value == 'Any' ? null : value),
-                          ),
-                          _buildDropdownFilter(
-                            label: 'Sleeping Schedule',
-                            value: _filters.sleepingSchedule,
-                            items: _sleepingScheduleOptions,
-                            onChanged: (value) => setState(() => _filters.sleepingSchedule = value == 'Any' ? null : value),
-                          ),
-                          _buildDropdownFilter(
-                            label: 'Visitors Policy',
-                            value: _filters.visitorsPolicy,
-                            items: _visitorsPolicyOptions,
-                            onChanged: (value) => setState(() => _filters.visitorsPolicy = value == 'Any' ? null : value),
-                          ),
-                          _buildDropdownFilter(
-                            label: 'Guests Overnight Policy',
-                            value: _filters.guestsOvernightPolicy,
-                            items: _guestsOvernightPolicyOptions,
-                            onChanged: (value) => setState(() => _filters.guestsOvernightPolicy = value == 'Any' ? null : value),
-                          ),
+
+
                           _FilterChipGroup(
                             title: 'Ideal Qualities',
                             availableItems: _commonQualities,

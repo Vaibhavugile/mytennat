@@ -31,16 +31,16 @@ class FilterOptions {
   // And then applied to the habits/preferences of the *other* profile.
   String? cleanlinessLevel; // NEW: e.g., 'Very Clean', 'Moderately Clean'
   String? socialHabits; // NEW: e.g., 'Very Social', 'Introvert'
-  String? noiseLevel; // NEW: e.g., 'Quiet', 'Moderate'
+  // String? noiseLevel; // NEW: e.g., 'Quiet', 'Moderate'
   String? smokingHabit; // NEW: e.g., 'Non-Smoker', 'Social Smoker'
   String? drinkingHabit; // NEW: e.g., 'Non-Drinker', 'Social Drinker'
   String? foodPreference; // NEW: e.g., 'Vegetarian', 'Non-Vegetarian'
   String? petOwnership; // NEW: e.g., 'Has Pets', 'No Pets'
   String? petTolerance; // NEW: e.g., 'Pet-Friendly', 'Not Pet-Friendly'
-  String? workSchedule; // NEW: e.g., '9-5', 'Flexible'
-  String? sleepingSchedule; // NEW: e.g., 'Early Riser', 'Night Owl'
-  String? visitorsPolicy; // NEW: e.g., 'Guests Welcome', 'Occasional Guests'
-  String? guestsOvernightPolicy; // NEW: e.g., 'Allowed', 'Not Allowed'
+  // String? workSchedule; // NEW: e.g., '9-5', 'Flexible'
+  // String? sleepingSchedule; // NEW: e.g., 'Early Riser', 'Night Owl'
+  // String? visitorsPolicy; // NEW: e.g., 'Guests Welcome', 'Occasional Guests'
+  // String? guestsOvernightPolicy; // NEW: e.g., 'Allowed', 'Not Allowed'
   String? occupation; // NEW: for matching occupation directly
 
   // Keep these generic lists for other preferences if needed, but for direct Firestore queries,
@@ -69,16 +69,15 @@ class FilterOptions {
     this.budgetMax,
     this.cleanlinessLevel,   // NEW
     this.socialHabits,       // NEW
-    this.noiseLevel,         // NEW
+          // NEW
     this.smokingHabit,       // NEW
     this.drinkingHabit,      // NEW
     this.foodPreference,     // NEW
     this.petOwnership,       // NEW
     this.petTolerance,       // NEW
-    this.workSchedule,       // NEW
-    this.sleepingSchedule,   // NEW
-    this.visitorsPolicy,     // NEW
-    this.guestsOvernightPolicy, // NEW
+          // NEW
+       // NEW
+     // NEW
     this.occupation,         // NEW
     List<String>? selectedIdealQualities,
     List<String>? selectedDealBreakers,
@@ -106,16 +105,13 @@ class FilterOptions {
         budgetMax != null ||
         cleanlinessLevel != null || // NEW
         socialHabits != null ||     // NEW
-        noiseLevel != null ||       // NEW
+          // NEW
         smokingHabit != null ||     // NEW
         drinkingHabit != null ||    // NEW
         foodPreference != null ||   // NEW
         petOwnership != null ||     // NEW
         petTolerance != null ||     // NEW
-        workSchedule != null ||     // NEW
-        sleepingSchedule != null || // NEW
-        visitorsPolicy != null ||   // NEW
-        guestsOvernightPolicy != null || // NEW
+
         occupation != null ||       // NEW
         selectedIdealQualities.isNotEmpty ||
         selectedDealBreakers.isNotEmpty;
@@ -141,16 +137,13 @@ class FilterOptions {
     budgetMax = null;
     cleanlinessLevel = null;   // NEW
     socialHabits = null;       // NEW
-    noiseLevel = null;         // NEW
+          // NEW
     smokingHabit = null;       // NEW
     drinkingHabit = null;      // NEW
     foodPreference = null;     // NEW
     petOwnership = null;       // NEW
     petTolerance = null;       // NEW
-    workSchedule = null;       // NEW
-    sleepingSchedule = null;   // NEW
-    visitorsPolicy = null;     // NEW
-    guestsOvernightPolicy = null; // NEW
+
     occupation = null;         // NEW
     selectedIdealQualities.clear();
     selectedDealBreakers.clear();
@@ -216,16 +209,12 @@ class FilterOptions {
       budgetMax: budgetMax ?? this.budgetMax,
       cleanlinessLevel: cleanlinessLevel ?? this.cleanlinessLevel,   // NEW
       socialHabits: socialHabits ?? this.socialHabits,       // NEW
-      noiseLevel: noiseLevel ?? this.noiseLevel,         // NEW
+
       smokingHabit: smokingHabit ?? this.smokingHabit,       // NEW
       drinkingHabit: drinkingHabit ?? this.drinkingHabit,      // NEW
       foodPreference: foodPreference ?? this.foodPreference,     // NEW
       petOwnership: petOwnership ?? this.petOwnership,       // NEW
       petTolerance: petTolerance ?? this.petTolerance,       // NEW
-      workSchedule: workSchedule ?? this.workSchedule,       // NEW
-      sleepingSchedule: sleepingSchedule ?? this.sleepingSchedule,   // NEW
-      visitorsPolicy: visitorsPolicy ?? this.visitorsPolicy,     // NEW
-      guestsOvernightPolicy: guestsOvernightPolicy ?? this.guestsOvernightPolicy, // NEW
       occupation: occupation ?? this.occupation,         // NEW
     );
   }

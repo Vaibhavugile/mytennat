@@ -5,12 +5,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mytennat/screens/edit_profile_screen.dart';
 import 'package:mytennat/screens/matching_screen.dart';
 import 'package:mytennat/screens/matches_list_screen.dart';
-import 'package:mytennat/screens/ActivityScreen.dart';
+//import 'package:mytennat/screens/ActivityScreen.dart';
 import 'package:mytennat/widgets/profile_display_widgets.dart';
 import 'package:mytennat/screens/view_profile_screen.dart';
 import 'package:mytennat/screens/more_profile_screen.dart'; // Import the MoreProfileScreen
 import 'package:shared_preferences/shared_preferences.dart'; // Import SharedPreferences
-
+import 'package:mytennat/screens/user_activity_screen.dart';
 // Assuming these models are accessible
 import 'package:mytennat/screens/flatmate_profile_screen.dart'; // For FlatListingProfile
 import 'package:mytennat/screens/flat_with_flatmate_profile_screen.dart'; // For SeekingFlatmateProfile
@@ -264,10 +264,7 @@ class _HomePageState extends State<HomePage> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => ActivityScreen(
-                          profileType: _userProfileType!, // Pass the active profile type
-                          profileId: _currentActiveProfileId!, // Pass the active profile ID
-                        ),
+                        builder: (context) => const UserActivityScreen(), // No parameters needed
                       ),
                     );
                   },

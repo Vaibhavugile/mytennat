@@ -582,6 +582,7 @@ class SeekingFlatmateProfileDisplay extends StatelessWidget {
               MapEntry('Gender', profile.gender),
               MapEntry('Age', profile.age?.toString()),
               MapEntry('Occupation', profile.occupation),
+              MapEntry('Religion', profile.religion),
               MapEntry('Current Location', profile.currentLocation),
               MapEntry('Desired City', profile.desiredCity),
               MapEntry('Area Pref.', profile.areaPreference),
@@ -599,19 +600,12 @@ class SeekingFlatmateProfileDisplay extends StatelessWidget {
             [
               MapEntry('Cleanliness', profile.cleanliness),
               MapEntry('Social Habits', profile.socialHabits),
-              MapEntry('Work Schedule', profile.workSchedule),
-              MapEntry('Noise Level', profile.noiseLevel),
               MapEntry('Smoking Habits', profile.smokingHabits),
               MapEntry('Drinking Habits', profile.drinkingHabits),
               MapEntry('Food Preference', profile.foodPreference),
               MapEntry('Guests Freq.', profile.guestsFrequency),
-              MapEntry('Visitors Policy', profile.visitorsPolicy),
               MapEntry('Pet Ownership', profile.petOwnership),
               MapEntry('Pet Tolerance', profile.petTolerance),
-              MapEntry('Sleeping Schedule', profile.sleepingSchedule),
-              MapEntry('Sharing Spaces', profile.sharingCommonSpaces),
-              MapEntry('Guests Overnight Policy', profile.guestsOvernightPolicy),
-              MapEntry('Personal Space vs. Socialization', profile.personalSpaceVsSocialization),
             ],
           ),
 
@@ -628,6 +622,7 @@ class SeekingFlatmateProfileDisplay extends StatelessWidget {
             'Flat Requirements',
             [
               MapEntry('Preferred Flat Type', profile.preferredFlatType),
+              MapEntry('Preferred Room Type', profile.preferredRoomType),
               MapEntry('Furnished Status', profile.preferredFurnishedStatus),
             ],
           ),
@@ -773,12 +768,13 @@ class FlatListingProfileDisplay extends StatelessWidget {
 
           // Basic Info (Owner's Info) - NOW AS A GRID
           _buildCharacteristicGrid(
-            'About The Owner / Current Flatmate',
+            'About The Current Flatmate',
             [
               MapEntry('Name', profile.ownerName),
               MapEntry('Age', profile.ownerAge?.toString()),
               MapEntry('Gender', profile.ownerGender),
               MapEntry('Occupation', profile.ownerOccupation),
+              MapEntry('Religion', profile.ownerReligion),
               MapEntry('Bio', profile.ownerBio),
             ],
           ),
@@ -791,16 +787,12 @@ class FlatListingProfileDisplay extends StatelessWidget {
               MapEntry('Drinking Habits', profile.drinkingHabit),
               MapEntry('Food Preference', profile.foodPreference),
               MapEntry('Cleanliness', profile.cleanlinessLevel),
-              MapEntry('Noise Level', profile.noiseLevel),
+
               MapEntry('Social Preferences', profile.socialPreferences),
-              MapEntry('Visitors Policy', profile.visitorsPolicy),
+
               MapEntry('Pet Ownership', profile.petOwnership),
               MapEntry('Pet Tolerance', profile.petTolerance),
-              MapEntry('Sleeping Schedule', profile.sleepingSchedule),
-              MapEntry('Work Schedule', profile.workSchedule),
-              MapEntry('Sharing Spaces', profile.sharingCommonSpaces),
-              MapEntry('Guests Overnight Policy', profile.guestsOvernightPolicy),
-              MapEntry('Personal Space vs. Socialization', profile.personalSpaceVsSocialization),
+
             ],
           ),
 
@@ -814,6 +806,7 @@ class FlatListingProfileDisplay extends StatelessWidget {
               MapEntry('Landmark', profile.landmark),
               MapEntry('Description', profile.flatDescription),
               MapEntry('Flat Type', profile.flatType),
+              MapEntry('Room Type', profile.roomType),
               MapEntry('Furnished Status', profile.furnishedStatus),
               MapEntry('Available For', profile.availableFor),
               MapEntry('Availability Date', profile.availabilityDate != null
@@ -822,8 +815,7 @@ class FlatListingProfileDisplay extends StatelessWidget {
               MapEntry('Rent Price', '₹${profile.rentPrice ?? 'N/A'}'),
               MapEntry('Deposit Amt.', '₹${profile.depositAmount ?? 'N/A'}'),
               MapEntry('Bathroom Type', profile.bathroomType),
-              MapEntry('Balcony', profile.balconyAvailability),
-              MapEntry('Parking', profile.parkingAvailability),
+
             ],
           ),
           // Amenities - NOW AS A GRID
