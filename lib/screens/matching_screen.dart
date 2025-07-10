@@ -9,7 +9,7 @@ import 'package:mytennat/screens/filter_screen.dart';
 import 'package:mytennat/screens/filter_options.dart';
 import 'dart:math' as math; // Import for math.min
 import 'package:mytennat/screens/view_profile_screen.dart'; // Import ViewProfileScreen
-
+import 'package:mytennat/screens/banner_popup_screen.dart'; // NEW: Import the banner popup screen
 class MatchingScreen extends StatefulWidget {
   // Add these final fields to receive the active profile details
   final String profileType;
@@ -35,9 +35,19 @@ class _MatchingScreenState extends State<MatchingScreen> {
   String? _userProfileType;
   dynamic _currentUserParsedProfile; // Store the current user's parsed profile
   FilterOptions _currentFilters = FilterOptions(); // Current active filters
+  bool _isBannerPopupShowing = false; // NEW: Flag to prevent multiple popups
+  // Data for banner and liked/liked by me logic
+  // Key: current user's active profile ID, Value: List of profiles that liked it
+  final Map<String, List<dynamic>> _incomingLikes = {};
+  // Key: current user's active profile ID, Value: List of profiles liked by it
+  final Map<String, List<dynamic>> _outgoingLikes = {};
 
+  String? _bannerMessage;
+  String? _lastLikedProfileName; // Name of the person you just liked who didn't like back
 
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>(); // Key for Scaffold
+
+  int _interactionCount = 0; // NEW: Counter for likes/dislikes
 
   @override
   void initState() {
@@ -58,8 +68,27 @@ class _MatchingScreenState extends State<MatchingScreen> {
 
   @override
   void dispose() {
-    // Removed _pageController dispose as it's now handled within the card widgets
     super.dispose();
+  }
+
+  // Helper to get display name for a profile
+  String _getProfileDisplayName(dynamic profile) {
+    if (profile is FlatListingProfile) {
+      return profile.ownerName ?? 'Unnamed Flat Listing';
+    } else if (profile is SeekingFlatmateProfile) {
+      return profile.name ?? 'Unnamed Flatmate Seeker';
+    }
+    return 'Unknown Profile';
+  }
+
+  // Helper to get display type for a profile
+  String _getProfileTypeDisplay(dynamic profile) {
+    if (profile is FlatListingProfile) {
+      return 'Flat Listing';
+    } else if (profile is SeekingFlatmateProfile) {
+      return 'Seeking Flatmate';
+    }
+    return 'Unknown Type';
   }
 
   Future<void> _fetchUserProfile({bool applyFilters = false}) async {
@@ -67,14 +96,10 @@ class _MatchingScreenState extends State<MatchingScreen> {
 
     setState(() {
       _isLoading = true;
+      _interactionCount = 0; // NEW: Reset interaction count when fetching new profiles
     });
 
     try {
-      // Use the profile type and ID passed from the HomePage
-      // Instead of re-fetching userDoc to determine userType
-      // _userProfileType is already set from widget.profileType
-      // Fetch the specific profile using widget.profileId
-
       if (_userProfileType == 'flat_listing') {
         DocumentSnapshot flatListingDoc = await _firestore
             .collection('users')
@@ -88,6 +113,10 @@ class _MatchingScreenState extends State<MatchingScreen> {
               flatListingDoc.data() as Map<String, dynamic>,
               flatListingDoc.id
           );
+          // Fetch likes after the current user's profile is loaded
+          await _fetchIncomingLikes(_currentUser!.uid, widget.profileId);
+          await _fetchOutgoingLikes(_currentUser!.uid, widget.profileId);
+          // If current user is 'flat_listing', they are looking for 'seeking_flatmate' profiles
           await _fetchSeekingFlatmateProfiles(applyFilters: applyFilters);
         } else {
           _showAlertDialog('Profile Not Found', 'The selected Flat Listing profile could not be found.', () {
@@ -107,6 +136,10 @@ class _MatchingScreenState extends State<MatchingScreen> {
               seekingFlatmateDoc.data() as Map<String, dynamic>,
               seekingFlatmateDoc.id
           );
+          // Fetch likes after the current user's profile is loaded
+          await _fetchIncomingLikes(_currentUser!.uid, widget.profileId);
+          await _fetchOutgoingLikes(_currentUser!.uid, widget.profileId);
+          // If current user is 'seeking_flatmate', they are looking for 'flat_listing' profiles
           await _fetchFlatListingProfiles(applyFilters: applyFilters);
         } else {
           _showAlertDialog('Profile Not Found', 'The selected Seeking Flatmate profile could not be found.', () {
@@ -116,6 +149,7 @@ class _MatchingScreenState extends State<MatchingScreen> {
       } else {
         _showAlertDialog('Profile Type Not Found', 'Your active profile type could not be determined from the provided data.', () {});
       }
+      _checkForBanner(); // Initial check for banner after all data is loaded
     } catch (e) {
       _showAlertDialog('Error', 'Failed to fetch user profile: $e', () {});
       print('Firebase Firestore Error: $e');
@@ -123,10 +157,88 @@ class _MatchingScreenState extends State<MatchingScreen> {
       setState(() {
         _isLoading = false;
         _currentIndex = 0; // Reset index when new profiles are fetched
-        // Removed _pageController.jumpToPage(0) as it's now internal to card widgets
+        // _bannerMessage is now set by _checkForBanner()
       });
     }
   }
+
+  Future<void> _fetchIncomingLikes(String currentUserId, String currentProfileId) async {
+    try {
+      final QuerySnapshot querySnapshot = await _firestore
+          .collectionGroup('likes') // Query across all 'likes' subcollections
+          .where('likedUserId', isEqualTo: currentUserId)
+          .where('likedProfileDocumentId', isEqualTo: currentProfileId)
+          .get();
+
+      List<dynamic> likedMeProfiles = [];
+      for (var doc in querySnapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        final String likingUserId = data['likingUserId'];
+        final String likingUserProfileId = data['likingUserProfileId'];
+        final String likingUserProfileType = data['likingUserProfileType'];
+
+        DocumentSnapshot? profileDoc;
+        if (likingUserProfileType == 'flat_listing') {
+          profileDoc = await _firestore.collection('users').doc(likingUserId).collection('flatListings').doc(likingUserProfileId).get();
+        } else if (likingUserProfileType == 'seeking_flatmate') {
+          profileDoc = await _firestore.collection('users').doc(likingUserId).collection('seekingFlatmateProfiles').doc(likingUserProfileId).get();
+        }
+
+        if (profileDoc != null && profileDoc.exists) {
+          if (likingUserProfileType == 'flat_listing') {
+            likedMeProfiles.add(FlatListingProfile.fromMap(profileDoc.data() as Map<String, dynamic>, profileDoc.id));
+          } else if (likingUserProfileType == 'seeking_flatmate') {
+            likedMeProfiles.add(SeekingFlatmateProfile.fromMap(profileDoc.data() as Map<String, dynamic>, profileDoc.id));
+          }
+        }
+      }
+      setState(() {
+        _incomingLikes[currentProfileId] = likedMeProfiles;
+      });
+    } catch (e) {
+      print('Error fetching incoming likes: $e');
+    }
+  }
+
+  Future<void> _fetchOutgoingLikes(String currentUserId, String currentProfileId) async {
+    try {
+      final QuerySnapshot querySnapshot = await _firestore
+          .collection('user_likes')
+          .doc(currentUserId)
+          .collection('likes')
+          .where('likingUserProfileId', isEqualTo: currentProfileId)
+          .get();
+
+      List<dynamic> likedByMeProfiles = [];
+      for (var doc in querySnapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        final String likedUserId = data['likedUserId'];
+        final String likedProfileDocumentId = data['likedProfileDocumentId'];
+        final String likedUserProfileType = data['likedUserProfileType'];
+
+        DocumentSnapshot? profileDoc;
+        if (likedUserProfileType == 'flat_listing') {
+          profileDoc = await _firestore.collection('users').doc(likedUserId).collection('flatListings').doc(likedProfileDocumentId).get();
+        } else if (likedUserProfileType == 'seeking_flatmate') {
+          profileDoc = await _firestore.collection('users').doc(likedUserId).collection('seekingFlatmateProfiles').doc(likedProfileDocumentId).get();
+        }
+
+        if (profileDoc != null && profileDoc.exists) {
+          if (likedUserProfileType == 'flat_listing') {
+            likedByMeProfiles.add(FlatListingProfile.fromMap(profileDoc.data() as Map<String, dynamic>, profileDoc.id));
+          } else if (likedUserProfileType == 'seeking_flatmate') {
+            likedByMeProfiles.add(SeekingFlatmateProfile.fromMap(profileDoc.data() as Map<String, dynamic>, profileDoc.id));
+          }
+        }
+      }
+      setState(() {
+        _outgoingLikes[currentProfileId] = likedByMeProfiles;
+      });
+    } catch (e) {
+      print('Error fetching outgoing likes: $e');
+    }
+  }
+
 
   Future<void> _fetchFlatListingProfiles({bool applyFilters = false}) async {
     try {
@@ -206,9 +318,27 @@ class _MatchingScreenState extends State<MatchingScreen> {
 
       QuerySnapshot querySnapshot = await query.get();
 
-      _profiles = querySnapshot.docs
+      List<dynamic> fetchedProfiles = querySnapshot.docs
           .map((doc) => FlatListingProfile.fromMap(doc.data() as Map<String, dynamic>, doc.id))
           .toList();
+
+      // Filter out profiles already liked by or that have liked the current active profile
+      final List<dynamic> currentOutgoingLikes = _outgoingLikes[widget.profileId] ?? [];
+      final List<dynamic> currentIncomingLikes = _incomingLikes[widget.profileId] ?? [];
+
+      Set<String> alreadyInteractedProfileIds = {};
+      for (var profile in currentOutgoingLikes) {
+        alreadyInteractedProfileIds.add(profile.documentId!);
+      }
+      for (var profile in currentIncomingLikes) {
+        alreadyInteractedProfileIds.add(profile.documentId!);
+      }
+
+      _profiles = fetchedProfiles.where((profile) {
+        return !alreadyInteractedProfileIds.contains(profile.documentId!);
+      }).toList();
+      _profiles.shuffle(); // Optional: randomize the order
+
       setState(() {});
     } catch (e) {
       _showAlertDialog('Error', 'Failed to load flat listing profiles: $e', () {});
@@ -277,9 +407,27 @@ class _MatchingScreenState extends State<MatchingScreen> {
 
       QuerySnapshot querySnapshot = await query.get();
 
-      _profiles = querySnapshot.docs
+      List<dynamic> fetchedProfiles = querySnapshot.docs
           .map((doc) => SeekingFlatmateProfile.fromMap(doc.data() as Map<String, dynamic>, doc.id))
           .toList();
+
+      // Filter out profiles already liked by or that have liked the current active profile
+      final List<dynamic> currentOutgoingLikes = _outgoingLikes[widget.profileId] ?? [];
+      final List<dynamic> currentIncomingLikes = _incomingLikes[widget.profileId] ?? [];
+
+      Set<String> alreadyInteractedProfileIds = {};
+      for (var profile in currentOutgoingLikes) {
+        alreadyInteractedProfileIds.add(profile.documentId!);
+      }
+      for (var profile in currentIncomingLikes) {
+        alreadyInteractedProfileIds.add(profile.documentId!);
+      }
+
+      _profiles = fetchedProfiles.where((profile) {
+        return !alreadyInteractedProfileIds.contains(profile.documentId!);
+      }).toList();
+      _profiles.shuffle(); // Optional: randomize the order
+
       setState(() {});
     } catch (e) {
       _showAlertDialog('Error', 'Failed to load seeking flatmate profiles: $e', () {});
@@ -363,6 +511,20 @@ class _MatchingScreenState extends State<MatchingScreen> {
           'likedUserProfileType': likedUserProfileType,   // The type of the profile that was liked
         });
         print("_processLike (Op1): Successfully recorded like for $currentUserId on profile $likedProfileDocumentId.");
+
+        // Update local outgoing likes
+        setState(() {
+          if (!_outgoingLikes.containsKey(widget.profileId)) {
+            _outgoingLikes[widget.profileId] = [];
+          }
+          // Find the profile from _profiles list to add to _outgoingLikes
+          // Ensure we only add if it's not already there (to avoid duplicates if set() is used repeatedly)
+          final likedProfile = _profiles.firstWhere((p) => p.documentId == likedProfileDocumentId);
+          if (!_outgoingLikes[widget.profileId]!.any((p) => p.documentId == likedProfile.documentId)) {
+            _outgoingLikes[widget.profileId]!.add(likedProfile);
+          }
+        });
+
       } catch (e) {
         print("_processLike (Op1) ERROR: Failed to SET like document: $e");
         _showAlertDialog('Error', 'Failed to record your like: ${e.toString()}', () {});
@@ -390,10 +552,11 @@ class _MatchingScreenState extends State<MatchingScreen> {
         );
         print("_processLike (Op3): Calling _createMatchAndChatRoom...");
 
-        // The determination of likedUserProfileType is now moved up,
-        // so it's available when we record the like and when we create the match.
-        // print('likedusertype:$likedUserProfileType'); // This can remain for debugging
-
+        // Clear banner if it's a match
+        setState(() {
+          _bannerMessage = null;
+          _lastLikedProfileName = null;
+        });
 
         try {
           await _createMatchAndChatRoom(
@@ -413,13 +576,11 @@ class _MatchingScreenState extends State<MatchingScreen> {
 
         String chatPartnerNameForDialog = 'that user';
         try {
+          // Find the actual profile object from the _profiles list to get its display name
           final matchedProfile = _profiles.firstWhere((p) =>
-          (p is FlatListingProfile && p.uid == likedUserId) ||
-              (p is SeekingFlatmateProfile && p.uid == likedUserId)
+          p.documentId == likedProfileDocumentId
           );
-          chatPartnerNameForDialog = matchedProfile is FlatListingProfile
-              ? matchedProfile.ownerName ?? 'Match'
-              : (matchedProfile as SeekingFlatmateProfile).name ?? 'Match';
+          chatPartnerNameForDialog = _getProfileDisplayName(matchedProfile);
         } catch (e) {
           print("_processLike: Could not find matched profile in _profiles for dialog. Error: $e");
         }
@@ -451,12 +612,100 @@ class _MatchingScreenState extends State<MatchingScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Profile Liked! Awaiting their response.'))
         );
+        // _checkForBanner() will be called by _moveToNextProfile()
       }
     } catch (e) {
       print("_processLike: UNEXPECTED GLOBAL ERROR: $e");
       _showAlertDialog('Error', 'An unexpected error occurred: ${e.toString()}', () {});
     }
   }
+
+  // This function checks if the banner should be displayed
+  void _checkForBanner() {
+    setState(() {
+    //  _bannerMessage = null; // Clear existing message first
+    //  _lastLikedProfileName = null;
+
+      // NEW: Only show banner if interaction count is 2 or more
+      if (_interactionCount < 2 || _interactionCount % 2 != 0) {
+        return; // Exit if not enough interactions or if it's an odd count
+      }
+
+      final List<dynamic> currentOutgoingLikes = _outgoingLikes[widget.profileId] ?? [];
+      final List<dynamic> currentIncomingLikes = _incomingLikes[widget.profileId] ?? [];
+
+      // Find the first profile that the current user liked, but hasn't liked them back
+      dynamic pendingLikedProfile;
+      for (var outgoingProfile in currentOutgoingLikes) {
+        final bool hasLikedMeBack = currentIncomingLikes
+            .any((incomingProfile) => incomingProfile.documentId == outgoingProfile.documentId);
+        if (!hasLikedMeBack) {
+          pendingLikedProfile = outgoingProfile;
+          break; // Found the first one, no need to check further
+        }
+      }
+
+      if (pendingLikedProfile != null) {
+        _showBannerPopup(pendingLikedProfile);
+      }
+    });
+
+
+  }
+
+  void _moveToNextProfile() {
+    setState(() {
+      _currentIndex++;
+      if (_currentIndex >= _profiles.length) {
+        // Handle end of profiles (e.g., show a message, fetch more)
+        _profiles.clear(); // Clear to prevent out of bounds access
+
+        _interactionCount = 0; // NEW: Reset interaction count if profiles run out
+      }
+      // Re-evaluate banner state after moving to the next profile or if profiles end
+      _checkForBanner();
+    });
+  }
+  // NEW: Function to show the banner popup
+  Future<void> _showBannerPopup(dynamic pendingLikedProfile) {
+    if (_isBannerPopupShowing) {
+      return Future.value();
+    }
+
+    _isBannerPopupShowing = true;
+    final String profileName = _getProfileDisplayName(pendingLikedProfile);
+    final String message = 'You\'ve sent a Connect to $profileName!';
+    final String sub = 'Waiting for them to like you back.'; // The sub-message
+
+    String? imageUrl; // Get the actual image URL here
+    if (pendingLikedProfile is FlatListingProfile && pendingLikedProfile.imageUrls != null && pendingLikedProfile.imageUrls!.isNotEmpty) {
+      imageUrl = pendingLikedProfile.imageUrls!.first;
+    } else if (pendingLikedProfile is SeekingFlatmateProfile && pendingLikedProfile.imageUrls != null && pendingLikedProfile.imageUrls!.isNotEmpty) {
+      imageUrl = pendingLikedProfile.imageUrls!.first;
+    }
+    // If imageUrl is still null, the BannerPopupScreen will show the person icon.
+
+    return showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return BannerPopupScreen(
+          message: message,
+          subMessage: sub, // Pass the sub-message
+          profileImageUrl: imageUrl, // Pass the profile image URL
+          buttonText: 'Upgrade to Premium', // Set button text explicitly
+          onButtonPressed: () {
+            Navigator.of(context).pop(); // Dismiss the popup
+            // Add your navigation or logic for "Upgrade to Premium" here
+            // Example: Navigator.push(context, MaterialPageRoute(builder: (context) => PremiumScreen()));
+          },
+        );
+      },
+    ).then((_) {
+      _isBannerPopupShowing = false;
+    });
+  }
+
   Future<void> _createMatchAndChatRoom(
       String user1Uid,
       String user1ProfileId,
@@ -511,37 +760,13 @@ class _MatchingScreenState extends State<MatchingScreen> {
         if (mounted) {
           // Still pass the USER ID (uid) to ChatScreen as it typically chats between users.
           // The ChatScreen itself would need to be adapted if it needs specific profile context.
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ChatScreen(
-                chatPartnerId: (user1Uid == _currentUser!.uid) ? user2Uid : user1Uid,
-                chatPartnerName: "Match!", // You might want to fetch and pass the specific profile name here
-                // You might also consider passing the specific chatRoomId if ChatScreen can use it
-                // to directly open the correct chat, especially if there are multiple chats between UIDs.
-              ),
-            ),
-          );
+          // Navigator.push is called in _processLike already, remove this duplicate.
         }
       } else {
         print("createMatchAndChatRoom: Match document already exists for profiles: $matchDocId. Not creating new chat.");
         final Map<String, dynamic>? matchData = matchDoc.data() as Map<String, dynamic>?;
         if (matchData != null && matchData['chatRoomId'] != null) {
-          final existingChatRoomId = matchData['chatRoomId'] as String;
-          print("createMatchAndChatRoom: Existing chatRoomId: $existingChatRoomId");
-          if (mounted) {
-            // If a match already exists for these two profiles, navigate to their existing chat.
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ChatScreen(
-                  chatPartnerId: (user1Uid == _currentUser!.uid) ? user2Uid : user1Uid,
-                  chatPartnerName: "Match!",
-                  // Potentially pass existingChatRoomId to ChatScreen
-                ),
-              ),
-            );
-          }
+          // Existing chat logic.
         }
       }
     } catch (e) {
@@ -594,23 +819,24 @@ class _MatchingScreenState extends State<MatchingScreen> {
           return;
         }
 
+        // NEW: Increment interaction count regardless of like or dislike
+        _interactionCount++;
+
         if (direction == DismissDirection.endToStart) {
           ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Profile Passed'))
           );
+          _moveToNextProfile(); // Move to next even if disliked
         } else if (direction == DismissDirection.startToEnd) {
           _processLike(likedOrPassedUserId, dismissedProfileDocId); // Pass both IDs
-        }
-        _profiles.removeAt(_currentIndex);
-        if (_profiles.isEmpty) {
-          _showAlertDialog('No More Profiles', 'You\'ve viewed all available profiles for now.', () {
-          });
+          _moveToNextProfile(); // Move to next after like process
         }
       }
     });
   }
 
   double _calculateMatchPercentage(dynamic userProfile, dynamic otherProfile) {
+    // Implement your matching logic here
     return 0.0;
   }
 
@@ -712,10 +938,12 @@ class _MatchingScreenState extends State<MatchingScreen> {
               child: Column( // This is the Column at 664:22
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  // Banner Area
+
                   Expanded( // ADDED Expanded here
                     child: Padding(
                       padding: const EdgeInsets.all(16.0),
-                      child: _profiles.isNotEmpty
+                      child: _profiles.isNotEmpty && _currentIndex < _profiles.length // Add index check
                           ? Dismissible(
                         key: ValueKey(_profiles[_currentIndex].documentId),
                         direction: DismissDirection.horizontal,
@@ -749,7 +977,7 @@ class _MatchingScreenState extends State<MatchingScreen> {
                           : const SizedBox.shrink(),
                     ),
                   ), // END of Expanded
-                  if (_profiles.isNotEmpty)
+                  if (_profiles.isNotEmpty && _currentIndex < _profiles.length) // Add index check for buttons
                     _buildActionButtons(
                         _profiles[_currentIndex] is FlatListingProfile
                             ? (_profiles[_currentIndex] as FlatListingProfile).uid!
@@ -763,11 +991,12 @@ class _MatchingScreenState extends State<MatchingScreen> {
       )
           : Column(
         children: [
+
           Expanded(
             child: Center(
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
-                child: _profiles.isNotEmpty
+                child: _profiles.isNotEmpty && _currentIndex < _profiles.length // Add index check
                     ? Dismissible(
                   key: ValueKey(_profiles[_currentIndex].documentId),
                   direction: DismissDirection.horizontal,
@@ -803,7 +1032,7 @@ class _MatchingScreenState extends State<MatchingScreen> {
             ),
           ),
           // Buttons for mobile view, allowing explicit like/pass without full swipe
-          if (_profiles.isNotEmpty)
+          if (_profiles.isNotEmpty && _currentIndex < _profiles.length) // Add index check for buttons
             _buildActionButtons(
                 _profiles[_currentIndex] is FlatListingProfile
                     ? (_profiles[_currentIndex] as FlatListingProfile).uid!
