@@ -5,15 +5,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mytennat/screens/edit_profile_screen.dart';
 import 'package:mytennat/screens/matching_screen.dart';
 import 'package:mytennat/screens/matches_list_screen.dart';
-//import 'package:mytennat/screens/ActivityScreen.dart';
 import 'package:mytennat/widgets/profile_display_widgets.dart';
 import 'package:mytennat/screens/view_profile_screen.dart';
-import 'package:mytennat/screens/more_profile_screen.dart'; // Import the MoreProfileScreen
-import 'package:shared_preferences/shared_preferences.dart'; // Import SharedPreferences
+import 'package:mytennat/screens/more_profile_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mytennat/screens/user_activity_screen.dart';
-// Assuming these models are accessible
-import 'package:mytennat/screens/flatmate_profile_screen.dart'; // For FlatListingProfile
-import 'package:mytennat/screens/flat_with_flatmate_profile_screen.dart'; // For SeekingFlatmateProfile
+import 'package:mytennat/screens/flatmate_profile_screen.dart';
+import 'package:mytennat/screens/flat_with_flatmate_profile_screen.dart';
+import 'package:mytennat/screens/PlansScreen.dart'; // Import the PlansScreen
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -24,23 +23,31 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   String? _userProfileType;
-  String? _currentActiveProfileId; // New: To store the ID of the active profile
+  String? _currentActiveProfileId;
+  dynamic _activeProfileObject;
   bool _isLoadingProfileType = true;
 
-  // Key for SharedPreferences to store the last selected profile ID (must match ViewProfileScreen)
+  String? _currentPlanName;
+  int? _currentPlanContacts;
+  int? _remainingContacts;
+
   static const String _lastSelectedProfileKey = 'lastSelectedProfileId_';
 
   @override
   void initState() {
     super.initState();
-    _fetchUserProfileType();
+    _fetchUserData();
   }
 
-  Future<void> _fetchUserProfileType() async {
+  Future<void> _fetchUserData() async {
     setState(() {
       _isLoadingProfileType = true;
       _userProfileType = null;
       _currentActiveProfileId = null;
+      _activeProfileObject = null;
+      _currentPlanName = null;
+      _currentPlanContacts = null;
+      _remainingContacts = null;
     });
 
     final user = FirebaseAuth.instance.currentUser;
@@ -48,92 +55,108 @@ class _HomePageState extends State<HomePage> {
       try {
         final userDocRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
 
-        // Fetch all flat listing profiles
+        final userDocSnapshot = await userDocRef.get();
+        if (userDocSnapshot.exists) {
+          final userData = userDocSnapshot.data();
+          if (userData != null) {
+            setState(() {
+              _currentPlanName = userData['currentPlan'] as String?;
+              _currentPlanContacts = userData['currentPlanContacts'] as int?;
+              _remainingContacts = userData['remainingContacts'] as int?;
+            });
+            print('[HomePage][_fetchUserData] Fetched Plan: $_currentPlanName, Remaining Contacts: $_remainingContacts');
+          }
+        }
+
         final flatListingsSnapshot = await userDocRef.collection('flatListings').get();
         final List<FlatListingProfile> flatListings = flatListingsSnapshot.docs
             .map((doc) => FlatListingProfile.fromMap(doc.data(), doc.id))
             .toList();
 
-        // Fetch all seeking flatmate profiles
         final seekingFlatmateProfilesSnapshot = await userDocRef.collection('seekingFlatmateProfiles').get();
         final List<SeekingFlatmateProfile> seekingFlatmateProfiles = seekingFlatmateProfilesSnapshot.docs
             .map((doc) => SeekingFlatmateProfile.fromMap(doc.data(), doc.id))
             .toList();
 
-        // Check if user has any profiles at all
         if (flatListings.isEmpty && seekingFlatmateProfiles.isEmpty) {
           setState(() {
-            _userProfileType = null; // Indicate no profiles exist
+            _userProfileType = null;
           });
           return;
         }
 
-        // Try to load the last selected profile ID from SharedPreferences
         final prefs = await SharedPreferences.getInstance();
         final lastSelectedId = prefs.getString(_lastSelectedProfileKey + user.uid);
-        print('[HomePage][_fetchUserProfileType] Last selected profile ID: $lastSelectedId');
+        print('[HomePage][_fetchUserData] Last selected profile ID: $lastSelectedId');
 
         bool profileSet = false;
 
         if (lastSelectedId != null) {
-          // Try to find the last selected profile among flat listings
           try {
             final activeFlatListing = flatListings.firstWhere((p) => p.documentId == lastSelectedId);
             setState(() {
               _userProfileType = 'flat_listing';
               _currentActiveProfileId = activeFlatListing.documentId;
+              _activeProfileObject = activeFlatListing;
             });
             profileSet = true;
-            print('[HomePage][_fetchUserProfileType] Active profile set to Flat Listing: $_currentActiveProfileId');
+            print('[HomePage][_fetchUserData] Active profile set to Flat Listing: $_currentActiveProfileId');
           } catch (_) {
-            // Not a flat listing, try to find it among seeking flatmate profiles
             try {
               final activeSeekingFlatmate = seekingFlatmateProfiles.firstWhere((p) => p.documentId == lastSelectedId);
               setState(() {
                 _userProfileType = 'seeking_flatmate';
                 _currentActiveProfileId = activeSeekingFlatmate.documentId;
+                _activeProfileObject = activeSeekingFlatmate;
               });
               profileSet = true;
-              print('[HomePage][_fetchUserProfileType] Active profile set to Seeking Flatmate: $_currentActiveProfileId');
+              print('[HomePage][_fetchUserData] Active profile set to Seeking Flatmate: $_currentActiveProfileId');
             } catch (__) {
-              print('[HomePage][_fetchUserProfileType] Last selected profile ID ($lastSelectedId) not found in current profiles.');
-              // Last selected ID not found, proceed to default logic
+              print('[HomePage][_fetchUserData] Last selected profile ID ($lastSelectedId) not found in current profiles.');
             }
           }
         }
 
-        // If no specific profile was set (either no previous selection or invalid ID),
-        // default to the first available profile
         if (!profileSet) {
           if (flatListings.isNotEmpty) {
             setState(() {
               _userProfileType = 'flat_listing';
               _currentActiveProfileId = flatListings.first.documentId;
+              _activeProfileObject = flatListings.first;
             });
-            print('[HomePage][_fetchUserProfileType] Defaulting to first Flat Listing: $_currentActiveProfileId');
+            print('[HomePage][_fetchUserData] Defaulting to first Flat Listing: $_currentActiveProfileId');
           } else if (seekingFlatmateProfiles.isNotEmpty) {
             setState(() {
               _userProfileType = 'seeking_flatmate';
               _currentActiveProfileId = seekingFlatmateProfiles.first.documentId;
+              _activeProfileObject = seekingFlatmateProfiles.first;
             });
-            print('[HomePage][_fetchUserProfileType] Defaulting to first Seeking Flatmate: $_currentActiveProfileId');
+            print('[HomePage][_fetchUserData] Defaulting to first Seeking Flatmate: $_currentActiveProfileId');
           } else {
-            // This case should ideally be caught by the initial empty check, but as a fallback:
             setState(() {
-              _userProfileType = null; // Still no profiles
+              _userProfileType = null;
+              _activeProfileObject = null;
             });
           }
         }
       } catch (e) {
-        print('[HomePage][_fetchUserProfileType] Error fetching user profile type: $e');
+        print('[HomePage][_fetchUserData] Error fetching user data: $e');
         setState(() {
-          _userProfileType = null; // Indicate error or no profile
+          _userProfileType = null;
+          _activeProfileObject = null;
+          _currentPlanName = null;
+          _currentPlanContacts = null;
+          _remainingContacts = null;
         });
       }
     } else {
-      print('[HomePage][_fetchUserProfileType] No user logged in.');
+      print('[HomePage][_fetchUserData] No user logged in.');
       setState(() {
-        _userProfileType = null; // No user, so no profile
+        _userProfileType = null;
+        _activeProfileObject = null;
+        _currentPlanName = null;
+        _currentPlanContacts = null;
+        _remainingContacts = null;
       });
     }
 
@@ -144,23 +167,45 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    String profileName = '';
+    if (_activeProfileObject != null) {
+      if (_userProfileType == 'flat_listing' && _activeProfileObject is FlatListingProfile) {
+        profileName = (_activeProfileObject as FlatListingProfile).ownerName ?? 'Your Flat Listing';
+      } else if (_userProfileType == 'seeking_flatmate' && _activeProfileObject is SeekingFlatmateProfile) {
+        profileName = (_activeProfileObject as SeekingFlatmateProfile).name ?? 'Your Flatmate Profile';
+      }
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('MyTennant', style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.redAccent,
         elevation: 0,
         actions: [
+          // NEW: View Plans Button
+          IconButton(
+            icon: const Icon(Icons.card_membership, color: Colors.white), // or Icons.local_activity, Icons.payments
+            tooltip: 'View Plans',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const PlansScreen()),
+              ).then((_) => _fetchUserData()); // Refresh all data when returning from PlansScreen
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.person, color: Colors.white),
+            tooltip: 'My Profile',
             onPressed: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const ViewProfileScreen()),
-              ).then((_) => _fetchUserProfileType()); // Refresh when returning from ViewProfileScreen
+              ).then((_) => _fetchUserData());
             },
           ),
           IconButton(
             icon: const Icon(Icons.more_vert, color: Colors.white),
+            tooltip: 'More Options',
             onPressed: () {
               Navigator.push(
                 context,
@@ -195,22 +240,83 @@ class _HomePageState extends State<HomePage> {
               style: TextStyle(fontSize: 16, color: Colors.grey[700]),
             ),
             const SizedBox(height: 40),
+            if (_userProfileType != null && _currentActiveProfileId != null)
+              Column(
+                children: [
+                  if (profileName.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 10.0),
+                      child: Text(
+                        'Active Profile: $profileName',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.deepPurple),
+                      ),
+                    ),
+                  if (_userProfileType == 'flat_listing')
+                    const Text(
+                      'You are currently looking for flatmates for your flat.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 16, color: Colors.black54),
+                    )
+                  else if (_userProfileType == 'seeking_flatmate')
+                    const Text(
+                      'You are currently looking for a flat.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 16, color: Colors.black54),
+                    ),
+                  const SizedBox(height: 20),
+                ],
+              ),
+
+            if (_currentPlanName != null)
+              Column(
+                children: [
+                  const Divider(height: 30, thickness: 1, color: Colors.grey),
+                  Text(
+                    'Your Current Plan: $_currentPlanName',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blueGrey),
+                  ),
+                  if (_currentPlanContacts != null)
+                    Text(
+                      'Total Contacts: $_currentPlanContacts',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 16, color: Colors.blueGrey),
+                    ),
+                  if (_remainingContacts != null)
+                    Text(
+                      'Remaining Contacts: $_remainingContacts',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 16, color: Colors.blueGrey),
+                    ),
+                  const SizedBox(height: 20),
+                  // This button is now redundant if we have an icon in the AppBar for PlansScreen
+                  // but kept for demonstration if you prefer a button here as well.
+                  // ElevatedButton(
+                  //   onPressed: () {
+                  //     Navigator.push(
+                  //       context,
+                  //       MaterialPageRoute(builder: (context) => const PlansScreen()),
+                  //     ).then((_) => _fetchUserData());
+                  //   },
+                  //   style: ElevatedButton.styleFrom(
+                  //     backgroundColor: Colors.purple,
+                  //     foregroundColor: Colors.white,
+                  //     padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
+                  //     shape: RoundedRectangleBorder(
+                  //       borderRadius: BorderRadius.circular(20),
+                  //     ),
+                  //     textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  //   ),
+                  //   child: const Text('Manage Plans'),
+                  // ),
+                  const Divider(height: 30, thickness: 1, color: Colors.grey),
+                  const SizedBox(height: 20),
+                ],
+              ),
             _userProfileType != null && _currentActiveProfileId != null
                 ? Column(
               children: [
-                if (_userProfileType == 'flat_listing')
-                  const Text(
-                    'You are currently looking for flatmates for your flat.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 16, color: Colors.black54),
-                  )
-                else if (_userProfileType == 'seeking_flatmate')
-                  const Text(
-                    'You are currently looking for a flat.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 16, color: Colors.black54),
-                  ),
-                const SizedBox(height: 20),
                 ElevatedButton(
                   onPressed: () {
                     Navigator.push(
@@ -264,7 +370,7 @@ class _HomePageState extends State<HomePage> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const UserActivityScreen(), // No parameters needed
+                        builder: (context) => const UserActivityScreen(),
                       ),
                     );
                   },
@@ -296,7 +402,7 @@ class _HomePageState extends State<HomePage> {
                       MaterialPageRoute(
                         builder: (context) => const EditProfileScreen(),
                       ),
-                    ).then((_) => _fetchUserProfileType()); // Refresh when returning from profile setup
+                    ).then((_) => _fetchUserData());
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blueAccent,

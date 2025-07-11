@@ -10,6 +10,7 @@ import 'package:mytennat/screens/filter_options.dart';
 import 'dart:math' as math; // Import for math.min
 import 'package:mytennat/screens/view_profile_screen.dart'; // Import ViewProfileScreen
 import 'package:mytennat/screens/banner_popup_screen.dart'; // NEW: Import the banner popup screen
+import 'package:mytennat/screens/PlansScreen.dart';
 class MatchingScreen extends StatefulWidget {
   // Add these final fields to receive the active profile details
   final String profileType;
@@ -695,9 +696,13 @@ class _MatchingScreenState extends State<MatchingScreen> {
           profileImageUrl: imageUrl, // Pass the profile image URL
           buttonText: 'Upgrade to Premium', // Set button text explicitly
           onButtonPressed: () {
-            Navigator.of(context).pop(); // Dismiss the popup
+            Navigator.of(context).pop(); // Dismiss the current popup
             // Add your navigation or logic for "Upgrade to Premium" here
-            // Example: Navigator.push(context, MaterialPageRoute(builder: (context) => PremiumScreen()));
+            Navigator.of(context).push( // Navigate to the PlansScreen
+              MaterialPageRoute(
+                builder: (context) => const PlansScreen(),
+              ),
+            );
           },
         );
       },
