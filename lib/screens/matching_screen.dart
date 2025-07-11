@@ -49,7 +49,8 @@ class _MatchingScreenState extends State<MatchingScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>(); // Key for Scaffold
 
   int _interactionCount = 0; // NEW: Counter for likes/dislikes
-
+  int _remainingContacts = 0; // State to hold remaining contacts
+  String? _currentPlanName; // State to hold current plan name
   @override
   void initState() {
     super.initState();
@@ -101,6 +102,16 @@ class _MatchingScreenState extends State<MatchingScreen> {
     });
 
     try {
+      final userDoc = await _firestore.collection('users').doc(_currentUser!.uid).get();
+      if (userDoc.exists) {
+        final userData = userDoc.data();
+        if (userData != null) {
+          setState(() {
+            _remainingContacts = userData['remainingContacts'] as int? ?? 0;
+            _currentPlanName = userData['currentPlan'] as String?;
+          });
+        }
+      }
       if (_userProfileType == 'flat_listing') {
         DocumentSnapshot flatListingDoc = await _firestore
             .collection('users')
@@ -469,6 +480,9 @@ class _MatchingScreenState extends State<MatchingScreen> {
   }
 
 // matching_screen.dart
+// matching_screen.dart
+
+  // matching_screen.dart
 
   Future<void> _processLike(String likedUserId, String likedProfileDocumentId) async {
     if (_currentUser == null) {
@@ -477,25 +491,20 @@ class _MatchingScreenState extends State<MatchingScreen> {
     }
 
     final currentUserId = _currentUser!.uid;
-    // Get the current user's profile type directly from widget.profileType
     final String currentUserProfileType = widget.profileType;
 
+    print("_processLike: User $currentUserId (active profile ${widget.profileId}) attempting to like user $likedUserId's profile $likedProfileDocumentId.");
 
-    print("_processLike: User $currentUserId (active profile ${widget.profileId}) attempting to like user $likedUserId's profile $likedProfileDocumentId."); // Add more detailed logging
-
-    // --- NEW: Determine the profile type for the liked user (reused from your existing logic) ---
     String likedUserProfileType;
-    if (currentUserProfileType == 'seeking_flatmate') { // If YOUR profile is seeking_flatmate, then the one you're liking must be flat_listing
+    if (currentUserProfileType == 'seeking_flatmate') {
       likedUserProfileType = 'flat_listing';
-    } else if (currentUserProfileType == 'flat_listing') { // If YOUR profile is flat_listing, then the one you're liking must be seeking_flatmate
+    } else if (currentUserProfileType == 'flat_listing') {
       likedUserProfileType = 'seeking_flatmate';
     } else {
-      // Fallback for unexpected profile types (consider logging an error or throwing)
       print("Warning: Unknown current user profile type: ${currentUserProfileType}. Assigning 'unknown' to likedUserProfileType.");
       likedUserProfileType = 'unknown';
     }
     print('Determined likedUserProfileType: $likedUserProfileType');
-    // --- END NEW ---
 
 
     try {
@@ -503,47 +512,80 @@ class _MatchingScreenState extends State<MatchingScreen> {
       try {
         await _firestore.collection('user_likes').doc(currentUserId).collection('likes').doc(likedProfileDocumentId).set({
           'timestamp': FieldValue.serverTimestamp(),
-          'likedUserId': likedUserId, // Still good to store the user ID
-          'likedProfileDocumentId': likedProfileDocumentId, // Explicitly store which profile was liked
-          'likingUserProfileId': widget.profileId, // Store the ID of the current user's profile that made the like
-          // IMPORTANT: ADD THIS LINE TO SAVE THE LIKING USER'S UID
-          'likingUserId': currentUserId, // <--- THIS IS THE KEY FIX!
-          'likingUserProfileType': currentUserProfileType, // The type of the current user's profile
-          'likedUserProfileType': likedUserProfileType,   // The type of the profile that was liked
+          'likedUserId': likedUserId,
+          'likedProfileDocumentId': likedProfileDocumentId,
+          'likingUserProfileId': widget.profileId,
+          'likingUserId': currentUserId,
+          'likingUserProfileType': currentUserProfileType,
+          'likedUserProfileType': likedUserProfileType,
         });
         print("_processLike (Op1): Successfully recorded like for $currentUserId on profile $likedProfileDocumentId.");
 
         // Update local outgoing likes
         setState(() {
-          if (!_outgoingLikes.containsKey(widget.profileId)) {
-            _outgoingLikes[widget.profileId] = [];
+          // Replaced firstWhere with a manual loop for robustness (previous fix)
+          dynamic likedProfile;
+          for (var p in _profiles) {
+            if (p.documentId == likedProfileDocumentId) {
+              likedProfile = p;
+              break;
+            }
           }
-          // Find the profile from _profiles list to add to _outgoingLikes
-          // Ensure we only add if it's not already there (to avoid duplicates if set() is used repeatedly)
-          final likedProfile = _profiles.firstWhere((p) => p.documentId == likedProfileDocumentId);
-          if (!_outgoingLikes[widget.profileId]!.any((p) => p.documentId == likedProfile.documentId)) {
-            _outgoingLikes[widget.profileId]!.add(likedProfile);
+
+          if (likedProfile != null) {
+            if (!_outgoingLikes.containsKey(widget.profileId)) {
+              _outgoingLikes[widget.profileId] = [];
+            }
+            if (!_outgoingLikes[widget.profileId]!.any((p) => p.documentId == likedProfile.documentId)) {
+              _outgoingLikes[widget.profileId]!.add(likedProfile);
+            }
+          } else {
+            print("Warning: Liked profile with ID $likedProfileDocumentId not found in _profiles list during outgoing likes update.");
           }
         });
+
+        // --- NEW ADDITION: Contact Reveal Logic ---
+        // MODIFICATION START: Replaced firstWhere with a manual loop for robustness here too
+        dynamic likedProfileObject;
+        for (var profile in _profiles) {
+          if (profile.documentId == likedProfileDocumentId) {
+            likedProfileObject = profile;
+            break;
+          }
+        }
+        // MODIFICATION END
+
+        if (likedProfileObject != null) {
+          if (_remainingContacts > 0) {
+            // Show contact reveal popup if contacts are available
+            _showContactRevealPopup(likedUserId, likedProfileObject); // MODIFIED LINE
+          } else {
+            // Show out of contacts message or direct to plans
+            _showOutOfContactsPopup();
+          }
+        } else {
+          print("Warning: Liked profile object not found in _profiles for contact reveal.");
+        }
+        // --- END NEW ADDITION ---
 
       } catch (e) {
         print("_processLike (Op1) ERROR: Failed to SET like document: $e");
         _showAlertDialog('Error', 'Failed to record your like: ${e.toString()}', () {});
-        return;
+        return; // Exit if recording the like failed
       }
 
       print("_processLike (Op2): Checking if user $likedUserId has liked our active profile ${widget.profileId}.");
       QuerySnapshot otherUserLikesOurProfile;
       try {
         otherUserLikesOurProfile = await _firestore.collection('user_likes').doc(likedUserId).collection('likes')
-            .where('likedUserId', isEqualTo: currentUserId) // They liked *us*
-            .where('likedProfileDocumentId', isEqualTo: widget.profileId) // Specifically liked *our current active profile*
+            .where('likedUserId', isEqualTo: currentUserId)
+            .where('likedProfileDocumentId', isEqualTo: widget.profileId)
             .get();
         print("_processLike (Op2): Other user like check completed. Exists: ${otherUserLikesOurProfile.docs.isNotEmpty}");
       } catch (e) {
         print("_processLike (Op2) ERROR: Failed to GET other user's like: $e");
         _showAlertDialog('Error', 'Failed to check for mutual like: ${e.toString()}', () {});
-        return;
+        return; // Exit if checking for mutual like failed
       }
 
       if (otherUserLikesOurProfile.docs.isNotEmpty) {
@@ -551,9 +593,7 @@ class _MatchingScreenState extends State<MatchingScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('It\'s a MATCH! 🎉'))
         );
-        print("_processLike (Op3): Calling _createMatchAndChatRoom...");
 
-        // Clear banner if it's a match
         setState(() {
           _bannerMessage = null;
           _lastLikedProfileName = null;
@@ -563,24 +603,22 @@ class _MatchingScreenState extends State<MatchingScreen> {
           await _createMatchAndChatRoom(
             currentUserId,
             widget.profileId,
-            currentUserProfileType, // Current user's profile type, passed from widget
+            currentUserProfileType,
             likedUserId,
             likedProfileDocumentId,
-            likedUserProfileType, // The newly determined liked user's profile type
+            likedUserProfileType,
           );
           print("_processLike (Op3): _createMatchAndChatRoom call completed successfully.");
         } catch (e) {
           print("_processLike (Op3) ERROR: _createMatchAndChatRoom failed: $e");
           _showAlertDialog('Error', 'Failed to create match/chat: ${e.toString()}', () {});
-          return;
+          return; // Exit if match/chat creation failed
         }
 
         String chatPartnerNameForDialog = 'that user';
         try {
-          // Find the actual profile object from the _profiles list to get its display name
-          final matchedProfile = _profiles.firstWhere((p) =>
-          p.documentId == likedProfileDocumentId
-          );
+          // This firstWhere call should be safe as it's outside the problematic context
+          final matchedProfile = _profiles.firstWhere((p) => p.documentId == likedProfileDocumentId);
           chatPartnerNameForDialog = _getProfileDisplayName(matchedProfile);
         } catch (e) {
           print("_processLike: Could not find matched profile in _profiles for dialog. Error: $e");
@@ -599,8 +637,6 @@ class _MatchingScreenState extends State<MatchingScreen> {
                     builder: (context) => ChatScreen(
                       chatPartnerId: likedUserId,
                       chatPartnerName: chatPartnerNameForDialog,
-                      // You might also want to pass the chatRoomId from the match document
-                      // if _createMatchAndChatRoom returns it or stores it in state.
                     ),
                   ),
                 );
@@ -613,14 +649,194 @@ class _MatchingScreenState extends State<MatchingScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Profile Liked! Awaiting their response.'))
         );
-        // _checkForBanner() will be called by _moveToNextProfile()
       }
     } catch (e) {
       print("_processLike: UNEXPECTED GLOBAL ERROR: $e");
       _showAlertDialog('Error', 'An unexpected error occurred: ${e.toString()}', () {});
     }
   }
+// New: Function to show contact reveal popup
+  void _showContactRevealPopup(String likedUserId, dynamic matchedProfile) { // MODIFIED SIGNATURE
+    String contactNumber = '';
+    String contactEmail = '';
+    String profileName = '';
 
+    // Determine the contact information and profile name based on the profile type
+    if (matchedProfile is FlatListingProfile) {
+      profileName = matchedProfile.ownerName ?? 'Flat Owner';
+    } else if (matchedProfile is SeekingFlatmateProfile) {
+      profileName = matchedProfile.name ?? 'Flatmate Seeker';
+    }
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Get Contact Details?'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('You have $_remainingContacts contacts remaining.'),
+              const SizedBox(height: 10),
+              Text('Do you want to reveal $profileName\'s contact information for 1 contact?'),
+            ],
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Dismiss dialog
+              },
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.of(context).pop(); // Dismiss dialog
+                await _revealContactAndDecrement(likedUserId, matchedProfile); // MODIFIED LINE
+              },
+              child: const Text('Get Contact'),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            ),
+          ],
+        );
+      },
+    );
+  }
+  // New: Function to show out of contacts popup
+  void _showOutOfContactsPopup() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Out of Contacts!'),
+          content: const Text('You have no remaining contacts. Please purchase a plan to get more contacts.'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('OK'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Dismiss this dialog
+                // Navigate to PlansScreen - ensure you have this route defined
+                Navigator.pushNamed(context, '/plans'); // Or use MaterialPageRoute directly
+              },
+              child: const Text('View Plans'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+  // New: Function to reveal contact and decrement remaining contacts
+  Future<void> _revealContactAndDecrement(
+      String targetUserId, // Add this parameter
+      dynamic matchedProfile,
+      ) async {
+    if (_currentUser == null) return;
+
+    final String targetProfileId = matchedProfile.documentId; // Document ID of the matched profile (this is the likedProfileDocumentId)
+
+    // No longer need currentProfileIdField or targetProfileIdField for the query,
+    // as we will directly access the document using its ID (targetProfileId)
+    // based on the structure defined in _processLike.
+
+    try {
+      // 1. Decrement remaining contacts for the current user
+      if (_remainingContacts > 0) {
+        await _firestore.collection('users').doc(_currentUser!.uid).update({
+          'remainingContacts': FieldValue.increment(-1),
+        });
+        setState(() {
+          _remainingContacts--; // Update local state immediately
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No remaining contacts to reveal.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+
+      // 2. Mark contact as revealed in the specific like document
+      // Directly accessing the 'like' document as per _processLike's structure
+      final likeDocRef = _firestore
+          .collection('user_likes') // Changed to 'user_likes' as in _processLike
+          .doc(_currentUser!.uid)
+          .collection('likes')
+          .doc(targetProfileId); // Direct access using the likedProfileDocumentId as the document ID
+
+      // Check if the document exists before attempting to update (optional but good practice)
+      final docSnapshot = await likeDocRef.get();
+      if (docSnapshot.exists) {
+        await likeDocRef.update({
+          'contactRevealed': true,
+        });
+      } else {
+        print('Warning: Like document with ID $targetProfileId not found for marking contact revealed. This might be an issue.');
+      }
+
+      // 3. Show contact details to the user in a new dialog
+      String contactNumber = '';
+      String contactEmail = '';
+      String profileName = '';
+
+      if (matchedProfile is FlatListingProfile) {
+        // contactNumber = matchedProfile.ownerPhoneNumber ?? 'N/A';
+        // contactEmail = matchedProfile.ownerEmail ?? 'N/A';
+        profileName = matchedProfile.ownerName ?? 'Flat Owner';
+      } else if (matchedProfile is SeekingFlatmateProfile) {
+        // contactNumber = matchedProfile.phoneNumber ?? 'N/A';
+        // contactEmail = matchedProfile.email ?? 'N/A';
+        profileName = matchedProfile.name ?? 'Flatmate Seeker';
+      }
+
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('Contact Details'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Name: $profileName'),
+                const SizedBox(height: 10),
+                Text('Remaining contacts: $_remainingContacts'),
+              ],
+            ),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: const Text('Close'),
+              ),
+            ],
+          );
+        },
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Contact revealed successfully!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      print('Error revealing contact or decrementing: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to reveal contact: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
   // This function checks if the banner should be displayed
   void _checkForBanner() {
     setState(() {
@@ -940,12 +1156,21 @@ class _MatchingScreenState extends State<MatchingScreen> {
           // Main Matching Content
           Expanded(
             child: Center(
-              child: Column( // This is the Column at 664:22
+              child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   // Banner Area
-
-                  Expanded( // ADDED Expanded here
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Plan: ${_currentPlanName ?? 'N/A'}', style: const TextStyle(fontSize: 16)),
+                        Text('Contacts Left: $_remainingContacts', style: const TextStyle(fontSize: 16)),
+                      ],
+                    ),
+                  ),
+                  Expanded(
                     child: Padding(
                       padding: const EdgeInsets.all(16.0),
                       child: _profiles.isNotEmpty && _currentIndex < _profiles.length // Add index check
@@ -981,7 +1206,7 @@ class _MatchingScreenState extends State<MatchingScreen> {
                       )
                           : const SizedBox.shrink(),
                     ),
-                  ), // END of Expanded
+                  ),
                   if (_profiles.isNotEmpty && _currentIndex < _profiles.length) // Add index check for buttons
                     _buildActionButtons(
                         _profiles[_currentIndex] is FlatListingProfile
@@ -996,7 +1221,16 @@ class _MatchingScreenState extends State<MatchingScreen> {
       )
           : Column(
         children: [
-
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Plan: ${_currentPlanName ?? 'N/A'}', style: const TextStyle(fontSize: 16)),
+                Text('Contacts Left: $_remainingContacts', style: const TextStyle(fontSize: 16)),
+              ],
+            ),
+          ),
           Expanded(
             child: Center(
               child: Padding(
