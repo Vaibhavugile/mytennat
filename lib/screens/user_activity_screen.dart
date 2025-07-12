@@ -5,6 +5,7 @@ import 'package:mytennat/screens/flatmate_profile_screen.dart'; // For FlatListi
 import 'package:mytennat/screens/flat_with_flatmate_profile_screen.dart'; // For SeekingFlatmateProfile
 import 'package:mytennat/screens/chat_screen.dart'; // For ChatScreen
 import 'package:mytennat/screens/view_profile_screen.dart'; // For ViewProfileScreen
+import 'package:url_launcher/url_launcher.dart'; // Import for making phone calls
 
 class UserActivityScreen extends StatefulWidget {
   const UserActivityScreen({super.key});
@@ -217,7 +218,7 @@ class _UserActivityScreenState extends State<UserActivityScreen> with SingleTick
         final likingUserId = data['likingUserId'];
         final likingUserProfileId = data['likingUserProfileId'];
         final likingUserProfileType = data['likingUserProfileType'];
-        print('fetchIncomingLikes: Processing incoming like from likingUserId: $likingUserId, likingUserProfileId: $likingUserProfileId, type: $likingUserProfileType, data: $data'); // Added data print
+        print('fetchIncomingLikes: Processing incoming like from likingUserId: $likingUserId, likingUserProfileId: $likingUserProfileId, type: $likingUserProfileType, data: $data');
 
         dynamic likedByProfile;
         try {
@@ -231,7 +232,7 @@ class _UserActivityScreenState extends State<UserActivityScreen> with SingleTick
                 .get();
             if (otherDoc.exists) {
               likedByProfile = FlatListingProfile.fromMap(otherDoc.data() as Map<String, dynamic>, otherDoc.id);
-              print('fetchIncomingLikes: FlatListing found: ${otherDoc.id} (Name: ${likedByProfile.ownerName})'); // Added name print
+              print('fetchIncomingLikes: FlatListing found: ${otherDoc.id} (Name: ${likedByProfile.ownerName})');
             } else {
               print('fetchIncomingLikes: FlatListing NOT found for $likingUserId/$likingUserProfileId');
             }
@@ -245,7 +246,7 @@ class _UserActivityScreenState extends State<UserActivityScreen> with SingleTick
                 .get();
             if (otherDoc.exists) {
               likedByProfile = SeekingFlatmateProfile.fromMap(otherDoc.data() as Map<String, dynamic>, otherDoc.id);
-              print('fetchIncomingLikes: SeekingFlatmateProfile found: ${otherDoc.id} (Name: ${likedByProfile.name})'); // Added name print
+              print('fetchIncomingLikes: SeekingFlatmateProfile found: ${otherDoc.id} (Name: ${likedByProfile.name})');
             } else {
               print('fetchIncomingLikes: SeekingFlatmateProfile NOT found for $likingUserId/$likingUserProfileId');
             }
@@ -256,19 +257,19 @@ class _UserActivityScreenState extends State<UserActivityScreen> with SingleTick
 
         if (likedByProfile != null) {
           profilesThatLikedMe.add(likedByProfile);
-          print('fetchIncomingLikes: Added likedByProfile: ${likedByProfile.documentId} to list.'); // Added print
+          print('fetchIncomingLikes: Added likedByProfile: ${likedByProfile.documentId} to list.');
         } else {
-          print('fetchIncomingLikes: likedByProfile was null, not added.'); // Added print
+          print('fetchIncomingLikes: likedByProfile was null, not added.');
         }
       }
       if (profilesThatLikedMe.isNotEmpty) {
         _incomingLikes[userProfileId] = profilesThatLikedMe;
-        print('fetchIncomingLikes: _incomingLikes[$userProfileId] populated with ${profilesThatLikedMe.length} profiles.'); // Added print
+        print('fetchIncomingLikes: _incomingLikes[$userProfileId] populated with ${profilesThatLikedMe.length} profiles.');
       } else {
-        print('fetchIncomingLikes: No profiles liked this userProfile ($userProfileId). _incomingLikes not updated for it.'); // Added print
+        print('fetchIncomingLikes: No profiles liked this userProfile ($userProfileId). _incomingLikes not updated for it.');
       }
     }
-    print('fetchIncomingLikes: Final _incomingLikes state: ${_incomingLikes.keys.map((k) => '$k: ${_incomingLikes[k]?.length} profiles').join(', ')}'); // Final state print
+    print('fetchIncomingLikes: Final _incomingLikes state: ${_incomingLikes.keys.map((k) => '$k: ${_incomingLikes[k]?.length} profiles').join(', ')}');
   }
 
   Future<void> _fetchOutgoingLikes(String userId) async {
@@ -471,6 +472,21 @@ class _UserActivityScreenState extends State<UserActivityScreen> with SingleTick
       return 'Seeking Flatmate';
     }
     return 'Unknown';
+  }
+
+  // New function for making phone calls
+  Future<void> _makePhoneCall(String phoneNumber) async {
+    final Uri launchUri = Uri(
+      scheme: 'tel',
+      path: phoneNumber,
+    );
+    if (await canLaunchUrl(launchUri)) {
+      await launchUrl(launchUri);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not launch $phoneNumber')),
+      );
+    }
   }
 
   // Method to show the profile selection sheet
@@ -685,6 +701,7 @@ class _UserActivityScreenState extends State<UserActivityScreen> with SingleTick
                     },
                     getChatRoomId: (profile) => _findChatRoomId(currentProfileId, profile.uid!, profile.documentId!),
                     isMatchSection: false,
+                    isLikedByMeSection: false, // Changed: Call button NOT on Liked Me
                   ),
 
                   _buildSectionContent(
@@ -698,6 +715,7 @@ class _UserActivityScreenState extends State<UserActivityScreen> with SingleTick
                     },
                     getChatRoomId: (profile) => _findChatRoomId(currentProfileId, profile.uid!, profile.documentId!),
                     isMatchSection: false,
+                    isLikedByMeSection: true, // Changed: Call button IS on Liked By Me
                   ),
 
                   _buildSectionContent(
@@ -711,6 +729,7 @@ class _UserActivityScreenState extends State<UserActivityScreen> with SingleTick
                     },
                     getChatRoomId: (profile) => _findChatRoomId(currentProfileId, profile.uid!, profile.documentId!),
                     isMatchSection: true,
+                    isLikedByMeSection: false, // Changed: Call button NOT on Matches
                   ),
                 ],
               ),
@@ -727,8 +746,9 @@ class _UserActivityScreenState extends State<UserActivityScreen> with SingleTick
     required Function(dynamic profile) onTapProfile,
     required String? Function(dynamic profile) getChatRoomId,
     bool isMatchSection = false,
+    bool isLikedByMeSection = false, // Changed: Renamed from isLikedMeSection
   }) {
-    print('Building section content. Profiles count: ${profiles?.length ?? 0}. Is Match Section: $isMatchSection'); // Added print
+    print('Building section content. Profiles count: ${profiles?.length ?? 0}. Is Match Section: $isMatchSection. Is Liked By Me Section: $isLikedByMeSection');
     return profiles == null || profiles.isEmpty
         ? Center(child: Text(emptyMessage, style: const TextStyle(color: Colors.grey, fontSize: 16)))
         : ListView.builder(
@@ -738,10 +758,24 @@ class _UserActivityScreenState extends State<UserActivityScreen> with SingleTick
         final profile = profiles[index];
         String name = _getProfileDisplayName(profile);
         String typeDisplay = _getProfileTypeDisplay(profile);
+        String? profileImageUrl;
+        String? phoneNumber; // To hold the phone number
+
+        if (profile is FlatListingProfile) {
+          //profileImageUrl = profile.ownerImageUrl;
+          phoneNumber = profile.ownerPhonenumber;
+        } else if (profile is SeekingFlatmateProfile) {
+          //rprofileImageUrl = profile.profileImageUrl;
+          phoneNumber = profile.phoneNumber;
+        }
 
         final chatRoomId = getChatRoomId(profile);
         final canChat = isMatchSection && chatRoomId != null;
-        print('ListTile for profile: $name (ID: ${profile.documentId}), Can Chat: $canChat (chatRoomId: $chatRoomId)');
+
+        // Determine if call button should be shown
+        final bool showCallButton = isLikedByMeSection && phoneNumber != null && phoneNumber.isNotEmpty; // Changed: Use isLikedByMeSection
+
+        print('ListTile for profile: $name (ID: ${profile.documentId}), Can Chat: $canChat (chatRoomId: $chatRoomId), Show Call Button: $showCallButton (Phone: $phoneNumber)');
 
         return Card(
           margin: const EdgeInsets.symmetric(vertical: 4.0),
@@ -751,31 +785,49 @@ class _UserActivityScreenState extends State<UserActivityScreen> with SingleTick
             contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
             leading: CircleAvatar(
               backgroundColor: Colors.blueAccent,
-              child: Icon(
+              backgroundImage: profileImageUrl != null && profileImageUrl.isNotEmpty
+                  ? NetworkImage(profileImageUrl)
+                  : null,
+              child: profileImageUrl == null || profileImageUrl.isEmpty
+                  ? Icon(
                 profile is FlatListingProfile ? Icons.home : Icons.group,
                 color: Colors.white,
-              ),
+              )
+                  : null,
             ),
             title: Text(name, style: const TextStyle(fontWeight: FontWeight.w600)),
             subtitle: Text('$typeDisplay (ID: ${profile.documentId})', style: const TextStyle(color: Colors.grey)),
-            trailing: canChat
-                ? ElevatedButton.icon(
-              onPressed: () {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => ChatScreen(
-                  chatPartnerId: profile.uid!,
-                  chatPartnerName: name,
-                  chatRoomId: chatRoomId,
-                )));
-              },
-              icon: const Icon(Icons.chat),
-              label: const Text('Chat'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              ),
-            )
-                : null,
+            trailing: Row( // Use a Row to potentially hold multiple trailing widgets
+              mainAxisSize: MainAxisSize.min, // Essential to prevent layout errors
+              children: [
+                if (canChat)
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => ChatScreen(
+                        chatPartnerId: profile.uid!,
+                        chatPartnerName: name,
+                        chatRoomId: chatRoomId,
+                      )));
+                    },
+                    icon: const Icon(Icons.chat),
+                    label: const Text('Chat'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    ),
+                  ),
+                if (showCallButton) // Only show call button for Liked By Me section if phone number exists
+                  Padding(
+                    padding: EdgeInsets.only(left: canChat ? 8.0 : 0.0), // Add spacing if chat button is also present
+                    child: IconButton(
+                      icon: const Icon(Icons.call, color: Colors.blue), // Changed color for distinction
+                      onPressed: () => _makePhoneCall(phoneNumber!),
+                      tooltip: 'Call $name',
+                    ),
+                  ),
+              ],
+            ),
             onTap: () => onTapProfile(profile),
           ),
         );

@@ -14,6 +14,7 @@ class SeekingFlatmateProfile {
   String? uid; // Added: To store the user ID (UID)
 
   String name;
+  String ? phoneNumber;
   int? age; // Changed to nullable int
   String gender;
   String occupation;
@@ -64,6 +65,7 @@ class SeekingFlatmateProfile {
     this.documentId = '', // Initialize documentId
     this.uid, // Initialize uid
     this.name = '',
+    this.phoneNumber ='',
     this.age,
     this.gender = '',
     this.occupation = '',
@@ -116,7 +118,8 @@ class SeekingFlatmateProfile {
     return SeekingFlatmateProfile(
       documentId: documentId,
       uid: data['uid'] as String?,
-      name: data['displayName'] as String? ?? '', // Assuming 'displayName' at root level
+      name: data['displayName'] as String? ?? '',
+      phoneNumber: data['phonenumber']as String? ?? '',// Assuming 'displayName' at root level
       age: data['age'] is int ? data['age'] : (data['age'] is String ? int.tryParse(data['age']) : null),
       gender: data['gender'] as String? ?? '',
       occupation: data['occupation'] as String? ?? '',
@@ -168,7 +171,8 @@ class SeekingFlatmateProfile {
   Map<String, dynamic> toMap() {
     return {
       'uid': uid, // Include uid when converting to map
-      'name': name, // This might need to be 'displayName' if that's how it's stored at root
+      'name': name,
+      'phonnumber':phoneNumber,// This might need to be 'displayName' if that's how it's stored at root
       'age': age,
       'gender': gender,
       'occupation': occupation,
@@ -1544,6 +1548,7 @@ class _FlatWithFlatmateProfileScreenState
       "uid": user.uid,
       "email": user.email,//
       "displayName": _seekingFlatmateProfile.name, // Using 'name' for displayName
+      "phonenumber":_seekingFlatmateProfile.phoneNumber,
       "age": _seekingFlatmateProfile.age ?? 0,
       "gender": _seekingFlatmateProfile.gender,
       "occupation": _seekingFlatmateProfile.occupation,

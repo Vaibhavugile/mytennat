@@ -11,9 +11,10 @@ import 'package:mytennat/data/location_data.dart'; // Adjust path as needed
 class FlatListingProfile {
   String documentId; // Added: To store the Firestore document ID
   String? uid; // Added: To store the user ID (UID)
-
   // Basic Info
   String ownerName;
+
+  String? ownerPhonenumber;
   int? ownerAge; // Changed to nullable int
   String ownerGender;
   String ownerOccupation;
@@ -69,6 +70,7 @@ class FlatListingProfile {
     this.documentId = '',
     this.uid, // Initialize uid
     this.ownerName = '',
+    this.ownerPhonenumber ='',
     this.ownerAge,
     this.ownerGender = '',
     this.ownerOccupation = '',
@@ -125,7 +127,8 @@ class FlatListingProfile {
     return FlatListingProfile(
       documentId: documentId,
       uid: data['uid'] as String?,
-      ownerName: data['displayName'] ?? '', // Assuming ownerName is 'displayName' at root level
+      ownerName: data['displayName'] ?? '',
+      ownerPhonenumber:data['phonenumber'] ?? '',// Assuming ownerName is 'displayName' at root level
       ownerAge: data['age'] is int ? data['age'] : (data['age'] is String ? int.tryParse(data['age']) : null), // Assuming age is at root level
       ownerGender: data['gender'] ?? '', // Assuming gender is at root level
       ownerOccupation: data['occupation'] ?? '', // Assuming occupation is at root level
@@ -185,6 +188,7 @@ class FlatListingProfile {
     return {
       'uid': uid, // Include uid when converting to map
       'ownerName': ownerName,
+      'ownerPhonenumber' :ownerPhonenumber,
       'ownerAge': ownerAge,
       'ownerGender': ownerGender,
       'ownerOccupation': ownerOccupation,
@@ -242,6 +246,7 @@ class FlatListingProfile {
         '  documentId: $documentId,\n'
         '  uid: $uid,\n'
         '  ownerName: $ownerName,\n'
+        '  ownerPhonenumber: $ownerPhonenumber,\n'
         '  ownerAge: $ownerAge,\n'
         '  ownerGender: $ownerGender,\n'
         '  ownerOccupation: $ownerOccupation,\n'
@@ -1727,6 +1732,7 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
       "uid": user.uid,
       "email": user.email, //
       "displayName": _flatListingProfile.ownerName,
+      "phonenumber":_flatListingProfile.ownerPhonenumber,
       "age": _flatListingProfile.ownerAge ?? 0,
       "gender": _flatListingProfile.ownerGender,
       "occupation": _flatListingProfile.ownerOccupation,
