@@ -335,21 +335,7 @@ class _MatchingScreenState extends State<MatchingScreen> {
           .toList();
 
       // Filter out profiles already liked by or that have liked the current active profile
-      final List<dynamic> currentOutgoingLikes = _outgoingLikes[widget.profileId] ?? [];
-      final List<dynamic> currentIncomingLikes = _incomingLikes[widget.profileId] ?? [];
-
-      Set<String> alreadyInteractedProfileIds = {};
-      for (var profile in currentOutgoingLikes) {
-        alreadyInteractedProfileIds.add(profile.documentId!);
-      }
-      for (var profile in currentIncomingLikes) {
-        alreadyInteractedProfileIds.add(profile.documentId!);
-      }
-
-      _profiles = fetchedProfiles.where((profile) {
-        return !alreadyInteractedProfileIds.contains(profile.documentId!);
-      }).toList();
-      _profiles.shuffle(); // Optional: randomize the order
+      _profiles = fetchedProfiles; // Assign all fetched profiles directly
 
       setState(() {});
     } catch (e) {
@@ -424,21 +410,7 @@ class _MatchingScreenState extends State<MatchingScreen> {
           .toList();
 
       // Filter out profiles already liked by or that have liked the current active profile
-      final List<dynamic> currentOutgoingLikes = _outgoingLikes[widget.profileId] ?? [];
-      final List<dynamic> currentIncomingLikes = _incomingLikes[widget.profileId] ?? [];
-
-      Set<String> alreadyInteractedProfileIds = {};
-      for (var profile in currentOutgoingLikes) {
-        alreadyInteractedProfileIds.add(profile.documentId!);
-      }
-      for (var profile in currentIncomingLikes) {
-        alreadyInteractedProfileIds.add(profile.documentId!);
-      }
-
-      _profiles = fetchedProfiles.where((profile) {
-        return !alreadyInteractedProfileIds.contains(profile.documentId!);
-      }).toList();
-      _profiles.shuffle(); // Optional: randomize the order
+      _profiles = fetchedProfiles; // Assign all fetched profiles directly
 
       setState(() {});
     } catch (e) {
@@ -656,48 +628,33 @@ class _MatchingScreenState extends State<MatchingScreen> {
     }
   }
 // New: Function to show contact reveal popup
-  void _showContactRevealPopup(String likedUserId, dynamic matchedProfile) { // MODIFIED SIGNATURE
-    String contactNumber = '';
-    String contactEmail = '';
+  void _showContactRevealPopup(String likedUserId, dynamic matchedProfile) {
     String profileName = '';
 
-    // Determine the contact information and profile name based on the profile type
     if (matchedProfile is FlatListingProfile) {
       profileName = matchedProfile.ownerName ?? 'Flat Owner';
     } else if (matchedProfile is SeekingFlatmateProfile) {
       profileName = matchedProfile.name ?? 'Flatmate Seeker';
     }
+    String? imageUrl; // Get the actual image URL here
+    if ( matchedProfile  is FlatListingProfile && matchedProfile .imageUrls != null && matchedProfile .imageUrls!.isNotEmpty) {
+      imageUrl = matchedProfile .imageUrls!.first;
+    } else if (matchedProfile  is SeekingFlatmateProfile && matchedProfile .imageUrls != null && matchedProfile .imageUrls!.isNotEmpty) {
+      imageUrl = matchedProfile .imageUrls!.first;
+    }
 
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Get Contact Details?'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('You have $_remainingContacts contacts remaining.'),
-              const SizedBox(height: 10),
-              Text('Do you want to reveal $profileName\'s contact information for 1 contact?'),
-            ],
-          ),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(); // Dismiss dialog
-              },
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                Navigator.of(context).pop(); // Dismiss dialog
-                await _revealContactAndDecrement(likedUserId, matchedProfile); // MODIFIED LINE
-              },
-              child: const Text('Get Contact'),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-            ),
-          ],
+        return BannerPopupScreen(
+          message: 'Get Contact Details?',
+          subMessage: 'You have $_remainingContacts contacts remaining.\nDo you want to reveal $profileName\'s contact information for 1 contact?',
+          profileImageUrl:imageUrl, // Assuming your profile models have this property
+          buttonText: 'Get Contact',
+          onButtonPressed: () async {
+            Navigator.of(context).pop(); // Dismiss popup
+            await _revealContactAndDecrement(likedUserId, matchedProfile);
+          },
         );
       },
     );
@@ -707,50 +664,36 @@ class _MatchingScreenState extends State<MatchingScreen> {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Out of Contacts!'),
-          content: const Text('You have no remaining contacts. Please purchase a plan to get more contacts.'),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text('OK'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop(); // Dismiss this dialog
-                // Navigate to PlansScreen - ensure you have this route defined
-                Navigator.pushNamed(context, '/plans'); // Or use MaterialPageRoute directly
-              },
-              child: const Text('View Plans'),
-            ),
-          ],
+        return BannerPopupScreen(
+          message: 'Out of Contacts!',
+          subMessage: 'You have no remaining contacts. Please purchase a plan to get more contacts.',
+          buttonText: 'View Plans',
+          onButtonPressed: () {
+            Navigator.of(context).pop(); // Dismiss this popup
+            Navigator.pushNamed(context, '/plans');
+          },
         );
       },
     );
   }
+
+
   // New: Function to reveal contact and decrement remaining contacts
   Future<void> _revealContactAndDecrement(
-      String targetUserId, // Add this parameter
+      String targetUserId,
       dynamic matchedProfile,
       ) async {
     if (_currentUser == null) return;
 
-    final String targetProfileId = matchedProfile.documentId; // Document ID of the matched profile (this is the likedProfileDocumentId)
-
-    // No longer need currentProfileIdField or targetProfileIdField for the query,
-    // as we will directly access the document using its ID (targetProfileId)
-    // based on the structure defined in _processLike.
+    final String targetProfileId = matchedProfile.documentId;
 
     try {
-      // 1. Decrement remaining contacts for the current user
       if (_remainingContacts > 0) {
         await _firestore.collection('users').doc(_currentUser!.uid).update({
           'remainingContacts': FieldValue.increment(-1),
         });
         setState(() {
-          _remainingContacts--; // Update local state immediately
+          _remainingContacts--;
         });
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -762,15 +705,12 @@ class _MatchingScreenState extends State<MatchingScreen> {
         return;
       }
 
-      // 2. Mark contact as revealed in the specific like document
-      // Directly accessing the 'like' document as per _processLike's structure
       final likeDocRef = _firestore
-          .collection('user_likes') // Changed to 'user_likes' as in _processLike
+          .collection('user_likes')
           .doc(_currentUser!.uid)
           .collection('likes')
-          .doc(targetProfileId); // Direct access using the likedProfileDocumentId as the document ID
+          .doc(targetProfileId);
 
-      // Check if the document exists before attempting to update (optional but good practice)
       final docSnapshot = await likeDocRef.get();
       if (docSnapshot.exists) {
         await likeDocRef.update({
@@ -780,43 +720,40 @@ class _MatchingScreenState extends State<MatchingScreen> {
         print('Warning: Like document with ID $targetProfileId not found for marking contact revealed. This might be an issue.');
       }
 
-      // 3. Show contact details to the user in a new dialog
       String contactNumber = '';
       String contactEmail = '';
       String profileName = '';
 
       if (matchedProfile is FlatListingProfile) {
-        // contactNumber = matchedProfile.ownerPhoneNumber ?? 'N/A';
-        // contactEmail = matchedProfile.ownerEmail ?? 'N/A';
+       // contactNumber = matchedProfile.ownerPhoneNumber ?? 'N/A'; // Assuming this property exists
+       // contactEmail = matchedProfile.ownerEmail ?? 'N/A';     // Assuming this property exists
         profileName = matchedProfile.ownerName ?? 'Flat Owner';
       } else if (matchedProfile is SeekingFlatmateProfile) {
-        // contactNumber = matchedProfile.phoneNumber ?? 'N/A';
-        // contactEmail = matchedProfile.email ?? 'N/A';
+        //contactNumber = matchedProfile.phoneNumber ?? 'N/A'; // Assuming this property exists
+      //  contactEmail = matchedProfile.email ?? 'N/A';       // Assuming this property exists
         profileName = matchedProfile.name ?? 'Flatmate Seeker';
       }
+      String? imageUrl; // Get the actual image URL here
+      if ( matchedProfile  is FlatListingProfile && matchedProfile .imageUrls != null && matchedProfile .imageUrls!.isNotEmpty) {
+        imageUrl = matchedProfile .imageUrls!.first;
+      } else if (matchedProfile  is SeekingFlatmateProfile && matchedProfile .imageUrls != null && matchedProfile .imageUrls!.isNotEmpty) {
+        imageUrl = matchedProfile .imageUrls!.first;
+      }
 
+
+      // Display contact details using BannerPopupScreen
       showDialog(
         context: context,
         builder: (BuildContext context) {
-          return AlertDialog(
-            title: const Text('Contact Details'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Name: $profileName'),
-                const SizedBox(height: 10),
-                Text('Remaining contacts: $_remainingContacts'),
-              ],
-            ),
-            actions: <Widget>[
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-                child: const Text('Close'),
-              ),
-            ],
+          return BannerPopupScreen(
+            message: '$profileName\'s Contact Details',
+            subMessage: 'Remaining contacts: $_remainingContacts',
+            profileImageUrl: imageUrl, // Assuming profile models have this
+           // contactPhoneNumber: contactNumber, // Pass the revealed phone number
+            buttonText: 'Close',
+            onButtonPressed: () {
+              Navigator.of(context).pop();
+            },
           );
         },
       );
