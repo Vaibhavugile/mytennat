@@ -11,6 +11,8 @@ import 'dart:math' as math; // Import for math.min
 import 'package:mytennat/screens/view_profile_screen.dart'; // Import ViewProfileScreen
 import 'package:mytennat/screens/banner_popup_screen.dart'; // NEW: Import the banner popup screen
 import 'package:mytennat/screens/PlansScreen.dart';
+import 'package:mytennat/screens/ad_page.dart'; // NEW: Import the AdPage
+
 class MatchingScreen extends StatefulWidget {
   // Add these final fields to receive the active profile details
   final String profileType;
@@ -725,12 +727,12 @@ class _MatchingScreenState extends State<MatchingScreen> {
       String profileName = '';
 
       if (matchedProfile is FlatListingProfile) {
-       // contactNumber = matchedProfile.ownerPhoneNumber ?? 'N/A'; // Assuming this property exists
-       // contactEmail = matchedProfile.ownerEmail ?? 'N/A';     // Assuming this property exists
+        // contactNumber = matchedProfile.ownerPhoneNumber ?? 'N/A'; // Assuming this property exists
+        // contactEmail = matchedProfile.ownerEmail ?? 'N/A';     // Assuming this property exists
         profileName = matchedProfile.ownerName ?? 'Flat Owner';
       } else if (matchedProfile is SeekingFlatmateProfile) {
         //contactNumber = matchedProfile.phoneNumber ?? 'N/A'; // Assuming this property exists
-      //  contactEmail = matchedProfile.email ?? 'N/A';       // Assuming this property exists
+        //  contactEmail = matchedProfile.email ?? 'N/A';       // Assuming this property exists
         profileName = matchedProfile.name ?? 'Flatmate Seeker';
       }
       String? imageUrl; // Get the actual image URL here
@@ -749,7 +751,7 @@ class _MatchingScreenState extends State<MatchingScreen> {
             message: '$profileName\'s Contact Details',
             subMessage: 'Remaining contacts: $_remainingContacts',
             profileImageUrl: imageUrl, // Assuming profile models have this
-           // contactPhoneNumber: contactNumber, // Pass the revealed phone number
+            // contactPhoneNumber: contactNumber, // Pass the revealed phone number
             buttonText: 'Close',
             onButtonPressed: () {
               Navigator.of(context).pop();
@@ -775,36 +777,60 @@ class _MatchingScreenState extends State<MatchingScreen> {
     }
   }
   // This function checks if the banner should be displayed
-  void _checkForBanner() {
+  void _checkForBanner() async { // Make this function async
     setState(() {
-    //  _bannerMessage = null; // Clear existing message first
-    //  _lastLikedProfileName = null;
+      // Clear existing message first if you want the banner to re-evaluate entirely
+      // _bannerMessage = null;
+      // _lastLikedProfileName = null;
 
       // NEW: Only show banner if interaction count is 2 or more
       if (_interactionCount < 2 || _interactionCount % 2 != 0) {
         return; // Exit if not enough interactions or if it's an odd count
       }
-
-      final List<dynamic> currentOutgoingLikes = _outgoingLikes[widget.profileId] ?? [];
-      final List<dynamic> currentIncomingLikes = _incomingLikes[widget.profileId] ?? [];
-
-      // Find the first profile that the current user liked, but hasn't liked them back
-      dynamic pendingLikedProfile;
-      for (var outgoingProfile in currentOutgoingLikes) {
-        final bool hasLikedMeBack = currentIncomingLikes
-            .any((incomingProfile) => incomingProfile.documentId == outgoingProfile.documentId);
-        if (!hasLikedMeBack) {
-          pendingLikedProfile = outgoingProfile;
-          break; // Found the first one, no need to check further
-        }
-      }
-
-      if (pendingLikedProfile != null) {
-        _showBannerPopup(pendingLikedProfile);
-      }
     });
 
+    final List<dynamic> currentOutgoingLikes = _outgoingLikes[widget.profileId] ?? [];
+    final List<dynamic> currentIncomingLikes = _incomingLikes[widget.profileId] ?? [];
 
+    // Find the first profile that the current user liked, but hasn't liked them back
+    dynamic pendingLikedProfile;
+    for (var outgoingProfile in currentOutgoingLikes) {
+      final bool hasLikedMeBack = currentIncomingLikes
+          .any((incomingProfile) => incomingProfile.documentId == outgoingProfile.documentId);
+
+      if (!hasLikedMeBack) {
+        // --- NEW ADDITION START ---
+        // Check Firestore to see if contact was already revealed for this like
+        final likeDocRef = _firestore
+            .collection('user_likes')
+            .doc(_currentUser!.uid) // Ensure _currentUser is not null here
+            .collection('likes')
+            .doc(outgoingProfile.documentId);
+
+        try {
+          final docSnapshot = await likeDocRef.get();
+          if (docSnapshot.exists && docSnapshot.data() != null) {
+            final data = docSnapshot.data()!;
+            final bool contactRevealed = data['contactRevealed'] ?? false;
+            if (contactRevealed) {
+              print("Skipping banner for ${outgoingProfile.documentId} as contact was already revealed.");
+              continue; // Skip this profile, move to the next one in the loop
+            }
+          }
+        } catch (e) {
+          print("Error checking contactRevealed status for ${outgoingProfile.documentId}: $e");
+          // Continue anyway, maybe assume contact not revealed to be safe, or handle error
+        }
+        // --- NEW ADDITION END ---
+
+        pendingLikedProfile = outgoingProfile;
+        break; // Found the first eligible one, no need to check further
+      }
+    }
+
+    if (pendingLikedProfile != null) {
+      _showBannerPopup(pendingLikedProfile);
+    }
   }
 
   void _moveToNextProfile() {
@@ -846,48 +872,122 @@ class _MatchingScreenState extends State<MatchingScreen> {
         return BannerPopupScreen(
           message: message,
           subMessage: sub, // Pass the sub-message
-          profileImageUrl: imageUrl, // Pass the profile image URL
-          buttonText: 'Upgrade to Premium', // Set button text explicitly
+          profileImageUrl: imageUrl, // Pass the image URL
+          buttonText: 'OK',
           onButtonPressed: () {
-            Navigator.of(context).pop(); // Dismiss the current popup
-            // Add your navigation or logic for "Upgrade to Premium" here
-            Navigator.of(context).push( // Navigate to the PlansScreen
-              MaterialPageRoute(
-                builder: (context) => const PlansScreen(),
-              ),
-            );
+            setState(() {
+              _isBannerPopupShowing = false;
+            });
+            Navigator.of(context).pop();
           },
         );
       },
-    ).then((_) {
-      _isBannerPopupShowing = false;
-    });
+    );
   }
 
+  // --- NEW: Ad Banner Widget ---
+  Widget _buildAdBanner(String title, String imageUrl) {
+    return Card(
+      elevation: 4.0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      child: InkWell(
+        onTap: () {
+          // Handle ad banner tap, e.g., navigate to a promotional page
+          print('Ad Banner Tapped: $title');
+          // In a real app, you'd use url_launcher package:
+          // import 'package:url_launcher/url_launcher.dart';
+          // launchUrl(Uri.parse('your_ad_link_here'));
+        },
+        child: Column(
+          children: [
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
+              child: Image.network(
+                imageUrl,
+                fit: BoxFit.cover,
+                width: double.infinity,
+                height: 100, // Adjust height as needed for your ads
+                errorBuilder: (context, error, stackTrace) =>
+                const Center(child: Icon(Icons.broken_image, size: 50, color: Colors.grey)),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text(
+                title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // --- NEW: Ad Panel Widget ---
+  Widget _buildAdPanel(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Text(
+            'Advertisements',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          // Ad Banner 1
+          _buildAdBanner(
+              'Ad 1: Exclusive Deals!', 'https://via.placeholder.com/300x150/FF0000/FFFFFF?text=Ad+1'),
+          const SizedBox(height: 16),
+          // Ad Banner 2
+          _buildAdBanner(
+              'Ad 2: Find Your Dream Flat!', 'https://firebasestorage.googleapis.com/v0/b/renting-wala-27d06.appspot.com/o/products%2F4444%2FIMG-20250516-WA0065.jpg?alt=media&token=edb3308a-cd11-4d39-a1a1-5026188fe1d6'),
+          const SizedBox(height: 16),
+          // Ad Banner 3
+          _buildAdBanner(
+              'Ad 3: Premium Features!', 'https://via.placeholder.com/300x150/0000FF/FFFFFF?text=Ad+3'),
+          const SizedBox(height: 24),
+          // Button to navigate to a dedicated Ad Page
+          ElevatedButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const AdPage()),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blueAccent,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: const Text('View All Ads', style: TextStyle(fontSize: 16)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // This function is for creating a match document and a chat room
   Future<void> _createMatchAndChatRoom(
       String user1Uid,
       String user1ProfileId,
-      String user1ProfileType, // Add this parameter
+      String user1ProfileType,
       String user2Uid,
       String user2ProfileId,
-      String user2ProfileType, // Add this parameter
+      String user2ProfileType,
       ) async {
-    if (_currentUser == null) {
-      print("createMatchAndChatRoom: _currentUser is null.");
-      return;
-    }
-
     // Create a unique ID for the match based on the two *profile* IDs
     // This ensures a unique match document for each profile pair.
     List<String> sortedProfileIds = [user1ProfileId, user2ProfileId]..sort();
     String matchDocId = '${sortedProfileIds[0]}_${sortedProfileIds[1]}';
-
     print("createMatchAndChatRoom: Attempting to check existence of match for profiles: $matchDocId");
-
     try {
       DocumentSnapshot matchDoc = await _firestore.collection('matches').doc(matchDocId).get();
       print("createMatchAndChatRoom: Match document existence check result: ${matchDoc.exists}");
-
       if (!matchDoc.exists) {
         print("createMatchAndChatRoom: Match document for profiles does not exist. Proceeding to create chat and match.");
         DocumentReference chatRef = await _firestore.collection('chats').add({
@@ -902,7 +1002,6 @@ class _MatchingScreenState extends State<MatchingScreen> {
         print("createMatchAndChatRoom: Chat room created with ID: $chatRoomId");
         // The _userProfileType print here refers to a class member, not the function parameter.
         // print("user1profiletyppe: $_userProfileType"); // This line might be using a class variable, remove if not intended for user1ProfileType param
-
         await _firestore.collection('matches').doc(matchDocId).set({
           'user1_uid': user1Uid,
           'user2_uid': user2Uid,
@@ -914,38 +1013,31 @@ class _MatchingScreenState extends State<MatchingScreen> {
           'createdAt': FieldValue.serverTimestamp(),
         });
         print("createMatchAndChatRoom: Match document created successfully for profiles: $matchDocId");
-
-        if (mounted) {
-          // Still pass the USER ID (uid) to ChatScreen as it typically chats between users.
-          // The ChatScreen itself would need to be adapted if it needs specific profile context.
-          // Navigator.push is called in _processLike already, remove this duplicate.
-        }
       } else {
-        print("createMatchAndChatRoom: Match document already exists for profiles: $matchDocId. Not creating new chat.");
-        final Map<String, dynamic>? matchData = matchDoc.data() as Map<String, dynamic>?;
-        if (matchData != null && matchData['chatRoomId'] != null) {
-          // Existing chat logic.
-        }
+        print("createMatchAndChatRoom: Match document for profiles already exists.");
+        // If match already exists, ensure chatRoomId is fetched
+        String chatRoomId = (matchDoc.data() as Map<String, dynamic>)['chatRoomId'];
+        print("createMatchAndChatRoom: Existing chatRoomId: $chatRoomId");
       }
     } catch (e) {
-      print("createMatchAndChatRoom: ERROR during match/chat creation process: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error creating match: $e')),
-      );
+      print("createMatchAndChatRoom ERROR: $e");
+      rethrow; // Re-throw the error to be caught by the caller
     }
   }
+
 
   void _showMatchDialog(String title, String message, VoidCallback onChatPressed) {
     showDialog(
       context: context,
+      barrierDismissible: false, // User must tap a button to dismiss
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+          title: Text(title),
           content: Text(message),
           actions: <Widget>[
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop();
+                Navigator.of(context).pop(); // Dismiss the dialog
               },
               child: const Text('Later'),
             ),
@@ -960,35 +1052,36 @@ class _MatchingScreenState extends State<MatchingScreen> {
   }
 
   void _handleProfileDismissed(DismissDirection direction) {
+    if (_profiles.isEmpty || _currentIndex >= _profiles.length) {
+      print("_handleProfileDismissed: No profiles to dismiss or index out of bounds.");
+      return;
+    }
+
     setState(() {
-      if (_profiles.isNotEmpty) {
-        final dismissedProfile = _profiles[_currentIndex];
-        String likedOrPassedUserId;
-        String dismissedProfileDocId; // Declare variable for profile document ID
+      final dismissedProfile = _profiles[_currentIndex];
+      String likedOrPassedUserId = '';
+      String dismissedProfileDocId = ''; // Variable to hold the document ID
 
-        if (dismissedProfile is FlatListingProfile) {
-          likedOrPassedUserId = dismissedProfile.uid!;
-          dismissedProfileDocId = dismissedProfile.documentId!; // Get documentId
-        } else if (dismissedProfile is SeekingFlatmateProfile) {
-          likedOrPassedUserId = dismissedProfile.uid!;
-          dismissedProfileDocId = dismissedProfile.documentId!; // Get documentId
-        } else {
-          print("Error: Unknown profile type encountered in _handleProfileDismissed");
-          return;
-        }
-
-        // NEW: Increment interaction count regardless of like or dislike
-        _interactionCount++;
-
-        if (direction == DismissDirection.endToStart) {
-          ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Profile Passed'))
-          );
-          _moveToNextProfile(); // Move to next even if disliked
-        } else if (direction == DismissDirection.startToEnd) {
-          _processLike(likedOrPassedUserId, dismissedProfileDocId); // Pass both IDs
-          _moveToNextProfile(); // Move to next after like process
-        }
+      if (dismissedProfile is FlatListingProfile) {
+        likedOrPassedUserId = dismissedProfile.uid!;
+        dismissedProfileDocId = dismissedProfile.documentId!; // Get documentId
+      } else if (dismissedProfile is SeekingFlatmateProfile) {
+        likedOrPassedUserId = dismissedProfile.uid!;
+        dismissedProfileDocId = dismissedProfile.documentId!; // Get documentId
+      } else {
+        print("Error: Unknown profile type encountered in _handleProfileDismissed");
+        return;
+      }
+      // NEW: Increment interaction count regardless of like or dislike
+      _interactionCount++;
+      if (direction == DismissDirection.endToStart) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Profile Passed'))
+        );
+        _moveToNextProfile(); // Move to next even if disliked
+      } else if (direction == DismissDirection.startToEnd) {
+        _processLike(likedOrPassedUserId, dismissedProfileDocId); // Pass both IDs
+        _moveToNextProfile(); // Move to next after like process
       }
     });
   }
@@ -1002,7 +1095,6 @@ class _MatchingScreenState extends State<MatchingScreen> {
   Widget build(BuildContext context) {
     final double screenWidth = MediaQuery.of(context).size.width;
     final bool isLargeScreen = screenWidth > 900; // Define your breakpoint for web layout
-
     return Scaffold(
       key: _scaffoldKey, // Assign the key to Scaffold
       appBar: AppBar(
@@ -1020,8 +1112,7 @@ class _MatchingScreenState extends State<MatchingScreen> {
             ),
         ],
       ),
-      drawer: isLargeScreen
-          ? null // No drawer on large screens, as filter is inline
+      drawer: isLargeScreen ? null // No drawer on large screens, as filter is inline
           : Drawer(
         child: FilterScreen(
           initialFilters: _currentFilters.copyWith(),
@@ -1029,10 +1120,7 @@ class _MatchingScreenState extends State<MatchingScreen> {
           onFiltersChanged: _onFiltersChanged,
         ),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _profiles.isEmpty
-          ? Center(
+      body: _isLoading ? const Center(child: CircularProgressIndicator()) : _profiles.isEmpty ? Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -1047,23 +1135,9 @@ class _MatchingScreenState extends State<MatchingScreen> {
                 setState(() {
                   _currentFilters.clear(); // Clear filters
                 });
-                _fetchUserProfile(applyFilters: false); // Refetch without filters
-              },
-              icon: const Icon(Icons.refresh),
-              label: const Text('Clear Filters & Refresh'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.redAccent,
-                foregroundColor: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 10),
-            ElevatedButton.icon(
-              onPressed: () {
-                if (isLargeScreen) {
-                  // For large screens, simply ensure the filter panel is visible and scroll to top
-                  // This is a fallback if the user expects to "open" filters on web
-                  // In a truly responsive design, the filter panel would always be visible on large screens
-                  _scaffoldKey.currentState?.openDrawer(); // Open drawer to show filters for large screen as well if it was somehow closed
+                _fetchUserProfile(applyFilters: true);
+                if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
+                  Navigator.of(context).pop(); // Close drawer if it was somehow closed
                 } else {
                   _scaffoldKey.currentState?.openDrawer(); // Open drawer for small screens
                 }
@@ -1077,9 +1151,7 @@ class _MatchingScreenState extends State<MatchingScreen> {
             ),
           ],
         ),
-      )
-          : isLargeScreen
-          ? Row(
+      ) : isLargeScreen ? Row(
         children: [
           // Filter Panel on the left for large screens
           SizedBox(
@@ -1154,22 +1226,17 @@ class _MatchingScreenState extends State<MatchingScreen> {
               ),
             ),
           ),
-        ],
-      )
-          : Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Plan: ${_currentPlanName ?? 'N/A'}', style: const TextStyle(fontSize: 16)),
-                Text('Contacts Left: $_remainingContacts', style: const TextStyle(fontSize: 16)),
-              ],
-            ),
+          // Ad Panel on the right for large screens
+          SizedBox(
+            width: math.min(350.0, screenWidth * 0.3), // Occupy 30% or max 350px
+            child: _buildAdPanel(context), // Use the new ad panel here
           ),
-          Expanded(
-            child: Center(
+        ],
+      ) : Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Expanded(
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: _profiles.isNotEmpty && _currentIndex < _profiles.length // Add index check
@@ -1206,15 +1273,14 @@ class _MatchingScreenState extends State<MatchingScreen> {
                     : const SizedBox.shrink(),
               ),
             ),
-          ),
-          // Buttons for mobile view, allowing explicit like/pass without full swipe
-          if (_profiles.isNotEmpty && _currentIndex < _profiles.length) // Add index check for buttons
-            _buildActionButtons(
-                _profiles[_currentIndex] is FlatListingProfile
-                    ? (_profiles[_currentIndex] as FlatListingProfile).uid!
-                    : (_profiles[_currentIndex] as SeekingFlatmateProfile).uid!
-            ),
-        ],
+            if (_profiles.isNotEmpty && _currentIndex < _profiles.length) // Add index check for buttons
+              _buildActionButtons(
+                  _profiles[_currentIndex] is FlatListingProfile
+                      ? (_profiles[_currentIndex] as FlatListingProfile).uid!
+                      : (_profiles[_currentIndex] as SeekingFlatmateProfile).uid!
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -1267,9 +1333,7 @@ class FlatListingProfileCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Determine actual images to display (with placeholder)
-    final List<String> imagesToDisplay = (imageUrls.isNotEmpty)
-        ? List<String>.from(imageUrls)
-        : ['https://via.placeholder.com/400x300?text=No+Flat+Images'];
+    final List<String> imagesToDisplay = (imageUrls.isNotEmpty) ? List<String>.from(imageUrls) : ['https://via.placeholder.com/400x300?text=No+Flat+Images'];
 
     return GestureDetector( // Wrap with GestureDetector
       onTap: () {
@@ -1297,7 +1361,6 @@ class FlatListingProfileCard extends StatelessWidget {
                 builder: (BuildContext context, StateSetter setState) {
                   final PageController pageController = PageController();
                   int currentImageLocalIndex = 0;
-
                   // Listener to update the index for dot indicators
                   pageController.addListener(() {
                     if (pageController.page != null) {
@@ -1339,9 +1402,7 @@ class FlatListingProfileCard extends StatelessWidget {
                                 margin: const EdgeInsets.symmetric(horizontal: 4.0),
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: currentImageLocalIndex == index
-                                      ? Colors.redAccent
-                                      : Colors.grey.withOpacity(0.5),
+                                  color: currentImageLocalIndex == index ? Colors.redAccent : Colors.grey.withOpacity(0.5),
                                 ),
                               );
                             }),
@@ -1403,89 +1464,88 @@ class FlatListingProfileCard extends StatelessWidget {
 
                         _buildChipList(
                           title: 'Availability Date:',
-                          items: [profile.availabilityDate != null ? DateFormat('dd MMM,YYYY').format(profile.availabilityDate!) : null],
-                          backgroundColor: Colors.indigo.shade100,
-                          textColor: Colors.indigo.shade800,
+                          items: [profile.availabilityDate != null ? DateFormat('yyyy-MM-dd').format(profile.availabilityDate!) : null],
+                          backgroundColor: Colors.teal.shade100,
+                          textColor: Colors.teal.shade800,
                         ),
                       ],
                     ),
                     _buildInfoSection(
-                      title: 'Amenities',
-                      icon: Icons.spa,
+                      title: 'Location Preferences',
+                      icon: Icons.location_on,
                       children: [
                         _buildChipList(
-                          items: profile.amenities,
-                          backgroundColor: Colors.green.shade100,
-                          textColor: Colors.green.shade800,
+                          title: 'City:',
+                          items: [profile.desiredCity],
+                          backgroundColor: Colors.blue.shade100,
+                          textColor: Colors.blue.shade800,
+                        ),
+                        _buildChipList(
+                          title: 'Area:',
+                          items: [profile.areaPreference],
+                          backgroundColor: Colors.cyan.shade100,
+                          textColor: Colors.cyan.shade800,
                         ),
                       ],
-                    ),
-                    _buildInfoSection(
-                      title: 'About the Flat',
-                      value: profile.flatDescription,
-                      icon: Icons.description,
-                    ),
-                    _buildInfoSection(
-                      title: 'Owner Bio',
-                      value: profile.ownerBio,
-                      icon: Icons.person,
                     ),
                     _buildInfoSection(
                       title: 'Lifestyle & Habits',
-                      icon: Icons.self_improvement,
+                      icon: Icons.emoji_people,
                       children: [
                         _buildChipList(
-                          title: 'Occupation:',
-                          items: [profile.ownerOccupation],
-                          backgroundColor: Colors.purple.shade100,
-                          textColor: Colors.purple.shade800,
+                          title: 'Cleanliness:',
+                          items: [profile.cleanlinessLevel],
+                          backgroundColor: Colors.green.shade100,
+                          textColor: Colors.green.shade800,
+                        ),
+                        _buildChipList(
+                          title: 'Social:',
+                          items: [profile.socialPreferences],
+                          backgroundColor: Colors.red.shade100,
+                          textColor: Colors.red.shade800,
                         ),
                         _buildChipList(
                           title: 'Smoking:',
                           items: [profile.smokingHabit],
-                          backgroundColor: Colors.deepOrange.shade100,
-                          textColor: Colors.deepOrange.shade800,
+                          backgroundColor: Colors.grey.shade100,
+                          textColor: Colors.grey.shade800,
                         ),
                         _buildChipList(
                           title: 'Drinking:',
                           items: [profile.drinkingHabit],
-                          backgroundColor: Colors.cyan.shade100,
-                          textColor: Colors.cyan.shade800,
+                          backgroundColor: Colors.brown.shade100,
+                          textColor: Colors.brown.shade800,
                         ),
                         _buildChipList(
                           title: 'Food:',
                           items: [profile.foodPreference],
-                          backgroundColor: Colors.amber.shade100,
-                          textColor: Colors.amber.shade800,
+                          backgroundColor: Colors.yellow.shade100,
+                          textColor: Colors.yellow.shade800,
                         ),
                         _buildChipList(
-                          title: 'Cleanliness:',
-                          items: [profile.cleanlinessLevel],
-                          backgroundColor: Colors.blue.shade100,
-                          textColor: Colors.blue.shade800,
-                        ),
-
-                        _buildChipList(
-                          title: 'Social:',
-                          items: [profile.socialPreferences],
-                          backgroundColor: Colors.pink.shade100,
-                          textColor: Colors.pink.shade800,
-                        ),
-
-                        _buildChipList(
-                          title: 'Pets (Owner):',
+                          title: 'Pets:',
                           items: [profile.petOwnership],
-                          backgroundColor: Colors.lightGreen.shade100,
-                          textColor: Colors.lightGreen.shade800,
+                          backgroundColor: Colors.orange.shade100,
+                          textColor: Colors.orange.shade800,
                         ),
                         _buildChipList(
-                          title: 'Pets (Tolerance):',
+                          title: 'Pet Tolerance:',
                           items: [profile.petTolerance],
-                          backgroundColor: Colors.teal.shade100,
-                          textColor: Colors.teal.shade800,
+                          backgroundColor: Colors.deepOrange.shade100,
+                          textColor: Colors.deepOrange.shade800,
                         ),
-
-
+                      ],
+                    ),
+                    _buildInfoSection(
+                      title: 'About Owner',
+                      icon: Icons.person,
+                      children: [
+                        _buildChipList(
+                          title: 'Occupation:',
+                          items: [profile.ownerOccupation],
+                          backgroundColor: Colors.indigo.shade100,
+                          textColor: Colors.indigo.shade800,
+                        ),
                       ],
                     ),
                   ],
@@ -1620,12 +1680,9 @@ class SeekingFlatmateProfileCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Determine actual images to display (with placeholder)
-    final List<String> imagesToDisplay = (imageUrls.isNotEmpty)
-        ? List<String>.from(imageUrls)
-        : ['https://via.placeholder.com/400x300?text=No+Profile+Images'];
+    final List<String> imagesToDisplay = (imageUrls.isNotEmpty) ? List<String>.from(imageUrls) : ['https://via.placeholder.com/400x300?text=No+Flatmate+Images'];
 
-    return GestureDetector( // Wrap with GestureDetector
+    return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
@@ -1641,18 +1698,14 @@ class SeekingFlatmateProfileCard extends StatelessWidget {
         margin: const EdgeInsets.all(16.0),
         elevation: 8.0,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-        // Wrap the Column with SingleChildScrollView
-        child: SingleChildScrollView( // Added SingleChildScrollView here
+        child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Image Carousel with Indicators
               StatefulBuilder(
                 builder: (BuildContext context, StateSetter setState) {
                   final PageController pageController = PageController();
                   int currentImageLocalIndex = 0;
-
-                  // Listener to update the index for dot indicators
                   pageController.addListener(() {
                     if (pageController.page != null) {
                       setState(() {
@@ -1660,11 +1713,10 @@ class SeekingFlatmateProfileCard extends StatelessWidget {
                       });
                     }
                   });
-
                   return Column(
                     children: [
                       SizedBox(
-                        height: 300, // Fixed height for the image carousel
+                        height: 300,
                         child: PageView.builder(
                           controller: pageController,
                           itemCount: imagesToDisplay.length,
@@ -1681,7 +1733,7 @@ class SeekingFlatmateProfileCard extends StatelessWidget {
                           },
                         ),
                       ),
-                      if (imagesToDisplay.length > 1) // Show indicators only if more than one image
+                      if (imagesToDisplay.length > 1)
                         Padding(
                           padding: const EdgeInsets.all(8.0),
                           child: Row(
@@ -1693,9 +1745,7 @@ class SeekingFlatmateProfileCard extends StatelessWidget {
                                 margin: const EdgeInsets.symmetric(horizontal: 4.0),
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: currentImageLocalIndex == index
-                                      ? Colors.redAccent
-                                      : Colors.grey.withOpacity(0.5),
+                                  color: currentImageLocalIndex == index ? Colors.redAccent : Colors.grey.withOpacity(0.5),
                                 ),
                               );
                             }),
@@ -1717,7 +1767,7 @@ class SeekingFlatmateProfileCard extends StatelessWidget {
                     const SizedBox(height: 10),
                     Text(
                       '${profile.age ?? 'N/A'} years old, ${profile.gender ?? 'N/A'}',
-                      style: const TextStyle(fontSize: 16, color: Colors.grey),
+                      style: const TextStyle(fontSize: 18, color: Colors.grey),
                     ),
                     const SizedBox(height: 20),
                     _buildInfoSection(
@@ -1731,59 +1781,50 @@ class SeekingFlatmateProfileCard extends StatelessWidget {
                       icon: Icons.search,
                       children: [
                         _buildChipList(
-                          title: 'Desired City:',
-                          items: [profile.desiredCity],
-                          backgroundColor: Colors.blue.shade100,
-                          textColor: Colors.blue.shade800,
-                        ),
-                        _buildChipList(
-                          title: 'Area Preference:',
-                          items: [profile.areaPreference],
-                          backgroundColor: Colors.green.shade100,
-                          textColor: Colors.green.shade800,
-                        ),
-                        _buildChipList(
                           title: 'Move-in Date:',
-                          items: [
-                            profile.moveInDate != null
-                                ? DateFormat('MMM dd,YYYY').format(profile.moveInDate!)
-                                : 'Flexible'
-                          ],
-                          backgroundColor: Colors.orange.shade100,
-                          textColor: Colors.orange.shade800,
+                          items: [profile.moveInDate != null ? DateFormat('yyyy-MM-dd').format(profile.moveInDate!) : null],
+                          backgroundColor: Colors.teal.shade100,
+                          textColor: Colors.teal.shade800,
                         ),
                         _buildChipList(
                           title: 'Budget:',
                           items: [
                             profile.budgetMin != null && profile.budgetMax != null
-                                ? '₹${NumberFormat('#,##0').format(profile.budgetMin)} - ₹${NumberFormat('#,##0').format(profile.budgetMax)}'
-                                : 'N/A'
+                                ? '₹${profile.budgetMin!.toStringAsFixed(0)} - ₹${profile.budgetMax!.toStringAsFixed(0)}'
+                                : null
                           ],
-                          backgroundColor: Colors.red.shade100,
-                          textColor: Colors.red.shade800,
+                          backgroundColor: Colors.deepPurple.shade100,
+                          textColor: Colors.deepPurple.shade800,
                         ),
                       ],
                     ),
                     _buildInfoSection(
-                      title: 'Bio',
-                      value: profile.bio,
-                      icon: Icons.info,
+                      title: 'Location Preferences',
+                      icon: Icons.location_on,
+                      children: [
+                        _buildChipList(
+                          title: 'City:',
+                          items: [profile.desiredCity],
+                          backgroundColor: Colors.blue.shade100,
+                          textColor: Colors.blue.shade800,
+                        ),
+                        _buildChipList(
+                          title: 'Area:',
+                          items: [profile.areaPreference],
+                          backgroundColor: Colors.cyan.shade100,
+                          textColor: Colors.cyan.shade800,
+                        ),
+                      ],
                     ),
                     _buildInfoSection(
                       title: 'Lifestyle & Habits',
-                      icon: Icons.self_improvement,
+                      icon: Icons.emoji_people,
                       children: [
-                        _buildChipList(
-                          title: 'Occupation:',
-                          items: [profile.occupation],
-                          backgroundColor: Colors.purple.shade100,
-                          textColor: Colors.purple.shade800,
-                        ),
                         _buildChipList(
                           title: 'Cleanliness:',
                           items: [profile.cleanliness],
-                          backgroundColor: Colors.blue.shade100,
-                          textColor: Colors.blue.shade800,
+                          backgroundColor: Colors.green.shade100,
+                          textColor: Colors.green.shade800,
                         ),
                         _buildChipList(
                           title: 'Social Habits:',
@@ -1791,8 +1832,6 @@ class SeekingFlatmateProfileCard extends StatelessWidget {
                           backgroundColor: Colors.pink.shade100,
                           textColor: Colors.pink.shade800,
                         ),
-
-
                         _buildChipList(
                           title: 'Smoking Habits:',
                           items: [profile.smokingHabits],
@@ -1817,7 +1856,6 @@ class SeekingFlatmateProfileCard extends StatelessWidget {
                           backgroundColor: Colors.brown.shade100,
                           textColor: Colors.brown.shade800,
                         ),
-
                         _buildChipList(
                           title: 'Pet Ownership:',
                           items: [profile.petOwnership],
@@ -1827,10 +1865,21 @@ class SeekingFlatmateProfileCard extends StatelessWidget {
                         _buildChipList(
                           title: 'Pet Tolerance:',
                           items: [profile.petTolerance],
-                          backgroundColor: Colors.teal.shade100,
-                          textColor: Colors.teal.shade800,
+                          backgroundColor: Colors.lime.shade100,
+                          textColor: Colors.lime.shade800,
                         ),
-
+                      ],
+                    ),
+                    _buildInfoSection(
+                      title: 'Occupation',
+                      icon: Icons.work,
+                      children: [
+                        _buildChipList(
+                          title: 'Occupation:',
+                          items: [profile.occupation],
+                          backgroundColor: Colors.indigo.shade100,
+                          textColor: Colors.indigo.shade800,
+                        ),
                       ],
                     ),
                   ],
@@ -1910,7 +1959,7 @@ class SeekingFlatmateProfileCard extends StatelessWidget {
 
   Widget _buildChipList({
     String? title,
-    required List<String?>? items, // Corrected: Already nullable in this class, consistent
+    required List<String?>? items,
     Color backgroundColor = Colors.redAccent,
     Color textColor = Colors.white,
   }) {

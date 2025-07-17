@@ -35,7 +35,7 @@ class _PlansScreenState extends State<PlansScreen> {
         'All Basic features',
         'Priority support',
         'Ad-free experience',
-        'Enhanced matching',
+
       ],
       'isHighlighted': false,
     },
@@ -44,11 +44,9 @@ class _PlansScreenState extends State<PlansScreen> {
       'price': '₹499',
       'contacts': '40 Contacts', // This needs to be parsed to an int
       'features': [
-        'All Standard features',
-        'Dedicated account manager',
-        'Exclusive insights',
-        'Boosted visibility',
-        'Early access to new features',
+        'Priority support',
+        'Ad-free experience',
+        'Exclusive insights'
       ],
       'isHighlighted': true, // Highlight this plan
     },
@@ -114,7 +112,7 @@ class _PlansScreenState extends State<PlansScreen> {
           SingleChildScrollView(
             padding: EdgeInsets.symmetric(
               horizontal: isMobile ? 0.0 : 40.0, // No horizontal padding for mobile scrollable area
-              vertical: 120.0, // Adjust padding for app bar
+              vertical: 60.0, // Adjust padding for app bar
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -175,7 +173,7 @@ class _PlansScreenState extends State<PlansScreen> {
     return Column(
       children: [
         SizedBox(
-          height: 600, // Adjusted height for the PageView. You might fine-tune this.
+          height: 400, // Adjusted height for the PageView. You might fine-tune this.
           child: PageView.builder(
             controller: _pageController,
             itemCount: _plans.length,

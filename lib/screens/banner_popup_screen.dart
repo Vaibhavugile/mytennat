@@ -21,8 +21,8 @@ class BannerPopupScreen extends StatelessWidget {
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
 
-    final double redBackgroundHeight = screenHeight * 0.8;
-    final double curveDipHeight = 60.0;
+    final double redBackgroundHeight = screenHeight * 0.6;
+    final double curveDipHeight = 90.0;
 
     return Scaffold(
       backgroundColor: Colors.white,
