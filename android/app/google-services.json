@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "984950929715",
-    "project_id": "mytennat",
-    "storage_bucket": "mytennat.firebasestorage.app"
+    "project_number": "23597975309",
+    "project_id": "mytennant-5cc44",
+    "storage_bucket": "mytennant-5cc44.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:984950929715:android:d733677447d6e305166646",
+        "mobilesdk_app_id": "1:23597975309:android:0a31095a9706eab9bb1244",
         "android_client_info": {
           "package_name": "com.example.mytennat"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDR2tm1J1VZmKia0fM6UPhqbcoTFggYJOo"
+          "current_key": "AIzaSyCGJC2xx_5bW-DwaLWkkj8PlOCgfsF5Lj8"
         }
       ],
       "services": {
