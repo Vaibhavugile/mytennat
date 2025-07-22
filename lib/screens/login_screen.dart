@@ -1,12 +1,12 @@
+// lib/screens/login_screen.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'dart:async'; // Added for Timer functionality
-import 'package:flutter/foundation.dart' show kIsWeb; // Import kIsWeb for platform detection
-import 'package:cloud_firestore/cloud_firestore.dart'; // Added for Firestore
-// import 'package:lottie/lottie.dart'; // Uncomment if you plan to use Lottie animations
+import 'dart:async';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'selection_screen.dart';
-import 'home_page.dart'; // Import your home page (create this if it doesn't exist)
-import 'package:flutter/foundation.dart'; // Import for debugPrint
+import 'home_page.dart';
+import 'package:flutter/foundation.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -21,24 +21,24 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   String _verificationId = '';
   bool _isOtpSent = false;
   bool _loading = false;
-  int _resendOtpTimer = 60; // Initial timer value in seconds
+  int _resendOtpTimer = 60;
   bool _canResendOtp = false;
-  Timer? _timer; // Declare a Timer variable
+  Timer? _timer;
 
   late AnimationController _animationController;
-  late Animation<Offset> _slideUpAnimation; // For general elements sliding in from bottom
-  late Animation<double> _fadeInAnimation; // For general elements fading in
+  late Animation<Offset> _slideUpAnimation;
+  late Animation<double> _fadeInAnimation;
 
   @override
   void initState() {
     super.initState();
     _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200), // Increased overall animation duration for smoother feel
+      duration: const Duration(milliseconds: 1200),
     );
 
     _slideUpAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.2), // Start slightly below
+      begin: const Offset(0, 0.2),
       end: Offset.zero,
     ).animate(CurvedAnimation(
       parent: _animationController,
@@ -53,7 +53,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       curve: Curves.easeIn,
     ));
 
-    _animationController.forward(); // Start the animations when the screen loads
+    _animationController.forward();
   }
 
   @override
@@ -68,7 +68,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   void _startResendTimer() {
     _canResendOtp = false;
     _resendOtpTimer = 60;
-    _timer?.cancel(); // Cancel any existing timer
+    _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       setState(() {
         if (_resendOtpTimer < 1) {
@@ -90,10 +90,9 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       await FirebaseAuth.instance.verifyPhoneNumber(
         phoneNumber: '+91${_phoneController.text}', // Assuming Indian numbers
         verificationCompleted: (PhoneAuthCredential credential) async {
-          // AUTO RETRIEVAL - Only on Android and for some instant verifications
           debugPrint('Phone verification completed automatically.');
           await FirebaseAuth.instance.signInWithCredential(credential);
-          _navigateToNextScreen(); // Navigate after auto-verification
+          _navigateToNextScreen();
         },
         verificationFailed: (FirebaseAuthException e) {
           setState(() {
@@ -105,7 +104,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           } else if (e.code == 'too-many-requests') {
             errorMessage = 'Too many requests. Please try again later.';
           }
-          debugPrint('Phone verification failed: ${e.code} - ${e.message}'); // Log to console
+          debugPrint('Phone verification failed: ${e.code} - ${e.message}');
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(errorMessage)),
           );
@@ -117,7 +116,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
             _loading = false;
           });
           _startResendTimer();
-          debugPrint('OTP code sent to phone number. Verification ID: $verificationId'); // Log to console
+          debugPrint('OTP code sent to phone number. Verification ID: $verificationId');
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('OTP sent to your phone!')),
           );
@@ -127,15 +126,15 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
             _verificationId = verificationId;
             _loading = false;
           });
-          debugPrint('OTP auto-retrieval timed out. Verification ID: $verificationId'); // Log to console
+          debugPrint('OTP auto-retrieval timed out. Verification ID: $verificationId');
         },
-        timeout: const Duration(seconds: 60), // Set timeout for OTP
+        timeout: const Duration(seconds: 60),
       );
     } catch (e) {
       setState(() {
         _loading = false;
       });
-      debugPrint('Error verifying phone number: ${e.toString()}'); // Log to console
+      debugPrint('Error verifying phone number: ${e.toString()}');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: ${e.toString()}')),
       );
@@ -153,8 +152,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         smsCode: _otpController.text,
       );
       await FirebaseAuth.instance.signInWithCredential(credential);
-      debugPrint('OTP verification successful. User signed in.'); // Log to console
-      _navigateToNextScreen(); // Navigate after successful OTP verification
+      debugPrint('OTP verification successful. User signed in.');
+      _navigateToNextScreen();
     } on FirebaseAuthException catch (e) {
       setState(() {
         _loading = false;
@@ -165,7 +164,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       } else if (e.code == 'session-expired') {
         errorMessage = 'OTP session expired. Please resend OTP.';
       }
-      debugPrint('OTP verification failed: ${e.code} - ${e.message}'); // Log to console
+      debugPrint('OTP verification failed: ${e.code} - ${e.message}');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(errorMessage)),
       );
@@ -173,14 +172,13 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       setState(() {
         _loading = false;
       });
-      debugPrint('Error verifying OTP and signing in: ${e.toString()}'); // Log to console
+      debugPrint('Error verifying OTP and signing in: ${e.toString()}');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: ${e.toString()}')),
       );
     }
   }
 
-  // Updated method to handle navigation based on user profile existence
   Future<void> _navigateToNextScreen() async {
     setState(() {
       _loading = false;
@@ -190,11 +188,13 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     if (user != null) {
       final userDocRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
 
-      // Check for flatListings subcollection
+      // Get the phone number from the authenticated user
+      final String? userPhoneNumber = user.phoneNumber;
+      debugPrint('Authenticated user phone number: $userPhoneNumber');
+
       final flatListingsSnapshot = await userDocRef.collection('flatListings').limit(1).get();
       final bool hasFlatListingProfile = flatListingsSnapshot.docs.isNotEmpty;
 
-      // Check for seekingFlatmateProfiles subcollection
       final seekingFlatmateProfilesSnapshot = await userDocRef.collection('seekingFlatmateProfiles').limit(1).get();
       final bool hasSeekingFlatmateProfile = seekingFlatmateProfilesSnapshot.docs.isNotEmpty;
 
@@ -207,7 +207,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       } else {
         debugPrint('New user. No existing profiles found. Navigating to profile creation (SelectionScreen).');
         Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const SelectionScreen()),
+          MaterialPageRoute(builder: (context) => SelectionScreen(initialPhoneNumber: userPhoneNumber)),
               (Route<dynamic> route) => false,
         );
       }
@@ -235,8 +235,6 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                   position: _slideUpAnimation,
                   child: Column(
                     children: [
-                      // Lottie.asset('assets/animations/login_animation.json',
-                      //     height: 200, width: 200), // Example Lottie animation
                       const Icon(Icons.home_work_rounded, color: Colors.redAccent, size: 100),
                       const SizedBox(height: 32),
                       Text(
@@ -366,7 +364,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       backgroundColor: Colors.white,
       body: Center(
         child: Container(
-          constraints: const BoxConstraints(maxWidth: 800), // Max width for web content
+          constraints: const BoxConstraints(maxWidth: 800),
           padding: const EdgeInsets.all(40.0),
           child: Row(
             children: [
@@ -376,8 +374,6 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Lottie.asset('assets/animations/login_animation.json',
-                    //     height: 250, width: 250), // Example Lottie animation
                     const Icon(Icons.home_work_rounded, color: Colors.redAccent, size: 120),
                     const SizedBox(height: 30),
                     Text(

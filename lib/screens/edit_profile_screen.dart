@@ -4,13 +4,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart'; // For formatting dates
 
-// Re-using data models from your provided files (ensure these are accessible)
-// You might have these in a separate models/data_models.dart file.
-// For demonstration purposes, I'm assuming they are defined or imported elsewhere.
+// Re-using data models from your provided files
+// You should ensure these classes are accessible in your project
+// If not, you'll need to define them or adjust imports.
 
 // Data model to hold all the answers for the user seeking a flat
-// class SeekingFlatmateProfile { /* ... your model definition ... */ }
-// class FlatListingProfile { /* ... your model definition ... */ }
 
 
 // Reusable custom widgets
@@ -18,7 +16,7 @@ class _QuestionWidget extends StatelessWidget {
   final String title;
   final String subtitle;
   final List<String> options;
-  final Function(String) onSelected; // Corrected type
+  final Function(String) onSelected;
   final String? initialValue;
 
   const _QuestionWidget({
@@ -26,7 +24,7 @@ class _QuestionWidget extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.options,
-    required this.onSelected, // Corrected parameter
+    required this.onSelected,
     this.initialValue,
   }) : super(key: key);
 
@@ -81,7 +79,7 @@ class _MultiSelectQuestionWidget extends StatefulWidget {
   final String title;
   final String subtitle;
   final List<String> options;
-  final Function(List<String>) onSelected; // Corrected type
+  final Function(List<String>) onSelected;
   final List<String> initialValues;
 
   const _MultiSelectQuestionWidget({
@@ -89,7 +87,7 @@ class _MultiSelectQuestionWidget extends StatefulWidget {
     required this.title,
     required this.subtitle,
     required this.options,
-    required this.onSelected, // Corrected parameter
+    required this.onSelected,
     required this.initialValues,
   }) : super(key: key);
 
@@ -169,14 +167,7 @@ class _MultiSelectQuestionWidgetState extends State<_MultiSelectQuestionWidget> 
 
 
 class EditProfileScreen extends StatefulWidget {
-  final String? profileDocumentId; // New: Optional ID of the profile document to edit
-  final String? initialUserType;   // New: Optional initial user type (e.g., 'seeking_flat' or 'listing_flat')
-
-  const EditProfileScreen({
-    Key? key,
-    this.profileDocumentId,
-    this.initialUserType,
-  }) : super(key: key);
+  const EditProfileScreen({Key? key}) : super(key: key);
 
   @override
   State<EditProfileScreen> createState() => _EditProfileScreenState();
@@ -187,57 +178,19 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   bool _isLoading = false;
   // This now represents the selected profile type for the dropdown
   String _selectedProfileType = 'Seeking a Flatmate'; // Default value
-  String? _currentLoadedProfileDocId; // Stores the ID of the loaded profile for saving
 
-  // Controllers for SeekingFlatmateProfile data
-  late TextEditingController _nameController;
-  late TextEditingController _ageController;
-  // late String _gender; // Managed by _QuestionWidget
-  late TextEditingController _occupationController;
-  late TextEditingController _currentLocationController;
-  late TextEditingController _desiredCityController;
-  late TextEditingController _budgetMinController;
-  late TextEditingController _budgetMaxController;
-  late TextEditingController _areaPreferenceController;
-  late TextEditingController _bioController;
-  late TextEditingController _personalityController;
-  // late List<String> _interests; // Managed by _MultiSelectQuestionWidget
-  // late String _flatmateGenderPreference; // Managed by _QuestionWidget
-  // late String _flatmateAgePreference; // Managed by _QuestionWidget
-  // late String _flatmateOccupationPreference; // Managed by _QuestionWidget
-  // late List<String> _idealQualities; // Managed by _MultiSelectQuestionWidget
-  // late List<String> _dealBreakers; // Managed by _MultiSelectQuestionWidget
-  late TextEditingController _relationshipGoalController;
-  late TextEditingController _locationPreferenceController;
-  late TextEditingController _flatPreferenceController;
-
-  // Controllers for FlatListingProfile data
-  late TextEditingController _ownerNameController;
-  late TextEditingController _ownerAgeController;
-  // late String _ownerGender; // Managed by _QuestionWidget
-  late TextEditingController _ownerOccupationController;
-  late TextEditingController _ownerBioController;
-  late TextEditingController _ownerCurrentCityController;
-  late TextEditingController _ownerDesiredCityController;
-  late TextEditingController _ownerBudgetMinController;
-  late TextEditingController _ownerBudgetMaxController;
-  late TextEditingController _ownerAreaPreferenceController;
-  late TextEditingController _rentPriceController;
-  late TextEditingController _depositAmountController;
-  late TextEditingController _addressController;
-  late TextEditingController _landmarkController;
-  late TextEditingController _flatDescriptionController;
-  // late String _preferredGender; // Managed by _QuestionWidget
-  // late String _preferredAgeGroup; // Managed by _QuestionWidget
-  // late String _preferredOccupation; // Managed by _QuestionWidget
-  // late List<String> _preferredHabits; // Managed by _MultiSelectQuestionWidget
-  // late List<String> _flatmateIdealQualities; // Managed by _MultiSelectQuestionWidget
-  // late List<String> _flatmateDealBreakers; // Managed by _MultiSelectQuestionWidget
-
-  // State variables for dropdowns and date pickers
+  // SeekingFlatmateProfile data
+  String _name = '';
+  String _age = '';
   String _gender = '';
+  String _occupation = '';
+  String _currentLocation = '';
+  String _desiredCity = '';
   DateTime? _moveInDate;
-
+  String _budgetMin = '';
+  String _budgetMax = '';
+  String _areaPreference = '';
+  String _bio = '';
   String _cleanliness = '';
   String _socialHabits = '';
   String _workSchedule = '';
@@ -254,22 +207,32 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   String _guestsPolicyOvernight = '';
   String _personalSpaceVsSocialization = '';
   List<String> _interests = [];
-
+  String _personality = '';
   String _flatmateGenderPreference = '';
   String _flatmateAgePreference = '';
   String _flatmateOccupationPreference = '';
   List<String> _idealQualities = [];
   List<String> _dealBreakers = [];
-
+  String _relationshipGoal = '';
+  String _locationPreference = '';
+  String _flatPreference = '';
   String _furnishedUnfurnished = '';
   String _attachedBathroom = '';
   String _balcony = '';
   String _parking = '';
   String _wifi = '';
 
-
-  // Flat listing specific state variables
+  // FlatListingProfile data
+  String _ownerName = '';
+  String _ownerAge = '';
   String _ownerGender = '';
+  String _ownerOccupation = '';
+  String _ownerBio = '';
+  String _ownerCurrentCity = '';
+  String _ownerDesiredCity = '';
+  String _ownerBudgetMin = '';
+  String _ownerBudgetMax = '';
+  String _ownerAreaPreference = '';
   String _ownerSmokingHabit = '';
   String _ownerDrinkingHabit = '';
   String _ownerFoodPreference = '';
@@ -284,16 +247,19 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   String _ownerSharingCommonSpaces = '';
   String _ownerGuestsOvernightPolicy = '';
   String _ownerPersonalSpaceVsSocialization = '';
-
   String _flatType = '';
   String _furnishedStatus = '';
   String _availableFor = '';
   DateTime? _availabilityDate;
+  String _rentPrice = '';
+  String _depositAmount = '';
   String _bathroomType = '';
   String _balconyAvailability = '';
   String _parkingAvailability = '';
   List<String> _flatAmenities = [];
-
+  String _address = '';
+  String _landmark = '';
+  String _flatDescription = '';
   String _preferredGender = '';
   String _preferredAgeGroup = '';
   String _preferredOccupation = '';
@@ -305,76 +271,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   void initState() {
     super.initState();
-    // Initialize all controllers
-    _nameController = TextEditingController();
-    _ageController = TextEditingController();
-    _occupationController = TextEditingController();
-    _currentLocationController = TextEditingController();
-    _desiredCityController = TextEditingController();
-    _budgetMinController = TextEditingController();
-    _budgetMaxController = TextEditingController();
-    _areaPreferenceController = TextEditingController();
-    _bioController = TextEditingController();
-    _personalityController = TextEditingController();
-    _relationshipGoalController = TextEditingController();
-    _locationPreferenceController = TextEditingController();
-    _flatPreferenceController = TextEditingController();
-
-    _ownerNameController = TextEditingController();
-    _ownerAgeController = TextEditingController();
-    _ownerOccupationController = TextEditingController();
-    _ownerBioController = TextEditingController();
-    _ownerCurrentCityController = TextEditingController();
-    _ownerDesiredCityController = TextEditingController();
-    _ownerBudgetMinController = TextEditingController();
-    _ownerBudgetMaxController = TextEditingController();
-    _ownerAreaPreferenceController = TextEditingController();
-    _rentPriceController = TextEditingController();
-    _depositAmountController = TextEditingController();
-    _addressController = TextEditingController();
-    _landmarkController = TextEditingController();
-    _flatDescriptionController = TextEditingController();
-
-    // Set initial profile type if passed from HomePage
-    if (widget.initialUserType != null) {
-      _selectedProfileType = (widget.initialUserType == 'seeking_flat') ? 'Seeking a Flatmate' : 'Listing a Flat';
-    }
-
     _loadUserProfile();
-  }
-
-  @override
-  void dispose() {
-    // Dispose controllers to free up resources
-    _nameController.dispose();
-    _ageController.dispose();
-    _occupationController.dispose();
-    _currentLocationController.dispose();
-    _desiredCityController.dispose();
-    _budgetMinController.dispose();
-    _budgetMaxController.dispose();
-    _areaPreferenceController.dispose();
-    _bioController.dispose();
-    _personalityController.dispose();
-    _relationshipGoalController.dispose();
-    _locationPreferenceController.dispose();
-    _flatPreferenceController.dispose();
-
-    _ownerNameController.dispose();
-    _ownerAgeController.dispose();
-    _ownerOccupationController.dispose();
-    _ownerBioController.dispose();
-    _ownerCurrentCityController.dispose();
-    _ownerDesiredCityController.dispose();
-    _ownerBudgetMinController.dispose();
-    _ownerBudgetMaxController.dispose();
-    _ownerAreaPreferenceController.dispose();
-    _rentPriceController.dispose();
-    _depositAmountController.dispose();
-    _addressController.dispose();
-    _landmarkController.dispose();
-    _flatDescriptionController.dispose();
-    super.dispose();
   }
 
   Future<void> _loadUserProfile() async {
@@ -384,69 +281,26 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
-        // Fetch the main user document to get the userType if initialUserType not provided
-        if (widget.initialUserType == null) {
-          final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-          if (userDoc.exists) {
-            final userData = userDoc.data()!;
-            String userTypeFromDoc = userData['userType'] ?? 'listing_flat'; // Default to 'listing_flat' if not found
-            _selectedProfileType = (userTypeFromDoc == 'seeking_flat') ? 'Seeking a Flatmate' : 'Listing a Flat';
-            print("Determined user type from doc: $_selectedProfileType"); // Debugging print
-          } else {
-            // If main user document doesn't exist, default to 'Listing a Flat'
-            _selectedProfileType = 'Listing a Flat';
-            print("Main user document not found. Defaulting to: $_selectedProfileType"); // Debugging print
-          }
-        } else {
-          print("Using initial user type from widget: $_selectedProfileType");
-        }
-
-
-        DocumentSnapshot? profileDoc;
-        String collectionPath = (_selectedProfileType == 'Seeking a Flatmate')
-            ? 'seekingFlatmateProfiles'
-            : 'flatListings';
-
-        if (widget.profileDocumentId != null && widget.profileDocumentId!.isNotEmpty) {
-          // Fetch specific profile if ID is provided
-          profileDoc = await FirebaseFirestore.instance
-              .collection('users')
-              .doc(user.uid)
-              .collection(collectionPath)
-              .doc(widget.profileDocumentId)
-              .get();
-          print("Attempting to load specific profile: ${widget.profileDocumentId} from $collectionPath");
-        } else {
-          // Fallback to fetching the first document if no specific ID or ID is empty
-          QuerySnapshot snapshot = await FirebaseFirestore.instance
-              .collection('users')
-              .doc(user.uid)
-              .collection(collectionPath)
-              .get();
-          profileDoc = snapshot.docs.isNotEmpty ? snapshot.docs.first : null;
-          if (profileDoc != null) {
-            print("No specific profile ID provided, loaded first document: ${profileDoc.id} from $collectionPath");
-          } else {
-            print("No profile documents found in $collectionPath.");
-          }
-        }
-
-        if (profileDoc != null && profileDoc.exists) {
-          final data = profileDoc.data() as Map<String, dynamic>; // Explicit cast
+        // *** IMPORTANT CHANGE: Fetch from 'users' collection ***
+        final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+        if (doc.exists) {
+          final data = doc.data()!;
           print("Profile data loaded from Firestore: $data"); // Debugging print
 
           setState(() {
-            _currentLoadedProfileDocId = profileDoc!.id; // Store the ID of the loaded profile
+            // Determine initial dropdown selection based on 'userType'
+            String userType = data['userType'] ?? '';
+            _selectedProfileType = (userType == 'seeking_flat') ? 'Seeking a Flatmate' : 'Listing a Flat';
             print("Initial selected profile type: $_selectedProfileType"); // Debugging print
 
             // Load SeekingFlatmateProfile data based on the provided structure
             if (_selectedProfileType == 'Seeking a Flatmate') {
-              _nameController.text = data['displayName'] ?? ''; // Map displayName to name
-              _ageController.text = (data['age'] ?? '').toString();
+              _name = data['displayName'] ?? ''; // Map displayName to name
+              _age = (data['age'] ?? '').toString();
               _gender = data['gender'] ?? '';
-              _occupationController.text = data['occupation'] ?? '';
-              _currentLocationController.text = data['currentCity'] ?? ''; // Map currentCity to currentLocation
-              _desiredCityController.text = data['desiredCity'] ?? '';
+              _occupation = data['occupation'] ?? '';
+              _currentLocation = data['currentCity'] ?? ''; // Map currentCity to currentLocation
+              _desiredCity = data['desiredCity'] ?? '';
 
               if (data['moveInDate'] != null) {
                 // Firestore timestamp conversion
@@ -456,15 +310,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 _moveInDate = null;
               }
 
-              _budgetMinController.text = (data['budgetMinExpected'] ?? '').toString();
-              _budgetMaxController.text = (data['budgetMaxExpected'] ?? '').toString();
+              _budgetMin = (data['budgetMinExpected'] ?? '').toString();
+              _budgetMax = (data['budgetMaxExpected'] ?? '').toString();
 
               // areaPreference is an array in user's data, but string in state.
               // Taking the first element, or empty if null/empty.
               List<String> preferredAreasList = List<String>.from(data['areaPreference'] ?? []);
-              _areaPreferenceController.text = preferredAreasList.isNotEmpty ? preferredAreasList.first : '';
+              _areaPreference = preferredAreasList.isNotEmpty ? preferredAreasList.first : '';
 
-              _bioController.text = data['bio'] ?? '';
+              _bio = data['bio'] ?? '';
 
               // Habits
               Map<String, dynamic> habits = Map<String, dynamic>.from(data['habits'] ?? {});
@@ -485,7 +339,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               _personalSpaceVsSocialization = habits['personalSpaceVsSocializing'] ?? '';
 
               _interests = List<String>.from(data['hobbies'] ?? []); // Map hobbies to interests
-              _personalityController.text = data['personality'] ?? '';
+              // Personality is not directly available in provided 'seeking_flat' data, keep as is
+              _personality = data['personality'] ?? '';
 
 
               // Looking For Preferences
@@ -507,14 +362,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
               _idealQualities = List<String>.from(lookingFor['idealQualities'] ?? []); // Map importantQualities to idealQualities
               _dealBreakers = List<String>.from(lookingFor['dealBreakers'] ?? []);
-              _relationshipGoalController.text = data['relationshipGoal'] ?? '';
+              // relationshipGoal is not directly available in provided 'seeking_flat' data, keep as is
+              _relationshipGoal = data['relationshipGoal'] ?? '';
 
 
               // Flat Requirements
               Map<String, dynamic> flatRequirements = Map<String, dynamic>.from(data['flatRequirements'] ?? {});
-              _locationPreferenceController.text = data['locationPreference'] ?? ''; // Assuming direct access for now, adjust if nested
-              _flatPreferenceController.text = flatRequirements['preferredFlatType'] ?? ''; // Fixed: Map preferredFlatType to flatPreference
-              _furnishedUnfurnished = flatRequirements['furnished'] ?? ''; // Map furnished to furnishedUnfurnished
+              _locationPreference = data['locationPreference'] ?? ''; // Assuming direct access for now, adjust if nested
+              _flatPreference = data['flatRequirements'] ?? ''; // Assuming direct access for now, adjust if nested
+              _furnishedUnfurnished = flatRequirements['preferredFurnishedStatus'] ?? ''; // Map furnished to furnishedUnfurnished
               _attachedBathroom = flatRequirements['attachedBathroom'] ?? '';
               _balcony = flatRequirements['balcony'] ?? '';
               _parking = flatRequirements['parking'] ?? '';
@@ -522,16 +378,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
             } else {
               // Load FlatListingProfile data based on the desired structure
-              _ownerNameController.text = data['displayName'] ?? ''; // Map displayName to ownerName
-              _ownerAgeController.text = (data['age'] ?? '').toString();
+              _ownerName = data['displayName'] ?? ''; // Map displayName to ownerName
+              _ownerAge = (data['age'] ?? '').toString();
               _ownerGender = data['gender'] ?? '';
-              _ownerOccupationController.text = data['occupation'] ?? '';
-              _ownerBioController.text = data['bio'] ?? '';
-              _ownerCurrentCityController.text = data['currentCity'] ?? '';
-              _ownerDesiredCityController.text = data['desiredCity'] ?? '';
-              _ownerBudgetMinController.text = (data['budgetMinExpected'] ?? '').toString(); // Map budgetMinExpected
-              _ownerBudgetMaxController.text = (data['budgetMaxExpected'] ?? '').toString(); // Map budgetMaxExpected
-              _ownerAreaPreferenceController.text = data['areaPreference'] ?? '';
+              _ownerOccupation = data['occupation'] ?? '';
+              _ownerBio = data['bio'] ?? '';
+              _ownerCurrentCity = data['currentCity'] ?? '';
+              _ownerDesiredCity = data['desiredCity'] ?? '';
+              _ownerBudgetMin = (data['budgetMinExpected'] ?? '').toString(); // Map budgetMinExpected
+              _ownerBudgetMax = (data['budgetMaxExpected'] ?? '').toString(); // Map budgetMaxExpected
+              _ownerAreaPreference = data['areaPreference'] ?? '';
 
               Map<String, dynamic> ownerHabits = Map<String, dynamic>.from(data['habits'] ?? {});
               _ownerSmokingHabit = ownerHabits['smoking'] ?? '';
@@ -554,18 +410,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               _furnishedStatus = flatDetails['furnishedStatus'] ?? '';
               _availableFor = flatDetails['availableFor'] ?? '';
               _availabilityDate = flatDetails['availabilityDate'] != null ? (flatDetails['availabilityDate'] as Timestamp).toDate() : null;
-              _rentPriceController.text = (flatDetails['rentPrice'] ?? '').toString();
-              _depositAmountController.text = (flatDetails['depositAmount'] ?? '').toString();
+              _rentPrice = (flatDetails['rentPrice'] ?? '').toString();
+              _depositAmount = (flatDetails['depositAmount'] ?? '').toString();
               _bathroomType = flatDetails['bathroomType'] ?? '';
               _balconyAvailability = flatDetails['balconyAvailability'] ?? '';
               _parkingAvailability = flatDetails['parkingAvailability'] ?? '';
               _flatAmenities = List<String>.from(flatDetails['amenities'] ?? []);
-              _addressController.text = flatDetails['address'] ?? '';
-              _landmarkController.text = flatDetails['landmark'] ?? '';
-              _flatDescriptionController.text = flatDetails['flatDescription'] ?? '';
+              _address = flatDetails['address'] ?? '';
+              _landmark = flatDetails['landmark'] ?? '';
+              _flatDescription = flatDetails['flatDescription'] ?? '';
 
               Map<String, dynamic> flatmatePreferences = Map<String, dynamic>.from(data['flatmatePreferences'] ?? {});
-              _preferredGender = flatmatePreferences['preferredFlatmateGender'] ?? '';
+              _preferredGender = flatmatePreferences['preferredFlatmateAge'] ?? '';
               _preferredAgeGroup = flatmatePreferences['preferredAgeGroup'] ?? '';
               _preferredOccupation = flatmatePreferences['preferredOccupation'] ?? '';
               _preferredHabits = List<String>.from(flatmatePreferences['preferredHabits'] ?? []);
@@ -573,12 +429,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               _flatmateDealBreakers = List<String>.from(flatmatePreferences['dealBreakers'] ?? []);
             }
           });
-          print("State variables and controllers updated."); // Debugging print
+          print("State variables updated. Name (Seeking): $_name, Owner Name (Listing): $_ownerName"); // Debugging print
         } else {
-          print("No detailed profile found for user in subcollections based on determined/defaulted type or provided ID."); // Debugging print
-          setState(() {
-            _currentLoadedProfileDocId = null; // Clear if no profile was loaded
-          });
+          print("Document does not exist for user: ${user.uid} in 'users' collection."); // Debugging print
         }
       } else {
         print("User is null. Cannot load profile."); // Debugging print
@@ -597,9 +450,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       return;
     }
     _formKey.currentState!.save();
+
     setState(() {
       _isLoading = true;
     });
+
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
@@ -612,24 +467,19 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           'lastUpdated': FieldValue.serverTimestamp(),
         };
 
-        // Use the loaded document ID if available, otherwise use 'default'
-        String docIdToSave = _currentLoadedProfileDocId ?? 'default';
-        print("Saving profile with ID: $docIdToSave for type: $_selectedProfileType"); // Debugging print
-
-
         if (_selectedProfileType == 'Seeking a Flatmate') {
           profileData.addAll({
-            'displayName': _nameController.text,
-            'age': int.tryParse(_ageController.text) ?? 0,
+            'displayName': _name,
+            'age': int.tryParse(_age) ?? 0,
             'gender': _gender,
-            'occupation': _occupationController.text,
-            'currentCity': _currentLocationController.text,
-            'desiredCity': _desiredCityController.text,
+            'occupation': _occupation,
+            'currentCity': _currentLocation,
+            'desiredCity': _desiredCity,
             'moveInDate': _moveInDate != null ? Timestamp.fromDate(_moveInDate!) : null,
-            'budgetMinExpected': int.tryParse(_budgetMinController.text) ?? 0,
-            'budgetMaxExpected': int.tryParse(_budgetMaxController.text) ?? 0,
-            'areaPreference': _areaPreferenceController.text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList(),
-            'bio': _bioController.text,
+            'budgetMinExpected': int.tryParse(_budgetMin) ?? 0,
+            'budgetMaxExpected': int.tryParse(_budgetMax) ?? 0,
+            'areaPreference': _areaPreference.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList(),
+            'bio': _bio,
             'habits': {
               'smoking': _smokingHabits,
               'drinking': _drinkingHabits,
@@ -654,7 +504,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               'idealQualities': _idealQualities,
               'dealBreakers': _dealBreakers,
               'flatRequirements': {
-                "preferredFlatType": _flatPreferenceController.text,
+                "preferredFlatType": _flatPreference,
                 'furnished': _furnishedUnfurnished,
                 'attachedBathroom': _attachedBathroom,
                 'balcony': _balcony,
@@ -663,23 +513,22 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               }
             },
             'hobbies': _interests,
-            'personality': _personalityController.text,
-            'relationshipGoal': _relationshipGoalController.text,
+            'personality': _personality, // Keep personality at top level as in data
+            'relationshipGoal': _relationshipGoal,
+            // locationPreference and flatPreference were removed from flatRequirements as per user's desired structure
           });
-          await FirebaseFirestore.instance.collection('users').doc(user.uid).collection('seekingFlatmateProfiles').doc(docIdToSave).set(profileData, SetOptions(merge: true));
-        } else {
-          // 'Listing a Flat'
+        } else { // 'Listing a Flat'
           profileData.addAll({
-            'displayName': _ownerNameController.text,
-            'age': int.tryParse(_ownerAgeController.text) ?? 0,
+            'displayName': _ownerName,
+            'age': int.tryParse(_ownerAge) ?? 0,
             'gender': _ownerGender,
-            'occupation': _ownerOccupationController.text,
-            'bio': _ownerBioController.text,
-            'currentCity': _ownerCurrentCityController.text,
-            'desiredCity': _ownerDesiredCityController.text,
-            'budgetMinExpected': int.tryParse(_ownerBudgetMinController.text) ?? 0,
-            'budgetMaxExpected': int.tryParse(_ownerBudgetMaxController.text) ?? 0,
-            'areaPreference': _ownerAreaPreferenceController.text,
+            'occupation': _ownerOccupation,
+            'bio': _ownerBio,
+            'currentCity': _ownerCurrentCity,
+            'desiredCity': _ownerDesiredCity,
+            'budgetMinExpected': int.tryParse(_ownerBudgetMin) ?? 0, // Changed key
+            'budgetMaxExpected': int.tryParse(_ownerBudgetMax) ?? 0, // Changed key
+            'areaPreference': _ownerAreaPreference,
             'habits': {
               'smoking': _ownerSmokingHabit,
               'drinking': _ownerDrinkingHabit,
@@ -701,40 +550,31 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               'furnishedStatus': _furnishedStatus,
               'availableFor': _availableFor,
               'availabilityDate': _availabilityDate != null ? Timestamp.fromDate(_availabilityDate!) : null,
-              'rentPrice': (int.tryParse(_rentPriceController.text) ?? 0),
-              'depositAmount': (int.tryParse(_depositAmountController.text) ?? 0),
+              'rentPrice': int.tryParse(_rentPrice) ?? 0,
+              'depositAmount': int.tryParse(_depositAmount) ?? 0,
               'bathroomType': _bathroomType,
               'balconyAvailability': _balconyAvailability,
               'parkingAvailability': _parkingAvailability,
               'amenities': _flatAmenities,
-              'address': _addressController.text,
-              'landmark': _landmarkController.text,
-              'flatDescription': _flatDescriptionController.text,
+              'address': _address,
+              'landmark': _landmark,
+              'description': _flatDescription, // Changed key
             },
             'flatmatePreferences': {
               'preferredFlatmateGender': _preferredGender,
-              'preferredAgeGroup': _preferredAgeGroup,
+              'preferredFlatmateAge': _preferredAgeGroup,
               'preferredOccupation': _preferredOccupation,
               'preferredHabits': _preferredHabits,
-              'idealQualities': _flatmateIdealQualities,
-              'dealBreakers': _flatmateDealBreakers,
+              'idealQualities': _flatmateIdealQualities, // Changed key
+              'dealBreakers': _flatmateDealBreakers, // Changed key
             },
           });
-          await FirebaseFirestore.instance.collection('users').doc(user.uid).collection('flatListings').doc(docIdToSave).set(profileData, SetOptions(merge: true));
         }
 
-        // Also update the main user document with the userType
-        await FirebaseFirestore.instance.collection('users').doc(user.uid).set(
-          {'userType': _selectedProfileType == 'Seeking a Flatmate' ? 'seeking_flat' : 'listing_flat'},
-          SetOptions(merge: true),
-        );
+        await FirebaseFirestore.instance.collection('users').doc(user.uid).set(profileData, SetOptions(merge: true));
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Profile saved successfully!')),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Error: User not logged in.')),
         );
       }
     } catch (e) {
@@ -748,69 +588,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 
-  // Helper for text input fields
-  Widget _buildTextField({
-    required String label,
-    required String hint,
-    required TextEditingController controller,
-    TextInputType keyboardType = TextInputType.text,
-    List<TextInputFormatter>? inputFormatters,
-    String? Function(String?)? validator,
-    int? maxLines = 1,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: TextFormField(
-        controller: controller,
-        decoration: InputDecoration(
-          labelText: label,
-          hintText: hint,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          filled: true,
-          fillColor: Colors.grey[100],
-        ),
-        keyboardType: keyboardType,
-        inputFormatters: inputFormatters,
-        validator: validator,
-        maxLines: maxLines,
-      ),
-    );
-  }
-
-  // Date picker helper
-  Future<void> _selectDate(BuildContext context, DateTime? currentDate, Function(DateTime) onDateSelected) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: currentDate ?? DateTime.now(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2101),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Colors.redAccent, // header background color
-              onPrimary: Colors.white, // header text color
-              onSurface: Colors.black, // body text color
-            ),
-            textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.redAccent, // button text color
-              ),
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-    if (picked != null && picked != currentDate) {
-      onDateSelected(picked);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
+    // Determine the boolean value from the selected string for conditional rendering
+    bool isSeekingFlatmate = (_selectedProfileType == 'Seeking a Flatmate');
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Edit Profile'),
@@ -818,769 +600,862 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         foregroundColor: Colors.white,
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Colors.redAccent))
+          ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16.0), // Consistent padding
         child: Form(
           key: _formKey,
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start, // Align content to start
             children: [
+              // Replaced SwitchListTile with DropdownButtonFormField
               DropdownButtonFormField<String>(
-                value: _selectedProfileType,
-                decoration: InputDecoration(
-                  labelText: 'Profile Type',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  filled: true,
-                  fillColor: Colors.grey[100],
+                decoration: const InputDecoration(
+                  labelText: 'Select Profile Type',
+                  border: OutlineInputBorder(),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8), // Adjust padding
                 ),
-                items: <String>['Seeking a Flatmate', 'Listing a Flat']
-                    .map((String value) {
-                  return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(value),
-                  );
-                }).toList(),
+                value: _selectedProfileType,
+                items: const [
+                  DropdownMenuItem(
+                    value: 'Seeking a Flatmate',
+                    child: Text('Seeking a Flatmate'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'Listing a Flat',
+                    child: Text('Listing a Flat'),
+                  ),
+                ],
                 onChanged: (String? newValue) {
-                  setState(() {
-                    _selectedProfileType = newValue!;
-                    // When profile type changes, clear and reload to prevent data mix-up
-                    // A full clear might be too aggressive if user is just switching back and forth.
-                    // Instead, rely on _loadUserProfile to populate correctly.
-                    _currentLoadedProfileDocId = null; // Clear ID when type changes
-                    _loadUserProfile(); // Reload data for the newly selected type
-                  });
-                },
-              ),
-              const SizedBox(height: 20),
+                  if (newValue != null) {
+                    // --- Start: Logic to preserve common fields ---
+                    String tempGender = isSeekingFlatmate ? _gender : _ownerGender;
+                    String tempAge = isSeekingFlatmate ? _age : _ownerAge;
+                    String tempOccupation = isSeekingFlatmate ? _occupation : _ownerOccupation;
+                    String tempBio = isSeekingFlatmate ? _bio : _ownerBio;
+                    String tempCurrentLocation = isSeekingFlatmate ? _currentLocation : _ownerCurrentCity;
+                    String tempDesiredCity = isSeekingFlatmate ? _desiredCity : _ownerDesiredCity;
+                    String tempBudgetMin = isSeekingFlatmate ? _budgetMin : _ownerBudgetMin;
+                    String tempBudgetMax = isSeekingFlatmate ? _budgetMax : _ownerBudgetMax;
+                    String tempAreaPreference = isSeekingFlatmate ? _areaPreference : _ownerAreaPreference;
 
-              if (_selectedProfileType == 'Seeking a Flatmate')
+                    // Habits
+                    String tempCleanliness = isSeekingFlatmate ? _cleanliness : _ownerCleanlinessLevel;
+                    String tempSocialHabits = isSeekingFlatmate ? _socialHabits : _ownerSocialPreferences;
+                    String tempWorkSchedule = isSeekingFlatmate ? _workSchedule : _ownerWorkSchedule;
+                    String tempNoiseLevel = isSeekingFlatmate ? _noiseLevel : _ownerNoiseLevel;
+                    String tempSmokingHabits = isSeekingFlatmate ? _smokingHabits : _ownerSmokingHabit;
+                    String tempDrinkingHabits = isSeekingFlatmate ? _drinkingHabits : _ownerDrinkingHabit;
+                    String tempFoodPreference = isSeekingFlatmate ? _foodPreference : _ownerFoodPreference;
+                    String tempGuestsFrequency = isSeekingFlatmate ? _guestsFrequency : _ownerGuestsOvernightPolicy;
+                    String tempVisitorsPolicy = isSeekingFlatmate ? _visitorsPolicy : _ownerVisitorsPolicy;
+                    String tempPetOwnership = isSeekingFlatmate ? _petOwnership : _ownerPetOwnership;
+                    String tempPetTolerance = isSeekingFlatmate ? _petTolerance : _ownerPetTolerance;
+                    String tempSleepingSchedule = isSeekingFlatmate ? _sleepingSchedule : _ownerSleepingSchedule;
+                    String tempSharingCommonSpaces = isSeekingFlatmate ? _sharingCommonSpaces : _ownerSharingCommonSpaces;
+                    String tempGuestsPolicyOvernight = isSeekingFlatmate ? _guestsPolicyOvernight : _ownerGuestsOvernightPolicy;
+                    String tempPersonalSpaceVsSocialization = isSeekingFlatmate ? _personalSpaceVsSocialization : _ownerPersonalSpaceVsSocialization;
+                    // --- End: Logic to preserve common fields ---
+
+                    setState(() {
+                      _selectedProfileType = newValue;
+
+                      // --- Start: Apply preserved common fields to the new profile type ---
+                      if (newValue == 'Seeking a Flatmate') {
+                        _gender = tempGender;
+                        _age = tempAge;
+                        _occupation = tempOccupation;
+                        _bio = tempBio;
+                        _currentLocation = tempCurrentLocation;
+                        _desiredCity = tempDesiredCity;
+                        _budgetMin = tempBudgetMin;
+                        _budgetMax = tempBudgetMax;
+                        _areaPreference = tempAreaPreference;
+
+                        _cleanliness = tempCleanliness;
+                        _socialHabits = tempSocialHabits;
+                        _workSchedule = tempWorkSchedule;
+                        _noiseLevel = tempNoiseLevel;
+                        _smokingHabits = tempSmokingHabits;
+                        _drinkingHabits = tempDrinkingHabits;
+                        _foodPreference = tempFoodPreference;
+                        _guestsFrequency = tempGuestsFrequency;
+                        _visitorsPolicy = tempVisitorsPolicy;
+                        _petOwnership = tempPetOwnership;
+                        _petTolerance = tempPetTolerance;
+                        _sleepingSchedule = tempSleepingSchedule;
+                        _workSchedule = tempWorkSchedule;
+                        _sharingCommonSpaces = tempSharingCommonSpaces;
+                        _guestsPolicyOvernight = tempGuestsPolicyOvernight;
+                        _personalSpaceVsSocialization = tempPersonalSpaceVsSocialization;
+                      } else { // Listing a Flat
+                        _ownerGender = tempGender;
+                        _ownerAge = tempAge;
+                        _ownerOccupation = tempOccupation;
+                        _ownerBio = tempBio;
+                        _ownerCurrentCity = tempCurrentLocation;
+                        _ownerDesiredCity = tempDesiredCity;
+                        _ownerBudgetMin = tempBudgetMin;
+                        _ownerBudgetMax = tempBudgetMax;
+                        _ownerAreaPreference = tempAreaPreference;
+
+                        _ownerCleanlinessLevel = tempCleanliness;
+                        _ownerSocialPreferences = tempSocialHabits;
+                        _ownerWorkSchedule = tempWorkSchedule;
+                        _ownerNoiseLevel = tempNoiseLevel;
+                        _ownerSmokingHabit = tempSmokingHabits;
+                        _ownerDrinkingHabit = tempDrinkingHabits;
+                        _ownerFoodPreference = tempFoodPreference;
+                        _ownerGuestsOvernightPolicy = tempGuestsFrequency;
+                        _ownerVisitorsPolicy = tempVisitorsPolicy;
+                        _ownerPetOwnership = tempPetOwnership;
+                        _ownerPetTolerance = tempPetTolerance;
+                        _ownerSleepingSchedule = tempSleepingSchedule;
+                        _ownerWorkSchedule = tempWorkSchedule;
+                        _ownerSharingCommonSpaces = tempSharingCommonSpaces;
+                        _ownerGuestsOvernightPolicy = tempGuestsPolicyOvernight;
+                        _ownerPersonalSpaceVsSocialization = tempPersonalSpaceVsSocialization;
+                      }
+                      // --- End: Apply preserved common fields to the new profile type ---
+                    });
+                  }
+                },
+                style: const TextStyle(fontSize: 16, color: Colors.black), // Text style for dropdown
+                icon: const Icon(Icons.arrow_drop_down, color: Colors.redAccent), // Dropdown icon color
+              ),
+              const SizedBox(height: 24), // Increased spacing after dropdown
+
+              if (isSeekingFlatmate) // Use the boolean derived from _selectedProfileType
+              // Fields for Seeking Flatmate Profile
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Your Basic Information',
-                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.redAccent),
+                    TextFormField(
+                      initialValue: _name,
+                      decoration: const InputDecoration(labelText: 'Name'),
+                      onSaved: (value) => _name = value!,
+                      validator: (value) => value!.isEmpty ? 'Please enter your name' : null,
                     ),
-                    const Divider(),
-                    _buildTextField(
-                      label: 'Name',
-                      hint: 'Enter your full name',
-                      controller: _nameController,
-                      validator: (value) => value!.isEmpty ? 'Name cannot be empty' : null,
-                    ),
-                    _buildTextField(
-                      label: 'Age',
-                      hint: 'Enter your age',
-                      controller: _ageController,
+                    const SizedBox(height: 16), // Spacing for text fields
+                    TextFormField(
+                      initialValue: _age,
+                      decoration: const InputDecoration(labelText: 'Age'),
                       keyboardType: TextInputType.number,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      validator: (value) => value!.isEmpty ? 'Age cannot be empty' : null,
+                      onSaved: (value) => _age = value!,
+                      validator: (value) => value!.isEmpty ? 'Please enter your age' : null,
                     ),
                     _QuestionWidget(
-                      title: "What is your gender?",
-                      subtitle: "This helps us match you better.",
-                      options: const ['Male', 'Female', 'Non-binary', 'Prefer not to say'],
+                      title: "Your Gender",
+                      subtitle: "Tell us your gender",
+                      options: const ['Male', 'Female', 'Other'],
+                      initialValue: _gender,
                       onSelected: (selected) {
                         setState(() => _gender = selected);
                       },
-                      initialValue: _gender,
                     ),
-                    _buildTextField(
-                      label: 'Occupation',
-                      hint: 'e.g., Software Engineer, Student',
-                      controller: _occupationController,
+                    TextFormField(
+                      initialValue: _occupation,
+                      decoration: const InputDecoration(labelText: 'Occupation'),
+                      onSaved: (value) => _occupation = value!,
                     ),
-                    _buildTextField(
-                      label: 'Current Location (City)',
-                      hint: 'e.g., Pune, Mumbai',
-                      controller: _currentLocationController,
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      initialValue: _currentLocation,
+                      decoration: const InputDecoration(labelText: 'Your Current City'),
+                      onSaved: (value) => _currentLocation = value!,
                     ),
-                    _buildTextField(
-                      label: 'Desired City for Flat',
-                      hint: 'e.g., Bangalore, Delhi',
-                      controller: _desiredCityController,
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      initialValue: _desiredCity,
+                      decoration: const InputDecoration(labelText: 'Desired City for Flat'),
+                      onSaved: (value) => _desiredCity = value!,
                     ),
+                    const SizedBox(height: 16),
                     ListTile(
                       title: Text(_moveInDate == null
                           ? 'Select Move-in Date'
-                          : 'Move-in Date: ${DateFormat('dd-MM-yyyy').format(_moveInDate!)}'),
-                      trailing: const Icon(Icons.calendar_today, color: Colors.redAccent),
-                      onTap: () => _selectDate(context, _moveInDate, (date) {
-                        setState(() {
-                          _moveInDate = date;
-                        });
-                      }),
+                          : 'Move-in Date: ${DateFormat('yyyy-MM-dd').format(_moveInDate!)}'),
+                      trailing: const Icon(Icons.calendar_today),
+                      onTap: () async {
+                        final pickedDate = await showDatePicker(
+                          context: context,
+                          initialDate: _moveInDate ?? DateTime.now(),
+                          firstDate: DateTime.now(),
+                          lastDate: DateTime(2028),
+                        );
+                        if (pickedDate != null) {
+                          setState(() {
+                            _moveInDate = pickedDate;
+                          });
+                        }
+                      },
                     ),
-                    _buildTextField(
-                      label: 'Budget Range (Min)',
-                      hint: 'e.g., 5000',
-                      controller: _budgetMinController,
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      initialValue: _budgetMin,
+                      decoration: const InputDecoration(labelText: 'Minimum Budget'),
                       keyboardType: TextInputType.number,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      onSaved: (value) => _budgetMin = value!,
                     ),
-                    _buildTextField(
-                      label: 'Budget Range (Max)',
-                      hint: 'e.g., 15000',
-                      controller: _budgetMaxController,
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      initialValue: _budgetMax,
+                      decoration: const InputDecoration(labelText: 'Maximum Budget'),
                       keyboardType: TextInputType.number,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      onSaved: (value) => _budgetMax = value!,
                     ),
-                    _buildTextField(
-                      label: 'Preferred Area/Locality (Comma separated)',
-                      hint: 'e.g., Koregaon Park, Viman Nagar',
-                      controller: _areaPreferenceController,
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      initialValue: _areaPreference,
+                      decoration: const InputDecoration(labelText: 'Preferred Area/Locality'),
+                      onSaved: (value) => _areaPreference = value!,
                     ),
-                    _buildTextField(
-                      label: 'Bio / About Yourself',
-                      hint: 'Tell us a bit about yourself and what you are looking for.',
-                      controller: _bioController,
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      initialValue: _bio,
+                      decoration: const InputDecoration(labelText: 'Tell us about yourself (Bio)'),
                       maxLines: 3,
+                      onSaved: (value) => _bio = value!,
                     ),
-
-                    const SizedBox(height: 30),
-                    const Text(
-                      'Your Habits & Lifestyle',
-                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.redAccent),
-                    ),
-                    const Divider(),
                     _QuestionWidget(
-                      title: "How tidy are you?",
-                      subtitle: "Be honest! It helps find a compatible flatmate.",
-                      options: const ['Very Tidy', 'Moderately Tidy', 'Flexible', 'Can be messy at times'],
+                      title: "Cleanliness",
+                      subtitle: "How clean are you?",
+                      options: const ['Very Clean', 'Moderately Clean', 'A Little Messy', 'Messy'],
+                      initialValue: _cleanliness,
                       onSelected: (selected) {
                         setState(() => _cleanliness = selected);
                       },
-                      initialValue: _cleanliness,
                     ),
                     _QuestionWidget(
-                      title: "What are your social habits like?",
-                      subtitle: "Do you enjoy socializing or prefer quiet time?",
-                      options: const ['Social & outgoing', 'Occasional gatherings', 'Quiet & private'],
+                      title: "Social Habits",
+                      subtitle: "How social are you?",
+                      options: const ['Very Social', 'Moderately Social', 'Prefer Solitude', 'Introvert'],
+                      initialValue: _socialHabits,
                       onSelected: (selected) {
                         setState(() => _socialHabits = selected);
                       },
-                      initialValue: _socialHabits,
                     ),
                     _QuestionWidget(
-                      title: "What's your typical work/study schedule?",
-                      subtitle: "Helps in understanding routines.",
-                      options: const ['9-5 Office hours', 'Freelance/Flexible hours', 'Night shifts', 'Student schedule', 'Mixed'],
+                      title: "Work Schedule",
+                      subtitle: "What's your typical work schedule?",
+                      options: const ['9-5 Job', 'Flexible Hours', 'Night Shifts', 'Student', 'Freelancer'],
+                      initialValue: _workSchedule,
                       onSelected: (selected) {
                         setState(() => _workSchedule = selected);
                       },
-                      initialValue: _workSchedule,
                     ),
                     _QuestionWidget(
-                      title: "What's your preferred noise level at home?",
-                      subtitle: "Are you sensitive to noise or prefer a lively environment?",
-                      options: const ['Very quiet', 'Moderate noise', 'Lively'],
+                      title: "Noise Level",
+                      subtitle: "What's your preferred noise level?",
+                      options: const ['Quiet', 'Moderate', 'Lively'],
+                      initialValue: _noiseLevel,
                       onSelected: (selected) {
                         setState(() => _noiseLevel = selected);
                       },
-                      initialValue: _noiseLevel,
                     ),
                     _QuestionWidget(
-                      title: "Smoking habits?",
-                      subtitle: "Indicate your smoking frequency.",
-                      options: const ['Never', 'Occasionally', 'Socially', 'Regularly'],
+                      title: "Smoking Habits",
+                      subtitle: "Do you smoke?",
+                      options: const ['Yes', 'No', 'Occasionally'],
+                      initialValue: _smokingHabits,
                       onSelected: (selected) {
                         setState(() => _smokingHabits = selected);
                       },
-                      initialValue: _smokingHabits,
                     ),
                     _QuestionWidget(
-                      title: "Drinking habits?",
-                      subtitle: "Indicate your drinking frequency.",
-                      options: const ['Never', 'Occasionally', 'Socially', 'Regularly'],
+                      title: "Drinking Habits",
+                      subtitle: "Do you drink?",
+                      options: const ['Yes', 'No', 'Socially'],
+                      initialValue: _drinkingHabits,
                       onSelected: (selected) {
                         setState(() => _drinkingHabits = selected);
                       },
-                      initialValue: _drinkingHabits,
                     ),
                     _QuestionWidget(
-                      title: "Food Preference?",
-                      subtitle: "Share your dietary habits.",
-                      options: const ['Vegetarian', 'Non-Vegetarian', 'Vegan', 'Eggetarian', 'Jain'],
+                      title: "Food Preference",
+                      subtitle: "What are your food preferences?",
+                      options: const ['Vegetarian', 'Non-Vegetarian', 'Vegan', 'Eggetarian'],
+                      initialValue: _foodPreference,
                       onSelected: (selected) {
                         setState(() => _foodPreference = selected);
                       },
-                      initialValue: _foodPreference,
                     ),
                     _QuestionWidget(
-                      title: "How often do you have guests staying overnight?",
-                      subtitle: "This helps manage expectations.",
-                      options: const ['Frequently', 'Occasionally', 'Rarely', 'Never'],
+                      title: "Guests Frequency",
+                      subtitle: "How often do you have guests?",
+                      options: const ['Rarely', 'Occasionally', 'Frequently'],
+                      initialValue: _guestsFrequency,
                       onSelected: (selected) {
-                        setState(() => _guestsPolicyOvernight = selected);
+                        setState(() => _guestsFrequency = selected);
                       },
-                      initialValue: _guestsPolicyOvernight,
                     ),
                     _QuestionWidget(
-                      title: "How often do you have day visitors?",
-                      subtitle: "This helps manage expectations.",
-                      options: const ['Frequent visitors', 'Occasional visitors', 'Rarely have visitors', 'No visitors'],
+                      title: "Visitors Policy",
+                      subtitle: "What is your policy on visitors?",
+                      options: ['Open to visitors', 'Visitors occasionally', 'No visitors'],
+                      initialValue: _visitorsPolicy,
                       onSelected: (selected) {
                         setState(() => _visitorsPolicy = selected);
                       },
-                      initialValue: _visitorsPolicy,
                     ),
                     _QuestionWidget(
-                      title: "Do you own pets?",
-                      subtitle: "If yes, specify what kind.",
-                      options: const ['Yes, I own pets', 'Planning to get one', 'No pets'],
+                      title: "Pet Ownership",
+                      subtitle: "Do you own pets?",
+                      options: const ['Yes', 'No'],
+                      initialValue: _petOwnership,
                       onSelected: (selected) {
                         setState(() => _petOwnership = selected);
                       },
-                      initialValue: _petOwnership,
                     ),
                     _QuestionWidget(
-                      title: "What is your tolerance for flatmates having pets?",
-                      subtitle: "Your comfort level with animals.",
-                      options: const ['Comfortable with pets', 'Tolerant of pets', 'Prefer no pets', 'Allergic to pets'],
+                      title: "Pet Tolerance",
+                      subtitle: "Are you comfortable living with pets?",
+                      options: const ['Very comfortable', 'Moderately comfortable', 'Not comfortable'],
+                      initialValue: _petTolerance,
                       onSelected: (selected) {
                         setState(() => _petTolerance = selected);
                       },
-                      initialValue: _petTolerance,
                     ),
                     _QuestionWidget(
-                      title: "What's your general sleeping schedule?",
-                      subtitle: "Early riser, night owl, or irregular?",
-                      options: const ['Early riser', 'Night Owl', 'Irregular'],
+                      title: "Sleeping Schedule",
+                      subtitle: "What's your typical sleeping schedule?",
+                      options: const ['Early Bird', 'Night Owl', 'Flexible'],
+                      initialValue: _sleepingSchedule,
                       onSelected: (selected) {
                         setState(() => _sleepingSchedule = selected);
                       },
-                      initialValue: _sleepingSchedule,
                     ),
                     _QuestionWidget(
-                      title: "How do you prefer sharing common spaces?",
-                      subtitle: "Do you like to share items or prefer separate?",
-                      options: const ['Share everything', 'Share some items', 'Prefer separate items'],
+                      title: "Sharing Common Spaces",
+                      subtitle: "How do you prefer sharing common spaces?",
+                      options: const ['Strictly divided', 'Flexible and shared', 'Minimal sharing'],
+                      initialValue: _sharingCommonSpaces,
                       onSelected: (selected) {
                         setState(() => _sharingCommonSpaces = selected);
                       },
-                      initialValue: _sharingCommonSpaces,
                     ),
                     _QuestionWidget(
-                      title: "Personal space vs. Socialization?",
-                      subtitle: "Your ideal balance.",
-                      options: const ['Value personal space highly', 'Enjoy a balance', 'Prefer more socialization'],
+                      title: "Guests Overnight Policy",
+                      subtitle: "What's your policy on overnight guests?",
+                      options: ['Allowed with notice', 'Rarely allowed', 'Not allowed'],
+                      initialValue: _guestsPolicyOvernight,
+                      onSelected: (selected) {
+                        setState(() => _guestsPolicyOvernight = selected);
+                      },
+                    ),
+                    _QuestionWidget(
+                      title: "Personal Space vs. Socialization",
+                      subtitle: "How do you balance personal space and socialization?",
+                      options: const ['Need a lot of personal space', 'Balance of both', 'Enjoy socializing often'],
+                      initialValue: _personalSpaceVsSocialization,
                       onSelected: (selected) {
                         setState(() => _personalSpaceVsSocialization = selected);
                       },
-                      initialValue: _personalSpaceVsSocialization,
                     ),
                     _MultiSelectQuestionWidget(
-                      title: "What are your interests/hobbies?",
-                      subtitle: "Select all that apply.",
-                      options: const ['Reading', 'Gaming', 'Cooking', 'Sports', 'Movies', 'Music', 'Traveling', 'Hiking', 'Photography', 'Art', 'Writing', 'Technology', 'Fashion', 'Volunteering', 'Gardening', 'Fitness', 'Yoga', 'Meditation', 'Crafts', 'Board Games', 'Dancing', 'Singing', 'Learning New Languages'],
+                      title: "Interests & Hobbies",
+                      subtitle: "What are your interests/hobbies?",
+                      options: const ['Reading', 'Sports', 'Gaming', 'Cooking', 'Movies', 'Music', 'Traveling', 'Art', 'Fitness', 'Outdoors'],
                       onSelected: (selected) {
                         setState(() => _interests = selected);
                       },
                       initialValues: _interests,
                     ),
-                    _buildTextField(
-                      label: 'Personality Traits',
-                      hint: 'Describe your personality in a few words.',
-                      controller: _personalityController,
-                    ),
-                    _buildTextField(
-                      label: 'Relationship Goal with Flatmate',
-                      hint: 'e.g., Friendship, Peaceful Coexistence',
-                      controller: _relationshipGoalController,
-                    ),
-
-                    const SizedBox(height: 30),
-                    const Text(
-                      'Flatmate Preferences',
-                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.redAccent),
-                    ),
-                    const Divider(),
                     _QuestionWidget(
-                      title: "Preferred Flatmate Gender?",
-                      subtitle: "Who would you prefer to live with?",
-                      options: const ['Male', 'Female', 'No preference', 'Any'],
+                      title: "Personality Traits",
+                      subtitle: "How would you describe your personality?",
+                      options: const ['Extrovert', 'Introvert', 'Ambivert', 'Reserved', 'Outgoing'],
+                      initialValue: _personality,
+                      onSelected: (selected) {
+                        setState(() => _personality = selected);
+                      },
+                    ),
+                    _QuestionWidget(
+                      title: "Preferred Flatmate Gender",
+                      subtitle: "What gender do you prefer your flatmate to be?",
+                      options: const ['Male', 'Female', 'No Preference'],
+                      initialValue: _flatmateGenderPreference,
                       onSelected: (selected) {
                         setState(() => _flatmateGenderPreference = selected);
                       },
-                      initialValue: _flatmateGenderPreference,
                     ),
                     _QuestionWidget(
-                      title: "Preferred Flatmate Age Range?",
-                      subtitle: "What age group do you prefer?",
-                      options: const ['18-24', '25-34', '35-45', '45+', 'No preference'],
+                      title: "Preferred Flatmate Age",
+                      subtitle: "What age group do you prefer your flatmate to be in?",
+                      options: const ['18-24', '25-34', '35-44', '45+', 'No Preference'],
+                      initialValue: _flatmateAgePreference,
                       onSelected: (selected) {
                         setState(() => _flatmateAgePreference = selected);
                       },
-                      initialValue: _flatmateAgePreference,
                     ),
                     _QuestionWidget(
-                      title: "Preferred Flatmate Occupation?",
-                      subtitle: "Any specific occupation preference?",
-                      options: const ['Student', 'Working Professional', 'Freelancer', 'No preference'],
+                      title: "Preferred Flatmate Occupation",
+                      subtitle: "What occupation do you prefer your flatmate to have?",
+                      options: const ['Student', 'Working Professional', 'Freelancer', 'No Preference'],
+                      initialValue: _flatmateOccupationPreference,
                       onSelected: (selected) {
                         setState(() => _flatmateOccupationPreference = selected);
                       },
-                      initialValue: _flatmateOccupationPreference,
                     ),
                     _MultiSelectQuestionWidget(
-                      title: "Ideal Qualities in a Flatmate?",
-                      subtitle: "Select the most important traits.",
-                      options: const ['Responsible', 'Clean', 'Respectful', 'Communicative', 'Friendly', 'Quiet', 'Tidy', 'Social', 'Organized'],
+                      title: "Ideal Flatmate Qualities",
+                      subtitle: "What qualities do you look for in an ideal flatmate?",
+                      options: const ['Responsible', 'Friendly', 'Quiet', 'Clean', 'Respectful', 'Communicative', 'Independent', 'Organized'],
                       onSelected: (selected) {
                         setState(() => _idealQualities = selected);
                       },
                       initialValues: _idealQualities,
                     ),
                     _MultiSelectQuestionWidget(
-                      title: "Any Deal Breakers?",
-                      subtitle: "What you absolutely cannot tolerate.",
+                      title: "Deal Breakers",
+                      subtitle: "Are there any deal breakers for you?",
                       options: const ['Smoking', 'Excessive Noise', 'Untidiness', 'Frequent Parties', 'Pets', 'Guests staying over without notice'],
                       onSelected: (selected) {
                         setState(() => _dealBreakers = selected);
                       },
                       initialValues: _dealBreakers,
                     ),
-
-                    const SizedBox(height: 30),
-                    const Text(
-                      'Flat Requirements',
-                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.redAccent),
+                    _QuestionWidget(
+                      title: "Relationship Goal with Flatmate",
+                      subtitle: "What kind of relationship are you looking for with your flatmate?",
+                      options: const ['Just roommates', 'Friendly', 'Close friends'],
+                      initialValue: _relationshipGoal,
+                      onSelected: (selected) {
+                        setState(() => _relationshipGoal = selected);
+                      },
                     ),
-                    const Divider(),
-                    _buildTextField(
-                      label: 'Location Preference',
-                      hint: 'Specific areas or neighborhoods',
-                      controller: _locationPreferenceController,
+                    TextFormField(
+                      initialValue: _locationPreference,
+                      decoration: const InputDecoration(labelText: 'Preferred Location (Flat Requirement)'),
+                      onSaved: (value) => _locationPreference = value!,
                     ),
-                    _buildTextField(
-                      label: 'Preferred Flat Type',
-                      hint: 'e.g., Studio, 1BHK, 2BHK',
-                      controller: _flatPreferenceController,
+                    const SizedBox(height: 16),
+                    _QuestionWidget(
+                      title: "Flat Preference",
+                      subtitle: "What type of flat are you looking for?",
+                      options: const ['Studio', '1BHK', '2BHK', '3BHK+', 'Villa', 'Apartment'],
+                      initialValue: _flatPreference,
+                      onSelected: (selected) {
+                        setState(() => _flatPreference = selected);
+                      },
                     ),
                     _QuestionWidget(
-                      title: "Furnished or Unfurnished?",
-                      subtitle: "What kind of flat are you looking for?",
-                      options: const ['Fully Furnished', 'Semi-Furnished', 'Unfurnished'],
+                      title: "Furnished/Unfurnished",
+                      subtitle: "Do you prefer a furnished or unfurnished flat?",
+                      options: const ['Furnished', 'Unfurnished', 'Either'],
+                      initialValue: _furnishedUnfurnished,
                       onSelected: (selected) {
                         setState(() => _furnishedUnfurnished = selected);
                       },
-                      initialValue: _furnishedUnfurnished,
                     ),
                     _QuestionWidget(
-                      title: "Attached Bathroom?",
+                      title: "Attached Bathroom",
                       subtitle: "Do you require an attached bathroom?",
-                      options: const ['Yes', 'No', 'No preference'],
+                      options: const ['Yes', 'No', 'Preferred'],
+                      initialValue: _attachedBathroom,
                       onSelected: (selected) {
                         setState(() => _attachedBathroom = selected);
                       },
-                      initialValue: _attachedBathroom,
                     ),
                     _QuestionWidget(
-                      title: "Balcony availability?",
-                      subtitle: "Is a balcony a must-have?",
-                      options: const ['Yes', 'No', 'No preference'],
+                      title: "Balcony",
+                      subtitle: "Is a balcony important to you?",
+                      options: const ['Yes', 'No', 'Not a priority'],
+                      initialValue: _balcony,
                       onSelected: (selected) {
                         setState(() => _balcony = selected);
                       },
-                      initialValue: _balcony,
                     ),
                     _QuestionWidget(
-                      title: "Parking availability?",
+                      title: "Parking",
                       subtitle: "Do you need parking space?",
-                      options: const ['Yes', 'No', 'No preference'],
+                      options: const ['Yes', 'No'],
+                      initialValue: _parking,
                       onSelected: (selected) {
                         setState(() => _parking = selected);
                       },
-                      initialValue: _parking,
                     ),
                     _QuestionWidget(
-                      title: "Wi-Fi included?",
-                      subtitle: "Is Wi-Fi a necessary amenity?",
-                      options: const ['Yes, must be included', 'No, I can arrange', 'No preference'],
+                      title: "Wi-Fi Availability",
+                      subtitle: "Is Wi-Fi a necessity?",
+                      options: const ['Yes', 'No', 'Can arrange myself'],
+                      initialValue: _wifi,
                       onSelected: (selected) {
                         setState(() => _wifi = selected);
                       },
-                      initialValue: _wifi,
                     ),
                   ],
                 )
-              else if (_selectedProfileType == 'Listing a Flat')
+              else
+              // Fields for Flat Listing Profile
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Your Basic Information (Flat Owner)',
-                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.redAccent),
+                    TextFormField(
+                      initialValue: _ownerName,
+                      decoration: const InputDecoration(labelText: 'Your Name'),
+                      onSaved: (value) => _ownerName = value!,
+                      validator: (value) => value!.isEmpty ? 'Please enter your name' : null,
                     ),
-                    const Divider(),
-                    _buildTextField(
-                      label: 'Your Name',
-                      hint: 'Enter your full name',
-                      controller: _ownerNameController,
-                      validator: (value) => value!.isEmpty ? 'Name cannot be empty' : null,
-                    ),
-                    _buildTextField(
-                      label: 'Your Age',
-                      hint: 'Enter your age',
-                      controller: _ownerAgeController,
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      initialValue: _ownerAge,
+                      decoration: const InputDecoration(labelText: 'Your Age'),
                       keyboardType: TextInputType.number,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      validator: (value) => value!.isEmpty ? 'Age cannot be empty' : null,
+                      onSaved: (value) => _ownerAge = value!,
+                      validator: (value) => value!.isEmpty ? 'Please enter your age' : null,
                     ),
                     _QuestionWidget(
-                      title: "What is your gender?",
-                      subtitle: "This helps in matching.",
-                      options: const ['Male', 'Female', 'Non-binary', 'Prefer not to say'],
+                      title: "Your Gender",
+                      subtitle: "Tell us your gender",
+                      options: const ['Male', 'Female', 'Other'],
+                      initialValue: _ownerGender,
                       onSelected: (selected) {
                         setState(() => _ownerGender = selected);
                       },
-                      initialValue: _ownerGender,
                     ),
-                    _buildTextField(
-                      label: 'Your Occupation',
-                      hint: 'e.g., Business Owner, Professional',
-                      controller: _ownerOccupationController,
+                    TextFormField(
+                      initialValue: _ownerOccupation,
+                      decoration: const InputDecoration(labelText: 'Your Occupation'),
+                      onSaved: (value) => _ownerOccupation = value!,
                     ),
-                    _buildTextField(
-                      label: 'Your Bio / About Yourself',
-                      hint: 'Tell us a bit about yourself and your living style.',
-                      controller: _ownerBioController,
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      initialValue: _ownerBio,
+                      decoration: const InputDecoration(labelText: 'Tell us about yourself (Bio)'),
                       maxLines: 3,
+                      onSaved: (value) => _ownerBio = value!,
                     ),
-                    _buildTextField(
-                      label: 'Your Current City',
-                      hint: 'e.g., Pune',
-                      controller: _ownerCurrentCityController,
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      initialValue: _ownerCurrentCity,
+                      decoration: const InputDecoration(labelText: 'Current City'),
+                      onSaved: (value) => _ownerCurrentCity = value!,
                     ),
-                    _buildTextField(
-                      label: 'Desired City (if different)',
-                      hint: 'e.g., Mumbai',
-                      controller: _ownerDesiredCityController,
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      initialValue: _ownerDesiredCity,
+                      decoration: const InputDecoration(labelText: 'Desired City (for flatmate, if applicable)'),
+                      onSaved: (value) => _ownerDesiredCity = value!,
                     ),
-                    _buildTextField(
-                      label: 'Your Budget Range (Min)',
-                      hint: 'e.g., 5000',
-                      controller: _ownerBudgetMinController,
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      initialValue: _ownerBudgetMin,
+                      decoration: const InputDecoration(labelText: 'Minimum Budget (for flatmate)'),
                       keyboardType: TextInputType.number,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      onSaved: (value) => _ownerBudgetMin = value!,
                     ),
-                    _buildTextField(
-                      label: 'Your Budget Range (Max)',
-                      hint: 'e.g., 15000',
-                      controller: _ownerBudgetMaxController,
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      initialValue: _ownerBudgetMax,
+                      decoration: const InputDecoration(labelText: 'Maximum Budget (for flatmate)'),
                       keyboardType: TextInputType.number,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      onSaved: (value) => _ownerBudgetMax = value!,
                     ),
-                    _buildTextField(
-                      label: 'Your Area Preference',
-                      hint: 'e.g., Koregaon Park',
-                      controller: _ownerAreaPreferenceController,
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      initialValue: _ownerAreaPreference,
+                      decoration: const InputDecoration(labelText: 'Preferred Area/Locality (for flatmate)'),
+                      onSaved: (value) => _ownerAreaPreference = value!,
                     ),
-                    const SizedBox(height: 30),
-                    const Text(
-                      'Your Habits & Lifestyle (Owner)',
-                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.redAccent),
-                    ),
-                    const Divider(),
                     _QuestionWidget(
-                      title: "Your Smoking habits?",
-                      subtitle: "Your personal smoking frequency.",
-                      options: const ['Never', 'Occasionally', 'Socially', 'Regularly'],
+                      title: "Smoking Habit",
+                      subtitle: "What is your smoking habit?",
+                      options: const ['Smoker', 'Non-Smoker', 'Occasionally'],
+                      initialValue: _ownerSmokingHabit,
                       onSelected: (selected) {
                         setState(() => _ownerSmokingHabit = selected);
                       },
-                      initialValue: _ownerSmokingHabit,
                     ),
                     _QuestionWidget(
-                      title: "Your Drinking habits?",
-                      subtitle: "Your personal drinking frequency.",
-                      options: const ['Never', 'Occasionally', 'Socially', 'Regularly'],
+                      title: "Drinking Habit",
+                      subtitle: "What is your drinking habit?",
+                      options: const ['Drinker', 'Non-Drinker', 'Socially'],
+                      initialValue: _ownerDrinkingHabit,
                       onSelected: (selected) {
                         setState(() => _ownerDrinkingHabit = selected);
                       },
-                      initialValue: _ownerDrinkingHabit,
                     ),
                     _QuestionWidget(
-                      title: "Your Food Preference?",
-                      subtitle: "Your dietary habits.",
-                      options: const ['Vegetarian', 'Non-Vegetarian', 'Vegan', 'Eggetarian', 'Jain'],
+                      title: "Food Preference",
+                      subtitle: "What is your food preference?",
+                      options: const ['Vegetarian', 'Non-Vegetarian', 'Vegan', 'Eggetarian'],
+                      initialValue: _ownerFoodPreference,
                       onSelected: (selected) {
                         setState(() => _ownerFoodPreference = selected);
                       },
-                      initialValue: _ownerFoodPreference,
                     ),
                     _QuestionWidget(
-                      title: "Your Cleanliness Level?",
-                      subtitle: "How tidy are you?",
-                      options: const ['Very Tidy', 'Moderately Tidy', 'Flexible', 'Can be messy at times'],
+                      title: "Cleanliness Level",
+                      subtitle: "How clean are you?",
+                      options: const ['Very Clean', 'Moderately Clean', 'A Little Messy', 'Messy'],
+                      initialValue: _ownerCleanlinessLevel,
                       onSelected: (selected) {
                         setState(() => _ownerCleanlinessLevel = selected);
                       },
-                      initialValue: _ownerCleanlinessLevel,
                     ),
                     _QuestionWidget(
-                      title: "Your Preferred Noise Level?",
-                      subtitle: "Your personal comfort with noise.",
-                      options: const ['Very quiet', 'Moderate noise', 'Lively'],
+                      title: "Noise Level",
+                      subtitle: "What is your preferred noise level?",
+                      options: const ['Quiet', 'Moderate', 'Lively'],
+                      initialValue: _ownerNoiseLevel,
                       onSelected: (selected) {
                         setState(() => _ownerNoiseLevel = selected);
                       },
-                      initialValue: _ownerNoiseLevel,
                     ),
                     _QuestionWidget(
-                      title: "Your Social Preferences?",
-                      subtitle: "Your personal social habits.",
-                      options: const ['Social & outgoing', 'Occasional gatherings', 'Quiet & private'],
+                      title: "Social Preferences",
+                      subtitle: "What are your social preferences?",
+                      options: const ['Very Social', 'Moderately Social', 'Prefer Solitude', 'Introvert'],
+                      initialValue: _ownerSocialPreferences,
                       onSelected: (selected) {
                         setState(() => _ownerSocialPreferences = selected);
                       },
-                      initialValue: _ownerSocialPreferences,
                     ),
                     _QuestionWidget(
-                      title: "Your Visitors Policy?",
-                      subtitle: "How often do you allow day visitors?",
-                      options: const ['Frequent visitors allowed', 'Occasional visitors allowed', 'Rarely allow visitors', 'No visitors allowed'],
+                      title: "Visitors Policy",
+                      subtitle: "What is your policy on visitors?",
+                      options: ['Open to visitors', 'Visitors occasionally', 'No visitors'],
+                      initialValue: _ownerVisitorsPolicy,
                       onSelected: (selected) {
                         setState(() => _ownerVisitorsPolicy = selected);
                       },
-                      initialValue: _ownerVisitorsPolicy,
                     ),
                     _QuestionWidget(
-                      title: "Do you own pets?",
-                      subtitle: "If yes, specify.",
-                      options: const ['Yes, I own pets', 'No pets'],
+                      title: "Pet Ownership",
+                      subtitle: "Do you own pets?",
+                      options: const ['Yes', 'No'],
+                      initialValue: _ownerPetOwnership,
                       onSelected: (selected) {
                         setState(() => _ownerPetOwnership = selected);
                       },
-                      initialValue: _ownerPetOwnership,
                     ),
                     _QuestionWidget(
-                      title: "What is your tolerance for flatmates having pets?",
-                      subtitle: "Your comfort level with animals.",
-                      options: const ['Comfortable with pets', 'Tolerant of pets', 'Prefer no pets', 'Allergic to pets'],
+                      title: "Pet Tolerance",
+                      subtitle: "Are you comfortable living with pets?",
+                      options: const ['Very comfortable', 'Moderately comfortable', 'Not comfortable'],
+                      initialValue: _ownerPetTolerance,
                       onSelected: (selected) {
                         setState(() => _ownerPetTolerance = selected);
                       },
-                      initialValue: _ownerPetTolerance,
                     ),
                     _QuestionWidget(
-                      title: "Your Sleeping Schedule?",
-                      subtitle: "Early riser, night owl, or irregular?",
-                      options: const ['Early riser', 'Night Owl', 'Irregular'],
+                      title: "Sleeping Schedule",
+                      subtitle: "What's your typical sleeping schedule?",
+                      options: const ['Early Bird', 'Night Owl', 'Flexible'],
+                      initialValue: _ownerSleepingSchedule,
                       onSelected: (selected) {
                         setState(() => _ownerSleepingSchedule = selected);
                       },
-                      initialValue: _ownerSleepingSchedule,
                     ),
                     _QuestionWidget(
-                      title: "Your Work Schedule?",
-                      subtitle: "Helps in understanding routines.",
-                      options: const ['9-5 Office hours', 'Freelance/Flexible hours', 'Night shifts', 'Student schedule', 'Mixed'],
+                      title: "Work Schedule",
+                      subtitle: "What's your typical work schedule?",
+                      options: const ['9-5 Job', 'Flexible Hours', 'Night Shifts', 'Student', 'Freelancer'],
+                      initialValue: _ownerWorkSchedule,
                       onSelected: (selected) {
                         setState(() => _ownerWorkSchedule = selected);
                       },
-                      initialValue: _ownerWorkSchedule,
                     ),
                     _QuestionWidget(
-                      title: "How do you prefer sharing common spaces?",
-                      subtitle: "Do you like to share items or prefer separate?",
-                      options: const ['Share everything', 'Share some items', 'Prefer separate items'],
+                      title: "Sharing Common Spaces",
+                      subtitle: "How do you prefer sharing common spaces?",
+                      options: const ['Strictly divided', 'Flexible and shared', 'Minimal sharing'],
+                      initialValue: _ownerSharingCommonSpaces,
                       onSelected: (selected) {
                         setState(() => _ownerSharingCommonSpaces = selected);
                       },
-                      initialValue: _ownerSharingCommonSpaces,
                     ),
                     _QuestionWidget(
-                      title: "Guests Overnight Policy?",
-                      subtitle: "Your policy on guests staying overnight.",
-                      options: const ['Allowed frequently', 'Allowed occasionally', 'Rarely allowed', 'Not allowed'],
+                      title: "Guests Overnight Policy",
+                      subtitle: "What's your policy on overnight guests?",
+                      options: ['Allowed with notice', 'Rarely allowed', 'Not allowed'],
+                      initialValue: _ownerGuestsOvernightPolicy,
                       onSelected: (selected) {
                         setState(() => _ownerGuestsOvernightPolicy = selected);
                       },
-                      initialValue: _ownerGuestsOvernightPolicy,
                     ),
                     _QuestionWidget(
-                      title: "Personal space vs. Socialization?",
-                      subtitle: "Your ideal balance.",
-                      options: const ['Value personal space highly', 'Enjoy a balance', 'Prefer more socialization'],
+                      title: "Personal Space vs. Socialization",
+                      subtitle: "How do you balance personal space and socialization?",
+                      options: const ['Need a lot of personal space', 'Balance of both', 'Enjoy socializing often'],
+                      initialValue: _ownerPersonalSpaceVsSocialization,
                       onSelected: (selected) {
                         setState(() => _ownerPersonalSpaceVsSocialization = selected);
                       },
-                      initialValue: _ownerPersonalSpaceVsSocialization,
                     ),
-
-                    const SizedBox(height: 30),
-                    const Text(
-                      'Flat Details',
-                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.redAccent),
-                    ),
-                    const Divider(),
                     _QuestionWidget(
-                      title: "Flat Type?",
-                      subtitle: "e.g., 1BHK, 2BHK, Studio",
-                      options: const ['1RK', '1BHK', '2BHK', '3BHK', 'Studio Apartment', 'Shared Room'],
+                      title: "Flat Type",
+                      subtitle: "What type of flat is it?",
+                      options: const ['Studio', '1BHK', '2BHK', '3BHK+', 'Villa', 'Apartment'],
+                      initialValue: _flatType,
                       onSelected: (selected) {
                         setState(() => _flatType = selected);
                       },
-                      initialValue: _flatType,
                     ),
                     _QuestionWidget(
-                      title: "Furnished Status?",
-                      subtitle: "Is the flat furnished, semi-furnished, or unfurnished?",
-                      options: const ['Fully Furnished', 'Semi-Furnished', 'Unfurnished'],
+                      title: "Furnished Status",
+                      subtitle: "Is the flat furnished, semi-furnished or unfurnished?",
+                      options: const ['Furnished', 'Semi-Furnished', 'Unfurnished'],
+                      initialValue: _furnishedStatus,
                       onSelected: (selected) {
                         setState(() => _furnishedStatus = selected);
                       },
-                      initialValue: _furnishedStatus,
                     ),
                     _QuestionWidget(
-                      title: "Available For?",
+                      title: "Available For",
                       subtitle: "Who is the flat available for?",
-                      options: const ['Male', 'Female', 'Couples', 'Family', 'Anyone'],
+                      options: const ['Boys', 'Girls', 'Couple', 'Family', 'Anyone'],
+                      initialValue: _availableFor,
                       onSelected: (selected) {
                         setState(() => _availableFor = selected);
                       },
-                      initialValue: _availableFor,
                     ),
+                    const SizedBox(height: 16),
                     ListTile(
                       title: Text(_availabilityDate == null
                           ? 'Select Availability Date'
-                          : 'Availability Date: ${DateFormat('dd-MM-yyyy').format(_availabilityDate!)}'),
-                      trailing: const Icon(Icons.calendar_today, color: Colors.redAccent),
-                      onTap: () => _selectDate(context, _availabilityDate, (date) {
-                        setState(() {
-                          _availabilityDate = date;
-                        });
-                      }),
+                          : 'Availability Date: ${DateFormat('yyyy-MM-dd').format(_availabilityDate!)}'),
+                      trailing: const Icon(Icons.calendar_today),
+                      onTap: () async {
+                        final pickedDate = await showDatePicker(
+                          context: context,
+                          initialDate: _availabilityDate ?? DateTime.now(),
+                          firstDate: DateTime.now(),
+                          lastDate: DateTime(2028),
+                        );
+                        if (pickedDate != null) {
+                          setState(() {
+                            _availabilityDate = pickedDate;
+                          });
+                        }
+                      },
                     ),
-                    _buildTextField(
-                      label: 'Rent Price (per month)',
-                      hint: 'e.g., 12000',
-                      controller: _rentPriceController,
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      initialValue: _rentPrice,
+                      decoration: const InputDecoration(labelText: 'Rent Price'),
                       keyboardType: TextInputType.number,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      validator: (value) => value!.isEmpty ? 'Rent price cannot be empty' : null,
+                      onSaved: (value) => _rentPrice = value!,
                     ),
-                    _buildTextField(
-                      label: 'Deposit Amount',
-                      hint: 'e.g., 24000',
-                      controller: _depositAmountController,
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      initialValue: _depositAmount,
+                      decoration: const InputDecoration(labelText: 'Deposit Amount'),
                       keyboardType: TextInputType.number,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      validator: (value) => value!.isEmpty ? 'Deposit amount cannot be empty' : null,
+                      onSaved: (value) => _depositAmount = value!,
                     ),
                     _QuestionWidget(
-                      title: "Bathroom Type?",
-                      subtitle: "Attached or Shared?",
-                      options: const ['Attached', 'Shared', 'Both (multiple bathrooms)'],
+                      title: "Bathroom Type",
+                      subtitle: "Is the bathroom attached or shared?",
+                      options: const ['Attached', 'Shared'],
+                      initialValue: _bathroomType,
                       onSelected: (selected) {
                         setState(() => _bathroomType = selected);
                       },
-                      initialValue: _bathroomType,
                     ),
                     _QuestionWidget(
-                      title: "Balcony Availability?",
-                      subtitle: "Does the flat have a balcony?",
+                      title: "Balcony Availability",
+                      subtitle: "Is a balcony available?",
                       options: const ['Yes', 'No'],
+                      initialValue: _balconyAvailability,
                       onSelected: (selected) {
                         setState(() => _balconyAvailability = selected);
                       },
-                      initialValue: _balconyAvailability,
                     ),
                     _QuestionWidget(
-                      title: "Parking Availability?",
-                      subtitle: "Is parking available for the flat?",
-                      options: const ['Car Parking', 'Bike Parking', 'Both', 'None'],
+                      title: "Parking Availability",
+                      subtitle: "Is parking available?",
+                      options: const ['Yes', 'No'],
+                      initialValue: _parkingAvailability,
                       onSelected: (selected) {
                         setState(() => _parkingAvailability = selected);
                       },
-                      initialValue: _parkingAvailability,
                     ),
                     _MultiSelectQuestionWidget(
-                      title: "Flat Amenities",
-                      subtitle: "Select all available amenities.",
-                      options: const ['AC', 'Washing Machine', 'Refrigerator', 'Geyser', 'TV', 'Sofa', 'Bed', 'Wardrobe', 'Dining Table', 'Modular Kitchen', 'Wi-Fi', 'Power Backup', 'Gym', 'Swimming Pool', 'Security'],
+                      title: "Amenities",
+                      subtitle: "What amenities does your flat offer?",
+                      options: const ['Furnished', 'AC', 'Washing Machine', 'Refrigerator', 'Geyser', 'Parking', 'Internet', 'Gym', 'Swimming Pool', 'Balcony'],
                       onSelected: (selected) {
                         setState(() => _flatAmenities = selected);
                       },
                       initialValues: _flatAmenities,
                     ),
-                    _buildTextField(
-                      label: 'Full Address',
-                      hint: 'Enter the complete address of the flat',
-                      controller: _addressController,
-                      maxLines: 2,
-                      validator: (value) => value!.isEmpty ? 'Address cannot be empty' : null,
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      initialValue: _address,
+                      decoration: const InputDecoration(labelText: 'Flat Address'),
+                      onSaved: (value) => _address = value!,
                     ),
-                    _buildTextField(
-                      label: 'Landmark',
-                      hint: 'Nearby landmark for easy identification',
-                      controller: _landmarkController,
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      initialValue: _landmark,
+                      decoration: const InputDecoration(labelText: 'Nearby Landmark'),
+                      onSaved: (value) => _landmark = value!,
                     ),
-                    _buildTextField(
-                      label: 'Flat Description',
-                      hint: 'Describe your flat (e.g., features, neighborhood, pros)',
-                      controller: _flatDescriptionController,
-                      maxLines: 5,
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      initialValue: _flatDescription,
+                      decoration: const InputDecoration(labelText: 'Flat Description'),
+                      maxLines: 3,
+                      onSaved: (value) => _flatDescription = value!,
                     ),
-
-                    const SizedBox(height: 30),
-                    const Text(
-                      'Preferred Flatmate (for your flat)',
-                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.redAccent),
-                    ),
-                    const Divider(),
                     _QuestionWidget(
-                      title: "Preferred Flatmate Gender?",
-                      subtitle: "Who would you prefer for your flat?",
-                      options: const ['Male', 'Female', 'Couples', 'Any'],
+                      title: "Preferred Flatmate Gender",
+                      subtitle: "What gender do you prefer your flatmate to be?",
+                      options: const ['Male', 'Female', 'No Preference'],
+                      initialValue: _preferredGender,
                       onSelected: (selected) {
                         setState(() => _preferredGender = selected);
                       },
-                      initialValue: _preferredGender,
                     ),
                     _QuestionWidget(
-                      title: "Preferred Flatmate Age Group?",
-                      subtitle: "What age group do you prefer?",
-                      options: const ['18-24', '25-34', '35-45', '45+', 'No preference'],
+                      title: "Preferred Flatmate Age Group",
+                      subtitle: "What age group do you prefer your flatmate to be in?",
+                      options: const ['18-24', '25-34', '35-44', '45+', 'No Preference'],
+                      initialValue: _preferredAgeGroup,
                       onSelected: (selected) {
                         setState(() => _preferredAgeGroup = selected);
                       },
-                      initialValue: _preferredAgeGroup,
                     ),
                     _QuestionWidget(
-                      title: "Preferred Flatmate Occupation?",
-                      subtitle: "Any specific occupation preference?",
-                      options: const ['Student', 'Working Professional', 'Freelancer', 'No preference'],
+                      title: "Preferred Flatmate Occupation",
+                      subtitle: "What occupation do you prefer your flatmate to have?",
+                      options: const ['Student', 'Working Professional', 'Freelancer', 'No Preference'],
+                      initialValue: _preferredOccupation,
                       onSelected: (selected) {
                         setState(() => _preferredOccupation = selected);
                       },
-                      initialValue: _preferredOccupation,
                     ),
                     _MultiSelectQuestionWidget(
-                      title: "Preferred Flatmate Habits",
-                      subtitle: "Select habits you prefer in a flatmate.",
-                      options: const ['Non-smoker', 'Non-drinker', 'Vegetarian', 'Tidy', 'Quiet', 'Social', 'Early riser'],
+                      title: "Preferred Habits",
+                      subtitle: "What habits do you prefer in your flatmate?",
+                      options: const ['Non-Smoker', 'Non-Drinker', 'Clean', 'Quiet', 'Social'],
                       onSelected: (selected) {
                         setState(() => _preferredHabits = selected);
                       },
                       initialValues: _preferredHabits,
                     ),
                     _MultiSelectQuestionWidget(
-                      title: "Ideal Qualities in a Flatmate?",
-                      subtitle: "Select the most important traits.",
-                      options: const ['Responsible', 'Clean', 'Respectful', 'Communicative', 'Friendly', 'Quiet', 'Tidy', 'Social', 'Organized'],
+                      title: "Ideal Flatmate Qualities",
+                      subtitle: "What qualities do you look for in an ideal flatmate?",
+                      options: const ['Responsible', 'Friendly', 'Quiet', 'Clean', 'Respectful', 'Communicative', 'Independent', 'Organized'],
                       onSelected: (selected) {
                         setState(() => _flatmateIdealQualities = selected);
                       },
                       initialValues: _flatmateIdealQualities,
                     ),
                     _MultiSelectQuestionWidget(
-                      title: "Any Deal Breakers?",
-                      subtitle: "What you absolutely cannot tolerate.",
+                      title: "Flatmate Deal Breakers",
+                      subtitle: "Are there any deal breakers for you in a flatmate?",
                       options: const ['Smoking', 'Excessive Noise', 'Untidiness', 'Frequent Parties', 'Pets', 'Guests staying over without notice'],
                       onSelected: (selected) {
                         setState(() => _flatmateDealBreakers = selected);

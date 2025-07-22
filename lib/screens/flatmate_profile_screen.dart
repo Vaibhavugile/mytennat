@@ -586,7 +586,8 @@ class _MultiChoiceQuestionWidgetState extends State<MultiChoiceQuestionWidget> {
 }
 
 class FlatmateProfileScreen extends StatefulWidget {
-  const FlatmateProfileScreen({super.key});
+  final String? initialPhoneNumber;
+  const FlatmateProfileScreen({super.key,this.initialPhoneNumber});
 
   @override
   State<FlatmateProfileScreen> createState() => _FlatmateProfileScreenState();
@@ -617,10 +618,11 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
 
   // Define your sections - UPDATED
   final List<Map<String, dynamic>> _sections = [
-    {'title': 'About You', 'startPage': 0, 'endPage': 6}, // Pages 0-6
-    {'title': 'Your Habits', 'startPage': 7, 'endPage': 20}, // Pages 7-20
-    {'title': 'Flat Details', 'startPage': 21, 'endPage': 33}, // Pages 21-33
-    {'title': 'Flatmate Preferences', 'startPage': 34, 'endPage': 39}, // Pages...
+    {'title': 'About You', 'startPage': 0, 'endPage': 7},             // 9 fields (Pages 0-8)
+    {'title': 'Your Habits', 'startPage': 8, 'endPage': 14},          // 7 fields (Pages 9-15)
+    {'title': 'Flat Details', 'startPage': 15, 'endPage': 26},        // 12 fields (Pages 16-27)
+    {'title': 'Flatmate Preferences', 'startPage': 27, 'endPage': 32},// 6 fields (Pages 28-33)
+    {'title': 'Upload Images', 'startPage': 33, 'endPage': 34},       // 1 field (Page 34)
   ];
 
   String _getCurrentSectionTitle() {
@@ -739,6 +741,9 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
   void initState() {
     super.initState();
     // Initialize controllers with current profile values
+    if (widget.initialPhoneNumber != null) {
+      _flatListingProfile.ownerPhonenumber = widget.initialPhoneNumber; // ADD THIS LINE
+    }
     _ownerNameController = TextEditingController(text: _flatListingProfile.ownerName);
     _ownerAgeController = TextEditingController(text: _flatListingProfile.ownerAge?.toString() ?? '');
     _ownerOccupationController = TextEditingController(text: _flatListingProfile.ownerOccupation);

@@ -522,8 +522,8 @@ class _MultiChoiceQuestionWidgetState extends State<MultiChoiceQuestionWidget> {
 }
 
 class FlatWithFlatmateProfileScreen extends StatefulWidget {
-
-  const FlatWithFlatmateProfileScreen({super.key});
+  final String? initialPhoneNumber;
+  const FlatWithFlatmateProfileScreen({super.key, this.initialPhoneNumber});
 
 
   @override
@@ -555,10 +555,11 @@ class _FlatWithFlatmateProfileScreenState
 
   // Define sections for progress tracking and navigation
   final List<Map<String, dynamic>> _sections = [
-    {'title': 'Your Basic Info', 'startPage': 0, 'endPage': 10},
-    {'title': 'Your Habits', 'startPage': 11, 'endPage': 24},
-    {'title': 'Flat Requirements', 'startPage': 25, 'endPage': 27},
-    {'title': 'Flatmate Preferences', 'startPage': 28, 'endPage': 33},
+    {'title': 'Your Basic Info', 'startPage': 0, 'endPage': 11},      // 13 fields (Pages 0-12)
+    {'title': 'Your Habits', 'startPage': 12, 'endPage': 19},         // 8 fields (Pages 13-20)
+    {'title': 'Flat Requirements', 'startPage': 20, 'endPage': 23},   // 4 fields (Pages 21-24)
+    {'title': 'Flatmate Preferences', 'startPage': 24, 'endPage': 29},// 6 fields (Pages 25-30)
+    {'title': 'Upload Images', 'startPage': 30, 'endPage': 31},       // 1 field (Page 31)
   ];
 
   String _getCurrentSectionTitle() {
@@ -589,6 +590,9 @@ class _FlatWithFlatmateProfileScreenState
   void initState() {
     super.initState();
     // Initialize controllers with current profile values
+    if (widget.initialPhoneNumber != null) {
+      _seekingFlatmateProfile.phoneNumber = widget.initialPhoneNumber; // ADD THIS LINE
+    }
     _nameController = TextEditingController(text: _seekingFlatmateProfile.name);
     _ageController = TextEditingController(
         text: _seekingFlatmateProfile.age?.toString() ?? '');
@@ -926,6 +930,20 @@ class _FlatWithFlatmateProfileScreenState
         },
         initialValue: _seekingFlatmateProfile.gender,
       ),
+      // TextFormField(
+      //   initialValue: _seekingFlatmateProfile.phoneNumber, // Set the initial value
+      //   decoration: InputDecoration(
+      //     labelText: 'Phone Number',
+      //     border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
+      //     prefixIcon: const Icon(Icons.phone),
+      //   ),
+      //   keyboardType: TextInputType.phone,
+      //   readOnly: true, // Consider making it read-only if it's auto-filled
+      //   onChanged: (value) {
+      //     _seekingFlatmateProfile.phoneNumber = value; // Update the profile on change (if not read-only)
+      //   },
+      //   // You can add validators if needed
+      // ),
 
       // Page 3: Occupation
       _buildTextQuestion(

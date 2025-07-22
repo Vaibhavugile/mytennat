@@ -1,9 +1,12 @@
+// lib/screens/selection_screen.dart
 import 'package:flutter/material.dart';
-import 'flat_with_flatmate_profile_screen.dart'; // Import the new screen
-import 'flatmate_profile_screen.dart'; // Import the new screen
+import 'flat_with_flatmate_profile_screen.dart';
+import 'flatmate_profile_screen.dart';
 
 class SelectionScreen extends StatefulWidget {
-  const SelectionScreen({super.key});
+  final String? initialPhoneNumber; //
+
+  const SelectionScreen({super.key, this.initialPhoneNumber}); //
 
   @override
   State<SelectionScreen> createState() => _SelectionScreenState();
@@ -15,7 +18,6 @@ class _SelectionScreenState extends State<SelectionScreen> with SingleTickerProv
   late Animation<Offset> _slideUpAnimation;
   late Animation<double> _scaleAnimation;
 
-  // Declare customTheme here, outside the build method
   final ThemeData customTheme = ThemeData(
     primaryColor: const Color(0xFF1A237E),
     colorScheme: ColorScheme.fromSwatch(
@@ -56,7 +58,7 @@ class _SelectionScreenState extends State<SelectionScreen> with SingleTickerProv
       style: ElevatedButton.styleFrom(
         padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 32),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        backgroundColor: const Color(0xFF00BFA5), // Using the original accent color
+        backgroundColor: const Color(0xFF00BFA5),
         foregroundColor: Colors.white,
         elevation: 5,
         shadowColor: const Color(0xFF00BFA5).withOpacity(0.3),
@@ -142,7 +144,11 @@ class _SelectionScreenState extends State<SelectionScreen> with SingleTickerProv
                       onTap: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => const FlatWithFlatmateProfileScreen()),
+                          MaterialPageRoute(
+                            builder: (context) => FlatWithFlatmateProfileScreen(
+                              initialPhoneNumber: widget.initialPhoneNumber, //
+                            ),
+                          ),
                         );
                       },
                     );
@@ -154,7 +160,11 @@ class _SelectionScreenState extends State<SelectionScreen> with SingleTickerProv
                       onTap: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => const FlatmateProfileScreen()),
+                          MaterialPageRoute(
+                            builder: (context) => FlatmateProfileScreen(
+                              initialPhoneNumber: widget.initialPhoneNumber, //
+                            ),
+                          ),
                         );
                       },
                     );
@@ -234,7 +244,7 @@ class _SelectionScreenState extends State<SelectionScreen> with SingleTickerProv
             : BorderRadius.circular(20),
         child: InkWell(
           onTap: onTap,
-          splashColor: theme.primaryColor.withOpacity(0.08), // Use primaryColor directly
+          splashColor: theme.primaryColor.withOpacity(0.08),
           highlightColor: Colors.transparent,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 28.0, vertical: 48.0),
