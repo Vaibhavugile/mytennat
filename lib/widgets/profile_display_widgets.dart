@@ -503,12 +503,7 @@ class SeekingFlatmateProfileDisplay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Seeking Flatmate Profile', style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.redAccent,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
-      ),
+
       body: ListView(
         children: [
           // Profile Header (similar to the image)
@@ -695,12 +690,7 @@ class FlatListingProfileDisplay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Flat Listing Profile', style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.redAccent,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
-      ),
+
       body: ListView(
         children: [
           // Profile Header (Owner Info)

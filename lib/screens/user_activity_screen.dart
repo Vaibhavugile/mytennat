@@ -517,12 +517,12 @@ class _UserActivityScreenState extends State<UserActivityScreen> with SingleTick
                     final hasNotification = _profileHasNewNotification[profile.documentId!] == true; // Check notification for this specific profile
 
                     return Card(
-                      color: isSelected ? Colors.redAccent.withOpacity(0.1) : null, // Highlight selected
+                      color: isSelected ? const Color(0xFF6A1B9A).withOpacity(0.1) : null, // Highlight selected with gradient color
                       elevation: isSelected ? 2 : 1,
                       margin: const EdgeInsets.symmetric(vertical: 4.0),
                       child: ListTile(
                         leading: CircleAvatar(
-                          backgroundColor: isSelected ? Colors.redAccent : Colors.blueGrey,
+                          backgroundColor: isSelected ? const Color(0xFFAD1457) : Colors.blueGrey, // Use a gradient color for selected
                           child: Icon(
                             profile is FlatListingProfile ? Icons.home : Icons.group,
                             color: Colors.white,
@@ -576,8 +576,25 @@ class _UserActivityScreenState extends State<UserActivityScreen> with SingleTick
       length: 3,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('My Connections'),
-          backgroundColor: Colors.redAccent,
+          title: const Text(
+            'My Connections',
+            style: TextStyle(
+              color: Colors.white, // Ensure title is visible on the gradient
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          centerTitle: true,
+          elevation: 0, // No shadow for the app bar
+          iconTheme: const IconThemeData(color: Colors.white), // Back button color
+          flexibleSpace: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF6A1B9A), Color(0xFFAD1457)], // Deep Purple to Pink-Red
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+          ),
           actions: [
             if (_userProfilesList.isNotEmpty)
               Stack(
@@ -650,7 +667,7 @@ class _UserActivityScreenState extends State<UserActivityScreen> with SingleTick
                     children: [
                       CircleAvatar(
                         radius: 35,
-                        backgroundColor: Colors.redAccent,
+                        backgroundColor: const Color(0xFF6A1B9A), // Changed color here
                         child: Icon(
                           currentDisplayedProfile is FlatListingProfile ? Icons.home : Icons.group,
                           color: Colors.white,

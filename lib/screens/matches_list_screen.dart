@@ -46,7 +46,16 @@ class _MatchesListScreenState extends State<MatchesListScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Matches', style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.redAccent,
+        // Apply the same gradient as PlansScreen background
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF6A1B9A), Color(0xFFAD1457)], // Deep Purple to Pink-Red
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
         iconTheme: const IconThemeData(color: Colors.white),
         elevation: 0,
       ),

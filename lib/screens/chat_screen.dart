@@ -286,11 +286,13 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
         elevation: 0,
         flexibleSpace: Container(
           decoration: const BoxDecoration(
+            // START OF CHANGES
             gradient: LinearGradient(
-              colors: [kPrimaryColor, kAccentColor],
+              colors: [Color(0xFF6A1B9A), Color(0xFFAD1457)], // Deep Purple to Pink-Red from PlansScreen
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
+            // END OF CHANGES
           ),
         ),
         title: Row(
@@ -638,9 +640,15 @@ class _MessageInput extends StatelessWidget {
           const SizedBox(width: 8.0),
           Container(
             decoration: const BoxDecoration(
-              color: kAccentColor,
-              shape: BoxShape.circle,
+              // START OF CHANGES
+              gradient: LinearGradient(
+                colors: [Color(0xFF6A1B9A), Color(0xFFAD1457)], // Deep Purple to Pink-Red from PlansScreen
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              shape: BoxShape.circle,// END OF CHANGES
             ),
+
             child: IconButton(
               onPressed: onSendMessage,
               icon: const Icon(Icons.send_rounded, color: Colors.white),

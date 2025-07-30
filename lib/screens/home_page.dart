@@ -179,18 +179,18 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('MyTennant', style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.redAccent,
+        // Make AppBar transparent to blend with the gradient background
+        backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
-          // NEW: View Plans Button
           IconButton(
-            icon: const Icon(Icons.card_membership, color: Colors.white), // or Icons.local_activity, Icons.payments
+            icon: const Icon(Icons.card_membership, color: Colors.white),
             tooltip: 'View Plans',
             onPressed: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const PlansScreen()),
-              ).then((_) => _fetchUserData()); // Refresh all data when returning from PlansScreen
+              ).then((_) => _fetchUserData());
             },
           ),
           IconButton(
@@ -215,206 +215,199 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
-      body: _isLoadingProfileType
-          ? const Center(child: CircularProgressIndicator(color: Colors.redAccent))
-          : Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Image.asset(
-              'assets/images/MyTennant.png',
-              height: 150,
-            ),
-            const SizedBox(height: 30),
-            const Text(
-              'Welcome to MyTennant!',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              'Find your perfect flatmate or flat with ease.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16, color: Colors.grey[700]),
-            ),
-            const SizedBox(height: 40),
-            if (_userProfileType != null && _currentActiveProfileId != null)
-              Column(
-                children: [
-                  if (profileName.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 10.0),
-                      child: Text(
-                        'Active Profile: $profileName',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.deepPurple),
-                      ),
-                    ),
-                  if (_userProfileType == 'flat_listing')
-                    const Text(
-                      'You are currently looking for flatmates for your flat.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 16, color: Colors.black54),
-                    )
-                  else if (_userProfileType == 'seeking_flatmate')
-                    const Text(
-                      'You are currently looking for a flat.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 16, color: Colors.black54),
-                    ),
-                  const SizedBox(height: 20),
-                ],
-              ),
-
-            if (_currentPlanName != null)
-              Column(
-                children: [
-                  const Divider(height: 30, thickness: 1, color: Colors.grey),
-                  Text(
-                    'Your Current Plan: $_currentPlanName',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blueGrey),
-                  ),
-                  if (_currentPlanContacts != null)
-                    Text(
-                      'Total Contacts: $_currentPlanContacts',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 16, color: Colors.blueGrey),
-                    ),
-                  if (_remainingContacts != null)
-                    Text(
-                      'Remaining Contacts: $_remainingContacts',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 16, color: Colors.blueGrey),
-                    ),
-                  const SizedBox(height: 20),
-                  // This button is now redundant if we have an icon in the AppBar for PlansScreen
-                  // but kept for demonstration if you prefer a button here as well.
-                  // ElevatedButton(
-                  //   onPressed: () {
-                  //     Navigator.push(
-                  //       context,
-                  //       MaterialPageRoute(builder: (context) => const PlansScreen()),
-                  //     ).then((_) => _fetchUserData());
-                  //   },
-                  //   style: ElevatedButton.styleFrom(
-                  //     backgroundColor: Colors.purple,
-                  //     foregroundColor: Colors.white,
-                  //     padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
-                  //     shape: RoundedRectangleBorder(
-                  //       borderRadius: BorderRadius.circular(20),
-                  //     ),
-                  //     textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  //   ),
-                  //   child: const Text('Manage Plans'),
-                  // ),
-                  const Divider(height: 30, thickness: 1, color: Colors.grey),
-                  const SizedBox(height: 20),
-                ],
-              ),
-            _userProfileType != null && _currentActiveProfileId != null
-                ? Column(
+      extendBodyBehindAppBar: true, // This allows the body to extend behind the app bar
+      body: Container( // Wrap the existing body content in a Container
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF6A1B9A), Color(0xFFAD1457)], // Deep Purple to Pink-Red
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: _isLoadingProfileType
+            ? const Center(child: CircularProgressIndicator(color: Colors.white)) // Changed color for visibility on dark background
+            : Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: SingleChildScrollView( // Added SingleChildScrollView to prevent overflow if content is too long
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => MatchingScreen(
-                          profileType: _userProfileType!,
-                          profileId: _currentActiveProfileId!,
-                        ),
-                      ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.redAccent,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  child: const Text('Start Matching'),
+                SizedBox(height: AppBar().preferredSize.height + 20), // Add spacing for the transparent AppBar
+                Image.asset(
+                  'assets/images/MyTennant.png',
+                  height: 150,
                 ),
-                const SizedBox(height: 15),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => MatchesListScreen(
-                          profileType: _userProfileType!,
-                          profileId: _currentActiveProfileId!,
-                        ),
-                      ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blueAccent,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    textStyle: const TextStyle(fontSize: 18),
-                  ),
-                  child: const Text('View Matches'),
-                ),
-                const SizedBox(height: 15),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const UserActivityScreen(),
-                      ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    textStyle: const TextStyle(fontSize: 18),
-                  ),
-                  child: const Text('View Activity'),
-                ),
-              ],
-            )
-                : Column(
-              children: [
+                const SizedBox(height: 30),
                 const Text(
-                  'Please complete your profile to start matching.',
+                  'Welcome to MyTennant!',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16, color: Colors.grey),
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white), // Changed text color to white
                 ),
-                const SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const EditProfileScreen(),
-                      ),
-                    ).then((_) => _fetchUserData());
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blueAccent,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                const SizedBox(height: 10),
+                const Text(
+                  'Find your perfect flatmate or flat with ease.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 16, color: Colors.white70), // Changed text color to white70
+                ),
+                const SizedBox(height: 40),
+                if (_userProfileType != null && _currentActiveProfileId != null)
+                  Column(
+                    children: [
+                      if (profileName.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 10.0),
+                          child: Text(
+                            'Active Profile: $profileName',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white), // Changed text color to white
+                          ),
+                        ),
+                      if (_userProfileType == 'flat_listing')
+                        const Text(
+                          'You are currently looking for flatmates for your flat.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 16, color: Colors.white70), // Changed text color to white70
+                        )
+                      else if (_userProfileType == 'seeking_flatmate')
+                        const Text(
+                          'You are currently looking for a flat.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 16, color: Colors.white70), // Changed text color to white70
+                        ),
+                      const SizedBox(height: 20),
+                    ],
                   ),
-                  child: const Text('Go to Profile Setup'),
+
+                if (_currentPlanName != null)
+                  Column(
+                    children: [
+                      const Divider(height: 30, thickness: 1, color: Colors.white54), // Changed divider color
+                      Text(
+                        'Your Current Plan: $_currentPlanName',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white), // Changed text color to white
+                      ),
+                      if (_currentPlanContacts != null)
+                        Text(
+                          'Total Contacts: $_currentPlanContacts',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontSize: 16, color: Colors.white70), // Changed text color to white70
+                        ),
+                      if (_remainingContacts != null)
+                        Text(
+                          'Remaining Contacts: $_remainingContacts',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontSize: 16, color: Colors.white70), // Changed text color to white70
+                        ),
+                      const SizedBox(height: 20),
+                      const Divider(height: 30, thickness: 1, color: Colors.white54), // Changed divider color
+                      const SizedBox(height: 20),
+                    ],
+                  ),
+                _userProfileType != null && _currentActiveProfileId != null
+                    ? Column(
+                  children: [
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => MatchingScreen(
+                              profileType: _userProfileType!,
+                              profileId: _currentActiveProfileId!,
+                            ),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white, // Changed button background to white
+                        foregroundColor: const Color(0xFFAD1457), // Changed text color to match end gradient color
+                        padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      child: const Text('Start Matching'),
+                    ),
+                    const SizedBox(height: 15),
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => MatchesListScreen(
+                              profileType: _userProfileType!,
+                              profileId: _currentActiveProfileId!,
+                            ),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white, // Changed button background to white
+                        foregroundColor: const Color(0xFF6A1B9A), // Changed text color to match start gradient color
+                        padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        textStyle: const TextStyle(fontSize: 18),
+                      ),
+                      child: const Text('View Matches'),
+                    ),
+                    const SizedBox(height: 15),
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const UserActivityScreen(),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white, // Changed button background to white
+                        foregroundColor: Colors.teal, // Choose a complementary color
+                        padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        textStyle: const TextStyle(fontSize: 18),
+                      ),
+                      child: const Text('View Activity'),
+                    ),
+                  ],
+                )
+                    : Column(
+                  children: [
+                    const Text(
+                      'Please complete your profile to start matching.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 16, color: Colors.white), // Changed text color to white
+                    ),
+                    const SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const EditProfileScreen(),
+                          ),
+                        ).then((_) => _fetchUserData());
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white, // Changed button background to white
+                        foregroundColor: Colors.blueAccent, // Choose a complementary color
+                        padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                      ),
+                      child: const Text('Go to Profile Setup'),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
+          ),
         ),
       ),
     );
