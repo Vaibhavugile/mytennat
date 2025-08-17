@@ -78,8 +78,7 @@ class _MatchingScreenState extends State<MatchingScreen> {
   // Helper to get display name for a profile
   String _getProfileDisplayName(dynamic profile) {
     if (profile is FlatListingProfile) {
-      return // Assuming each profile object has a `userProfile` field.
-        profile.userProfile.name ?? 'Unnamed Flat Listing';
+      return profile.userProfile.name ?? 'Unnamed Flat Listing';
     } else if (profile is SeekingFlatmateProfile) {
       return profile.userProfile.name ?? 'Unnamed Flatmate Seeker';
     }
@@ -105,6 +104,9 @@ class _MatchingScreenState extends State<MatchingScreen> {
     });
 
     try {
+      // Add a print statement to verify the value of widget.profileType
+      print('Widget profileType: ${widget.profileType}');
+
       final userDoc = await _firestore.collection('users').doc(_currentUser!.uid).get();
       if (userDoc.exists) {
         final userData = userDoc.data();
@@ -115,7 +117,9 @@ class _MatchingScreenState extends State<MatchingScreen> {
           });
         }
       }
-      if (_userProfileType == 'flat_listing') {
+
+      // Use widget.profileType to determine the user's profile type
+      if (widget.profileType == 'flat_listing') {
         DocumentSnapshot flatListingDoc = await _firestore
             .collection('users')
             .doc(_currentUser!.uid)
@@ -138,7 +142,7 @@ class _MatchingScreenState extends State<MatchingScreen> {
             // Navigate back to profile selection or home
           });
         }
-      } else if (_userProfileType == 'seeking_flatmate') {
+      } else if (widget.profileType == 'seeking_flatmate') {
         DocumentSnapshot seekingFlatmateDoc = await _firestore
             .collection('users')
             .doc(_currentUser!.uid)
@@ -176,7 +180,6 @@ class _MatchingScreenState extends State<MatchingScreen> {
       });
     }
   }
-
   Future<void> _fetchIncomingLikes(String currentUserId, String currentProfileId) async {
     try {
       final QuerySnapshot querySnapshot = await _firestore
@@ -253,8 +256,6 @@ class _MatchingScreenState extends State<MatchingScreen> {
       print('Error fetching outgoing likes: $e');
     }
   }
-
-
   Future<void> _fetchFlatListingProfiles({bool applyFilters = false}) async {
     try {
       Query query = _firestore.collectionGroup('flatListings')
@@ -262,10 +263,7 @@ class _MatchingScreenState extends State<MatchingScreen> {
 
       if (applyFilters && _currentUserParsedProfile is SeekingFlatmateProfile) {
         if (_currentFilters.desiredCity != null && _currentFilters.desiredCity!.isNotEmpty) {
-          query = query.where('desiredCity', isEqualTo: _currentFilters.desiredCity);
-        }
-        if (_currentFilters.areaPreference != null && _currentFilters.areaPreference!.isNotEmpty) {
-          query = query.where('areaPreference', isEqualTo: _currentFilters.areaPreference);
+          query = query.where('userProfile.city', isEqualTo: _currentFilters.desiredCity);
         }
         if (_currentFilters.availabilityDate != null) {
           query = query.where('flatDetails.availabilityDate', isGreaterThanOrEqualTo: _currentFilters.availabilityDate);
@@ -282,12 +280,6 @@ class _MatchingScreenState extends State<MatchingScreen> {
         if (_currentFilters.furnishedStatus != null && _currentFilters.furnishedStatus!.isNotEmpty) {
           query = query.where('flatDetails.furnishedStatus', isEqualTo: _currentFilters.furnishedStatus);
         }
-        if (_currentFilters.numberOfBedrooms != null) {
-          query = query.where('flatDetails.numberOfBedrooms', isEqualTo: _currentFilters.numberOfBedrooms);
-        }
-        if (_currentFilters.numberOfBathrooms != null) {
-          query = query.where('flatDetails.numberOfBathrooms', isEqualTo: _currentFilters.numberOfBathrooms);
-        }
         if (_currentFilters.amenitiesDesired.isNotEmpty) {
           query = query.where('flatDetails.amenities', arrayContainsAny: _currentFilters.amenitiesDesired);
         }
@@ -295,59 +287,61 @@ class _MatchingScreenState extends State<MatchingScreen> {
           query = query.where('flatDetails.availableFor', isEqualTo: _currentFilters.availableFor);
         }
         if (_currentFilters.gender != null && _currentFilters.gender!.isNotEmpty) {
-          query = query.where('ownerGender', isEqualTo: _currentFilters.gender);
+          query = query.where('userProfile.gender', isEqualTo: _currentFilters.gender);
         }
         if (_currentFilters.ageMin != null) {
-          query = query.where('ownerAge', isGreaterThanOrEqualTo: _currentFilters.ageMin);
+          query = query.where('userProfile.age', isGreaterThanOrEqualTo: _currentFilters.ageMin);
         }
         if (_currentFilters.ageMax != null) {
-          query = query.where('ownerAge', isLessThanOrEqualTo: _currentFilters.ageMax);
+          query = query.where('userProfile.age', isLessThanOrEqualTo: _currentFilters.ageMax);
         }
         if (_currentFilters.cleanlinessLevel != null && _currentFilters.cleanlinessLevel!.isNotEmpty) {
-          query = query.where('cleanlinessLevel', isEqualTo: _currentFilters.cleanlinessLevel);
+          query = query.where('userProfile.habits.cleanliness', isEqualTo: _currentFilters.cleanlinessLevel);
         }
         if (_currentFilters.socialHabits != null && _currentFilters.socialHabits!.isNotEmpty) {
-          query = query.where('socialPreferences', isEqualTo: _currentFilters.socialHabits);
+          query = query.where('userProfile.habits.socialPreferences', isEqualTo: _currentFilters.socialHabits);
         }
-
         if (_currentFilters.smokingHabit != null && _currentFilters.smokingHabit!.isNotEmpty) {
-          query = query.where('smokingHabit', isEqualTo: _currentFilters.smokingHabit);
+          query = query.where('userProfile.habits.smoking', isEqualTo: _currentFilters.smokingHabit);
         }
         if (_currentFilters.drinkingHabit != null && _currentFilters.drinkingHabit!.isNotEmpty) {
-          query = query.where('drinkingHabit', isEqualTo: _currentFilters.drinkingHabit);
+          query = query.where('userProfile.habits.drinking', isEqualTo: _currentFilters.drinkingHabit);
         }
         if (_currentFilters.foodPreference != null && _currentFilters.foodPreference!.isNotEmpty) {
-          query = query.where('foodPreference', isEqualTo: _currentFilters.foodPreference);
+          query = query.where('userProfile.habits.food', isEqualTo: _currentFilters.foodPreference);
         }
         if (_currentFilters.petOwnership != null && _currentFilters.petOwnership!.isNotEmpty) {
-          query = query.where('petOwnership', isEqualTo: _currentFilters.petOwnership);
+          query = query.where('userProfile.habits.petOwnership', isEqualTo: _currentFilters.petOwnership);
         }
         if (_currentFilters.petTolerance != null && _currentFilters.petTolerance!.isNotEmpty) {
-          query = query.where('petTolerance', isEqualTo: _currentFilters.petTolerance);
+          query = query.where('userProfile.habits.petTolerance', isEqualTo: _currentFilters.petTolerance);
         }
-
         if (_currentFilters.occupation != null && _currentFilters.occupation!.isNotEmpty) {
-          query = query.where('ownerOccupation', isEqualTo: _currentFilters.occupation);
+          query = query.where('userProfile.occupation', isEqualTo: _currentFilters.occupation);
         }
       }
 
       QuerySnapshot querySnapshot = await query.get();
 
+      // Add print statement to show the number of documents fetched
+      print('Fetched ${querySnapshot.docs.length} flat listing profiles.');
+
       List<dynamic> fetchedProfiles = querySnapshot.docs
-          .map((doc) => FlatListingProfile.fromMap(doc.data() as Map<String, dynamic>, doc.id))
+          .map((doc) {
+        // Add print statement to show the data of each document
+        print('Fetched flat listing profile: ${doc.data()}');
+        return FlatListingProfile.fromMap(doc.data() as Map<String, dynamic>, doc.id);
+      })
           .toList();
 
-      // Filter out profiles already liked by or that have liked the current active profile
-      _profiles = fetchedProfiles; // Assign all fetched profiles directly
-
+      _profiles = fetchedProfiles;
       setState(() {});
+
     } catch (e) {
       _showAlertDialog('Error', 'Failed to load flat listing profiles: $e', () {});
       print('Firebase Firestore Error: $e');
     }
   }
-
-
   Future<void> _fetchSeekingFlatmateProfiles({bool applyFilters = false}) async {
     try {
       Query query = _firestore.collectionGroup('seekingFlatmateProfiles')
@@ -355,10 +349,13 @@ class _MatchingScreenState extends State<MatchingScreen> {
 
       if (applyFilters && _currentUserParsedProfile is FlatListingProfile) {
         if (_currentFilters.desiredCity != null && _currentFilters.desiredCity!.isNotEmpty) {
-          query = query.where('desiredCity', isEqualTo: _currentFilters.desiredCity);
+          query = query.where('userProfile.city', isEqualTo: _currentFilters.desiredCity);
         }
         if (_currentFilters.areaPreference != null && _currentFilters.areaPreference!.isNotEmpty) {
-          query = query.where('areaPreference', isEqualTo: _currentFilters.areaPreference);
+          // This field is not in the provided schema, so it will not work.
+          // It's likely you need to use `userProfile.city` and other relevant fields instead.
+          // As a placeholder, I will comment this out.
+          // query = query.where('areaPreference', isEqualTo: _currentFilters.areaPreference);
         }
         if (_currentFilters.moveInDate != null) {
           query = query.where('moveInDate', isLessThanOrEqualTo: _currentFilters.moveInDate);
@@ -370,58 +367,60 @@ class _MatchingScreenState extends State<MatchingScreen> {
           query = query.where('budgetMax', isLessThanOrEqualTo: _currentFilters.budgetMax);
         }
         if (_currentFilters.gender != null && _currentFilters.gender!.isNotEmpty) {
-          query = query.where('gender', isEqualTo: _currentFilters.gender);
+          query = query.where('flatmatePreferences.preferredFlatmateGender', isEqualTo: _currentFilters.gender);
         }
         if (_currentFilters.ageMin != null) {
-          query = query.where('age', isGreaterThanOrEqualTo: _currentFilters.ageMin);
+          query = query.where('flatmatePreferences.preferredFlatmateAge', isGreaterThanOrEqualTo: _currentFilters.ageMin);
         }
         if (_currentFilters.ageMax != null) {
-          query = query.where('age', isLessThanOrEqualTo: _currentFilters.ageMax);
+          query = query.where('flatmatePreferences.preferredFlatmateAge', isLessThanOrEqualTo: _currentFilters.ageMax);
         }
         if (_currentFilters.cleanlinessLevel != null && _currentFilters.cleanlinessLevel!.isNotEmpty) {
-          query = query.where('cleanliness', isEqualTo: _currentFilters.cleanlinessLevel);
+          query = query.where('userProfile.habits.cleanliness', isEqualTo: _currentFilters.cleanlinessLevel);
         }
         if (_currentFilters.socialHabits != null && _currentFilters.socialHabits!.isNotEmpty) {
-          query = query.where('socialHabits', isEqualTo: _currentFilters.socialHabits);
+          query = query.where('userProfile.habits.socialPreferences', isEqualTo: _currentFilters.socialHabits);
         }
-
         if (_currentFilters.smokingHabit != null && _currentFilters.smokingHabit!.isNotEmpty) {
-          query = query.where('smokingHabits', isEqualTo: _currentFilters.smokingHabit);
+          query = query.where('userProfile.habits.smoking', isEqualTo: _currentFilters.smokingHabit);
         }
         if (_currentFilters.drinkingHabit != null && _currentFilters.drinkingHabit!.isNotEmpty) {
-          query = query.where('drinkingHabits', isEqualTo: _currentFilters.drinkingHabit);
+          query = query.where('userProfile.habits.drinking', isEqualTo: _currentFilters.drinkingHabit);
         }
         if (_currentFilters.foodPreference != null && _currentFilters.foodPreference!.isNotEmpty) {
-          query = query.where('foodPreference', isEqualTo: _currentFilters.foodPreference);
+          query = query.where('userProfile.habits.food', isEqualTo: _currentFilters.foodPreference);
         }
         if (_currentFilters.petOwnership != null && _currentFilters.petOwnership!.isNotEmpty) {
-          query = query.where('petOwnership', isEqualTo: _currentFilters.petOwnership);
+          query = query.where('userProfile.habits.petOwnership', isEqualTo: _currentFilters.petOwnership);
         }
         if (_currentFilters.petTolerance != null && _currentFilters.petTolerance!.isNotEmpty) {
-          query = query.where('petTolerance', isEqualTo: _currentFilters.petTolerance);
+          query = query.where('userProfile.habits.petTolerance', isEqualTo: _currentFilters.petTolerance);
         }
-
         if (_currentFilters.occupation != null && _currentFilters.occupation!.isNotEmpty) {
-          query = query.where('occupation', isEqualTo: _currentFilters.occupation);
+          query = query.where('flatmatePreferences.preferredOccupation', isEqualTo: _currentFilters.occupation);
         }
       }
 
       QuerySnapshot querySnapshot = await query.get();
 
+      // Add print statement to show the number of documents fetched
+      print('Fetched ${querySnapshot.docs.length} seeking flatmate profiles.');
+
       List<dynamic> fetchedProfiles = querySnapshot.docs
-          .map((doc) => SeekingFlatmateProfile.fromMap(doc.data() as Map<String, dynamic>, doc.id))
+          .map((doc) {
+        // Add print statement to show the data of each document
+        print('Fetched seeking flatmate profile: ${doc.data()}');
+        return SeekingFlatmateProfile.fromMap(doc.data() as Map<String, dynamic>, doc.id);
+      })
           .toList();
 
-      // Filter out profiles already liked by or that have liked the current active profile
-      _profiles = fetchedProfiles; // Assign all fetched profiles directly
-
+      _profiles = fetchedProfiles;
       setState(() {});
     } catch (e) {
       _showAlertDialog('Error', 'Failed to load seeking flatmate profiles: $e', () {});
       print('Firebase Firestore Error: $e');
     }
   }
-
   void _showAlertDialog(String title, String message, VoidCallback onPressed) {
     showDialog(
       context: context,
@@ -1419,7 +1418,7 @@ class FlatListingProfileCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      profile.userProfile.name?? 'N/A',
+                      profile.userProfile.name ?? 'N/A',
                       style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87),
                     ),
                     const SizedBox(height: 10),
@@ -1481,14 +1480,14 @@ class FlatListingProfileCard extends StatelessWidget {
                           backgroundColor: Colors.blue.shade100,
                           textColor: Colors.blue.shade800,
                         ),
-                    //     _buildChipList(
-                    //       title: 'Area:',
-                    //       items: [profile.areaPreference],
-                    //       backgroundColor: Colors.cyan.shade100,
-                    //       textColor: Colors.cyan.shade800,
-                    //     ),
-                    //   ],
-                    // ),
+                        _buildChipList(
+                          title: 'Area:',
+                          items: [profile.userProfile.city],
+                          backgroundColor: Colors.cyan.shade100,
+                          textColor: Colors.cyan.shade800,
+                        ),
+                      ],
+                    ),
                     _buildInfoSection(
                       title: 'Lifestyle & Habits',
                       icon: Icons.emoji_people,
@@ -1551,17 +1550,10 @@ class FlatListingProfileCard extends StatelessWidget {
                     ),
                   ],
                 ),
-              ],
-      ),
-
-
-
-
+              ),
+            ],
           ),
-        ],
-
-      ),
-          ),
+        ),
       ),
     );
   }
@@ -1816,12 +1808,12 @@ class SeekingFlatmateProfileCard extends StatelessWidget {
                           backgroundColor: Colors.blue.shade100,
                           textColor: Colors.blue.shade800,
                         ),
-                        // _buildChipList(
-                        //   title: 'Area:',
-                        //   items: [profile.areaPreference],
-                        //   backgroundColor: Colors.cyan.shade100,
-                        //   textColor: Colors.cyan.shade800,
-                        // ),
+                        _buildChipList(
+                          title: 'Area:',
+                          items: [profile.userProfile.city],
+                          backgroundColor: Colors.cyan.shade100,
+                          textColor: Colors.cyan.shade800,
+                        ),
                       ],
                     ),
                     _buildInfoSection(
@@ -1858,12 +1850,7 @@ class SeekingFlatmateProfileCard extends StatelessWidget {
                           backgroundColor: Colors.amber.shade100,
                           textColor: Colors.amber.shade800,
                         ),
-                        // _buildChipList(
-                        //   title: 'Guests Frequency:',
-                        //   items: [profile.guestsFrequency],
-                        //   backgroundColor: Colors.brown.shade100,
-                        //   textColor: Colors.brown.shade800,
-                        // ),
+
                         _buildChipList(
                           title: 'Pet Ownership:',
                           items: [profile.userProfile.petOwnership],

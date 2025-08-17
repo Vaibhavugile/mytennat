@@ -97,18 +97,25 @@ class FlatListingProfile {
         imageUrls = imageUrls;
 
   factory FlatListingProfile.fromMap(Map<String, dynamic> data, String documentId) {
+    // Add this print statement to see the raw data being processed
+    print('Document ID: $documentId, Raw Data: $data');
+
     Map<String, dynamic> flatDetails = data['flatDetails'] ?? {};
     Map<String, dynamic> flatmatePreferences = data['flatmatePreferences'] ?? {};
     final Map<String, dynamic>? userProfileData = data['userProfile'] as Map<String, dynamic>?;
 
-    if (userProfileData == null) {
-      throw StateError("UserProfile data is missing from the Firestore document.");
-    }
+    // Add this print statement to see the userProfileData specifically
+    print('UserProfile Data: $userProfileData');
+
+    // Change this part to handle missing data gracefully instead of throwing an error.
+    final UserProfile profile = userProfileData != null
+        ? UserProfile.fromMap(userProfileData, data['uid'] as String? ?? '')
+        : UserProfile(uid: data['uid'] as String? ?? '');
 
     return FlatListingProfile(
       documentId: documentId,
-      uid: data['uid'] as String?,
-      userProfile: UserProfile.fromMap(userProfileData, data['uid'] as String),
+      uid: data['uid'] as String? ?? '', // Added null-aware operator for safety
+      userProfile: profile, // Use the safely created profile object
       flatType: flatDetails['flatType'] ?? '',
       roomType: flatDetails['roomType'] ?? '',
       furnishedStatus: flatDetails['furnishedStatus'] ?? '',
@@ -142,33 +149,35 @@ class FlatListingProfile {
   }
 
   // Method to convert the object to a map for Firestore
+  // In your FlatListingProfile class
   Map<String, dynamic> toMap() {
     return {
-      'uid': uid,
-      'userProfile': userProfile.toMap(),
-      'flatDetails': {
-        'flatType': flatType,
-        'roomType': roomType,
-        'furnishedStatus': furnishedStatus,
-        'availableFor': availableFor,
-        'availabilityDate': availabilityDate != null ? Timestamp.fromDate(availabilityDate!) : null,
-        'rentPrice': rentPrice,
-        'depositAmount': depositAmount,
-        'bathroomType': bathroomType,
-        'amenities': amenities,
-        'address': address,
-        'landmark': landmark,
-        'description': flatDescription,
-      },
-      'flatmatePreferences': {
-        'preferredFlatmateGender': preferredGender,
-        'preferredFlatmateAge': preferredAgeGroup,
-        'preferredOccupation': preferredOccupation,
-        'preferredHabits': preferredHabits,
-        'idealQualities': flatmateIdealQualities,
-        'dealBreakers': flatmateDealBreakers,
-      },
-      'imageUrls': imageUrls,
+      'userProfile': userProfile.toMap(), // Saves all basic user info and habits
+
+      // Fields specific to the flat listing
+      'userType': 'flat_listing',
+      'documentId': documentId,
+      'rentPrice': rentPrice,
+      'depositAmount': depositAmount,
+      'flatType': flatType,
+      'roomType': roomType,
+      'furnishedStatus': furnishedStatus,
+      'availableFor': availableFor,
+      'availabilityDate': availabilityDate != null ? Timestamp.fromDate(availabilityDate!) : null,
+      'amenities': amenities,
+      'address': address,
+      'landmark': landmark,
+      'flatDescription': flatDescription,
+
+      // Flatmate preferences
+      'preferredFlatmateGender': preferredGender,
+      'preferredFlatmateAge': preferredAgeGroup,
+      'preferredOccupation': preferredOccupation,
+      'idealQualities': flatmateIdealQualities,
+      'dealBreakers': flatmateDealBreakers,
+
+      // Any other fields you want at the top level
+      'isProfileComplete': true,
     };
   }
 
@@ -1624,9 +1633,10 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
 
 
   // --- Firebase Integration Method ---
+  // In your _FlatmateProfileScreenState class
   Future<void> _submitProfileToFirebase() async {
     setState(() {
-      _isSubmitting = true; // Show loading
+      _isSubmitting = true;
     });
 
     final user = FirebaseAuth.instance.currentUser;
@@ -1635,99 +1645,93 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
         const SnackBar(content: Text('Please log in to submit your profile.')),
       );
       setState(() {
-        _isSubmitting = false; // Hide loading
+        _isSubmitting = false;
       });
       return;
     }
 
-    // Get a reference to the 'flatListings' subcollection for the current user
-    final CollectionReference flatListingsCollection =
-    FirebaseFirestore.instance.collection('users').doc(user.uid).collection('flatListings');
-
-    // --- Use your provided profileData structure ---
-    final Map<String, dynamic> profileData = {
-      "uid": user.uid,
-      "email": user.email, //
-      // "displayName": _flatListingProfile.ownerName,
-      // "phonenumber":_flatListingProfile.ownerPhonenumber,
-     // "age": _flatListingProfile.ownerAge ?? 0,
-      // "gender": _flatListingProfile.ownerGender,
-      // "occupation": _flatListingProfile.ownerOccupation,
-      // "religion":_flatListingProfile.ownerReligion,
-      // "bio": _flatListingProfile.ownerBio,
-      // "desiredCity": _flatListingProfile.desiredCity,//
-      // "areaPreference": _flatListingProfile.areaPreference,//
-      "userType": "flat_listing",
-      "habits": {
-        // "smoking": _flatListingProfile.smokingHabit,
-        // "drinking": _flatListingProfile.drinkingHabit,
-        // "food": _flatListingProfile.foodPreference,
-        // "cleanliness": _flatListingProfile.cleanlinessLevel,
-        // "noiseTolerance": _flatListingProfile.noiseLevel,//
-        // "socialPreferences": _flatListingProfile.socialPreferences,
-        // "visitorsPolicy": _flatListingProfile.visitorsPolicy,//
-        // "petOwnership": _flatListingProfile.petOwnership,
-        // "petTolerance": _flatListingProfile.petTolerance,
-        // "sleepingSchedule": _flatListingProfile.sleepingSchedule,//
-        // "workSchedule": _flatListingProfile.workSchedule,//
-        // "sharingCommonSpaces": _flatListingProfile.sharingCommonSpaces,//
-        // "guestOvernightStays": _flatListingProfile.guestsOvernightPolicy,//
-        // "personalSpaceVsSocialization": _flatListingProfile.personalSpaceVsSocialization,//
-      },
-      "flatDetails": {
-        "flatType": _flatListingProfile.flatType,
-        "roomType":_flatListingProfile.roomType,
-        "furnishedStatus": _flatListingProfile.furnishedStatus,
-        "availableFor": _flatListingProfile.availableFor,
-        "availabilityDate": _flatListingProfile.availabilityDate != null
-            ? Timestamp.fromDate(_flatListingProfile.availabilityDate!)
-            : null,
-        "rentPrice": _flatListingProfile.rentPrice ?? 0,
-        "depositAmount": _flatListingProfile.depositAmount ?? 0,
-        "bathroomType": _flatListingProfile.bathroomType,
-        // "balconyAvailability": _flatListingProfile.balconyAvailability,//
-        // "parkingAvailability": _flatListingProfile.parkingAvailability,//
-        "amenities": _flatListingProfile.amenities,
-        "address": _flatListingProfile.address,
-        "landmark": _flatListingProfile.landmark,
-        "description": _flatListingProfile.flatDescription,
-      },
-      "flatmatePreferences": {
-        "preferredFlatmateGender": _flatListingProfile.preferredGender,
-        "preferredFlatmateAge": _flatListingProfile.preferredAgeGroup,
-        "preferredOccupation": _flatListingProfile.preferredOccupation,
-        "idealQualities": _flatListingProfile.flatmateIdealQualities,
-        "dealBreakers": _flatListingProfile.flatmateDealBreakers,
-        // Ensure preferredHabits is included if it's a field in your model,
-        // it was missing from your habits section in the provided `profileData`
-        // if you want it here: "preferredHabits": _flatListingProfile.preferredHabits,
-      },
-      "isProfileComplete": true,
-      // Timestamps will be handled below based on new/update
-      // "createdAt": FieldValue.serverTimestamp(), // Removed from here
-      // "lastUpdated": FieldValue.serverTimestamp(), // Removed from here
-    };
-
     try {
-      if (_flatListingProfile.documentId.isEmpty) {
-        // This is a new listing, add it to the subcollection
+      // 1. Fetch the main user document to get the top-level user profile data
+      final DocumentSnapshot userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      if (!userDoc.exists) {
+        throw 'Main user profile not found. Please create your main profile first.';
+      }
+
+      final Map<String, dynamic> mainUserData = userDoc.data() as Map<String, dynamic>;
+
+      // 2. Manually create the userProfile object from the fetched top-level data
+      // This correctly mirrors the structure you have in your database
+      final userProfile = UserProfile(
+        uid: user.uid,
+        name: mainUserData['name'] ?? '',
+        age: mainUserData['age'],
+        gender: mainUserData['gender'] ?? '',
+        profilePhotoUrl: mainUserData['profilePhotoUrl'],
+        city: mainUserData['city'] ?? '',
+        phoneNumber: mainUserData['phoneNumber'],
+        occupation: mainUserData['occupation'],
+        religion: mainUserData['religion'],
+        bio: mainUserData['bio'],
+        imageUrls: (mainUserData['imageUrls'] as List<dynamic>?)?.map((e) => e.toString()).toList(),
+        // Handle habits which is a nested map
+        smokingHabit: mainUserData['habits']?['smoking'] ?? '',
+        drinkingHabit: mainUserData['habits']?['drinking'] ?? '',
+        foodPreference: mainUserData['habits']?['food'] ?? '',
+        cleanlinessLevel: mainUserData['habits']?['cleanliness'] ?? '',
+        socialPreferences: mainUserData['habits']?['socialPreferences'] ?? '',
+        petOwnership: mainUserData['habits']?['petOwnership'] ?? '',
+        petTolerance: mainUserData['habits']?['petTolerance'] ?? '',
+        guestsFrequency: mainUserData['habits']?['guestsFrequency'] ?? '',
+      );
+
+      // 3. Create the FlatListingProfile object, combining the fetched userProfile
+      // with the flat listing-specific data from the controllers
+      final FlatListingProfile flatListingProfile = FlatListingProfile(
+        uid: user.uid,
+        userProfile: userProfile,
+        rentPrice: int.tryParse(_rentPriceController.text),
+        depositAmount: int.tryParse(_depositAmountController.text),
+        address: _addressController.text,
+        landmark: _landmarkController.text,
+        flatDescription: _flatDescriptionController.text,
+        flatType: _flatListingProfile.flatType,
+        roomType: _flatListingProfile.bathroomType,
+        furnishedStatus: _flatListingProfile.furnishedStatus,
+        availableFor: _flatListingProfile.availableFor,
+        preferredGender: _flatListingProfile.preferredGender,
+        preferredAgeGroup: _flatListingProfile.preferredAgeGroup,
+        preferredOccupation: _flatListingProfile.preferredOccupation,
+        amenities: _flatListingProfile.amenities,
+        flatmateIdealQualities: _flatListingProfile.flatmateIdealQualities,
+        flatmateDealBreakers: _flatListingProfile.flatmateDealBreakers,
+      );
+
+      // 4. Convert the complete FlatListingProfile object to a map using your toMap() method
+      final Map<String, dynamic> profileData = flatListingProfile.toMap();
+
+      final CollectionReference flatListingsCollection =
+      FirebaseFirestore.instance.collection('users').doc(user.uid).collection('flatListings');
+
+      // 5. Save the data to the subcollection
+      if (flatListingProfile.documentId.isEmpty) {
+        // New document
         profileData['createdAt'] = FieldValue.serverTimestamp();
         profileData['lastUpdated'] = FieldValue.serverTimestamp();
-
         DocumentReference newDocRef = await flatListingsCollection.add(profileData);
-        // Update the local model with the new Firestore document ID
-        _flatListingProfile.documentId = newDocRef.id;
+        flatListingProfile.documentId = newDocRef.id;
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('New Flat Listing Profile Created Successfully!')),
         );
       } else {
-        // This is an existing listing, update it
+        // Existing document
         profileData['lastUpdated'] = FieldValue.serverTimestamp();
-        // Do not update 'createdAt' on existing documents
         profileData.remove('createdAt');
-
-        await flatListingsCollection.doc(_flatListingProfile.documentId).update(profileData);
+        await flatListingsCollection.doc(flatListingProfile.documentId).update(profileData);
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Flat Listing Profile Updated Successfully!')),
@@ -1737,9 +1741,10 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
       if (mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const HomePage()), // Consider MyProfilesScreen
+          MaterialPageRoute(builder: (context) => const HomePage()),
         );
       }
+
     } catch (e) {
       print('Error submitting flat listing profile to Firebase: $e');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1747,7 +1752,7 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
       );
     } finally {
       setState(() {
-        _isSubmitting = false; // Hide loading
+        _isSubmitting = false;
       });
     }
   }

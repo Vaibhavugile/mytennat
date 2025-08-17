@@ -62,19 +62,27 @@ class SeekingFlatmateProfile {
         imageUrls = imageUrls;
 
   // Factory constructor to create a SeekingFlatmateProfile from a map (Firestore data)
+  // Factory constructor to create a SeekingFlatmateProfile from a map (Firestore data)
+// Factory constructor to create a SeekingFlatmateProfile from a map (Firestore data)
   factory SeekingFlatmateProfile.fromMap(Map<String, dynamic> data, String documentId) {
+    // Add this print statement to see the raw data being processed
+    print('Document ID: $documentId, Raw Data: $data');
+
     Map<String, dynamic> flatRequirementsData = data['flatRequirements'] ?? {};
     Map<String, dynamic> flatmatePreferencesData = data['flatmatePreferences'] ?? {};
     final Map<String, dynamic>? userProfileData = data['userProfile'] as Map<String, dynamic>?;
 
-    if (userProfileData == null) {
-      throw StateError("UserProfile data is missing from the Firestore document.");
-    }
+    // Add this print statement to see the userProfileData specifically
+    print('UserProfile Data: $userProfileData');
+
+    final UserProfile profile = userProfileData != null
+        ? UserProfile.fromMap(userProfileData, data['uid'] as String? ?? '')
+        : UserProfile(uid: data['uid'] as String? ?? '');
 
     return SeekingFlatmateProfile(
       documentId: documentId,
       uid: data['uid'] as String?,
-      userProfile: UserProfile.fromMap(userProfileData, data['uid'] as String),
+      userProfile: profile,
       moveInDate: (data['moveInDate'] as Timestamp?)?.toDate(),
       budgetMin: data['budgetMin'] is int
           ? data['budgetMin']
@@ -100,6 +108,7 @@ class SeekingFlatmateProfile {
   Map<String, dynamic> toMap() {
     return {
       'uid': uid,
+      'userType': 'seeking_flatmate',
       'userProfile': userProfile.toMap(),
       'moveInDate': moveInDate != null ? Timestamp.fromDate(moveInDate!) : null,
       'budgetMin': budgetMin,
@@ -1461,74 +1470,60 @@ class _FlatWithFlatmateProfileScreenState
       return;
     }
 
-    // Get a reference to the 'seekingFlatmateProfiles' subcollection for the current user
-    final CollectionReference seekingFlatmateProfilesCollection =
-    FirebaseFirestore.instance.collection('users').doc(user.uid).collection('seekingFlatmateProfiles');
-
-    // --- Use your provided profileData structure ---
-    final Map<String, dynamic> profileData = {
-      "uid": user.uid,
-      "email": user.email,//
-      // "displayName": _seekingFlatmateProfile.name, // Using 'name' for displayName
-      // "phonenumber":_seekingFlatmateProfile.phoneNumber,
-      //"age": _seekingFlatmateProfile.age ?? 0,
-      // "gender": _seekingFlatmateProfile.gender,
-      // "occupation": _seekingFlatmateProfile.occupation,
-      // "religion": _seekingFlatmateProfile.religion,
-      // "currentLocation": _seekingFlatmateProfile.currentLocation,//
-      // "desiredCity": _seekingFlatmateProfile.desiredCity,
-      "moveInDate": _seekingFlatmateProfile.moveInDate != null
-          ? Timestamp.fromDate(_seekingFlatmateProfile.moveInDate!)
-          : null,
-      "budgetMin": _seekingFlatmateProfile.budgetMin ?? 0,
-      "budgetMax": _seekingFlatmateProfile.budgetMax ?? 0,
-      // "areaPreference": _seekingFlatmateProfile.areaPreference,
-      // "bio": _seekingFlatmateProfile.bio,
-      "userType": "seeking_flatmate",
-      "habits": {
-        // "cleanliness": _seekingFlatmateProfile.cleanliness,
-        // "socialPreferences": _seekingFlatmateProfile.socialHabits,
-        // // "workSchedule": _seekingFlatmateProfile.workSchedule,//
-        // // "noiseTolerance": _seekingFlatmateProfile.noiseLevel,//
-        // "smoking": _seekingFlatmateProfile.smokingHabits,
-        // "drinking": _seekingFlatmateProfile.drinkingHabits,
-        // "food": _seekingFlatmateProfile.foodPreference,
-        // // "visitorsPolicy": _seekingFlatmateProfile.visitorsPolicy,//
-        // "petOwnership": _seekingFlatmateProfile.petOwnership,
-        // "petTolerance": _seekingFlatmateProfile.petTolerance,
-        // "sleepingSchedule": _seekingFlatmateProfile.sleepingSchedule,//
-        // "sharingCommonSpaces": _seekingFlatmateProfile.sharingCommonSpaces,//
-        // "guestOvernightStays": _seekingFlatmateProfile.guestsOvernightPolicy,//
-        //"personalSpaceVsSocialization": _seekingFlatmateProfile.personalSpaceVsSocialization,//
-      },
-      "flatRequirements": {
-        "preferredFlatType": _seekingFlatmateProfile.preferredFlatType,
-        "preferredRoomType":_seekingFlatmateProfile.preferredRoomType,
-        "preferredFurnishedStatus": _seekingFlatmateProfile.preferredFurnishedStatus,
-        "amenitiesDesired": _seekingFlatmateProfile.amenitiesDesired,
-      },
-      "flatmatePreferences": {
-        "preferredFlatmateGender": _seekingFlatmateProfile.preferredFlatmateGender,
-        "preferredFlatmateAge": _seekingFlatmateProfile.preferredFlatmateAge,
-        "preferredOccupation": _seekingFlatmateProfile.preferredOccupation,
-        "preferredHabits": _seekingFlatmateProfile.preferredHabits,
-        "idealQualities": _seekingFlatmateProfile.idealQualities,
-        "dealBreakers": _seekingFlatmateProfile.dealBreakers,
-      },
-      "isProfileComplete": true,
-      // Timestamps will be handled below based on new/update
-      // "createdAt": FieldValue.serverTimestamp(), // Removed from here
-      // "lastUpdated": FieldValue.serverTimestamp(), // Removed from here
-    };
-
     try {
+      // 1. Fetch the main user document to get the top-level user profile data
+      final DocumentSnapshot userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      if (!userDoc.exists) {
+        throw 'Main user profile not found. Please create your main profile first.';
+      }
+
+      final Map<String, dynamic> mainUserData = userDoc.data() as Map<String, dynamic>;
+
+      // 2. Manually create the userProfile object from the fetched top-level data
+      final userProfile = UserProfile(
+        uid: user.uid,
+        name: mainUserData['name'] ?? '',
+        age: mainUserData['age'],
+        gender: mainUserData['gender'] ?? '',
+        profilePhotoUrl: mainUserData['profilePhotoUrl'],
+        city: mainUserData['city'] ?? '',
+        phoneNumber: mainUserData['phoneNumber'],
+        occupation: mainUserData['occupation'],
+        religion: mainUserData['religion'],
+        bio: mainUserData['bio'],
+        imageUrls: (mainUserData['imageUrls'] as List<dynamic>?)?.map((e) => e.toString()).toList(),
+        // Handle habits which is a nested map
+        smokingHabit: mainUserData['habits']?['smoking'] ?? '',
+        drinkingHabit: mainUserData['habits']?['drinking'] ?? '',
+        foodPreference: mainUserData['habits']?['food'] ?? '',
+        cleanlinessLevel: mainUserData['habits']?['cleanliness'] ?? '',
+        socialPreferences: mainUserData['habits']?['socialPreferences'] ?? '',
+        petOwnership: mainUserData['habits']?['petOwnership'] ?? '',
+        petTolerance: mainUserData['habits']?['petTolerance'] ?? '',
+        guestsFrequency: mainUserData['habits']?['guestsFrequency'] ?? '',
+      );
+
+      // 3. Update the _seekingFlatmateProfile object with the fetched userProfile
+      // and the new data from the controllers
+      _seekingFlatmateProfile.userProfile = userProfile;
+
+
+      // 4. Convert the complete SeekingFlatmateProfile object to a map
+      final Map<String, dynamic> profileData = _seekingFlatmateProfile.toMap();
+
+      final CollectionReference seekingFlatmateProfilesCollection =
+      FirebaseFirestore.instance.collection('users').doc(user.uid).collection('seekingFlatmateProfiles');
+
       if (_seekingFlatmateProfile.documentId.isEmpty) {
         // This is a new profile, add it to the subcollection
         profileData['createdAt'] = FieldValue.serverTimestamp();
         profileData['lastUpdated'] = FieldValue.serverTimestamp();
 
         DocumentReference newDocRef = await seekingFlatmateProfilesCollection.add(profileData);
-        // Update the local model with the new Firestore document ID
         _seekingFlatmateProfile.documentId = newDocRef.id;
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1537,7 +1532,6 @@ class _FlatWithFlatmateProfileScreenState
       } else {
         // This is an existing profile, update it
         profileData['lastUpdated'] = FieldValue.serverTimestamp();
-        // Do not update 'createdAt' on existing documents
         profileData.remove('createdAt');
 
         await seekingFlatmateProfilesCollection.doc(_seekingFlatmateProfile.documentId).update(profileData);
@@ -1550,7 +1544,7 @@ class _FlatWithFlatmateProfileScreenState
       if (mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const HomePage()), // Consider MyProfilesScreen
+          MaterialPageRoute(builder: (context) => const HomePage()),
         );
       }
     } catch (e) {
