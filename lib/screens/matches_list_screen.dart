@@ -174,13 +174,13 @@ class _MatchesListScreenState extends State<MatchesListScreen> {
                   // Determine name and image based on profile type
                   if (partnerProfileType == 'flat_listing') {
                     final profile = FlatListingProfile.fromMap(profileData, partnerProfileId);
-                    partnerName = profile.ownerName ?? 'Flat Owner';
+                    partnerName = profile.userProfile.name ?? 'Flat Owner';
                     if (profile.imageUrls != null && profile.imageUrls!.isNotEmpty) {
                       partnerProfileImageUrl = profile.imageUrls![0];
                     }
                   } else if (partnerProfileType == 'seeking_flatmate') {
                     final profile = SeekingFlatmateProfile.fromMap(profileData, partnerProfileId);
-                    partnerName = profile.name ?? 'Flatmate Seeker';
+                    partnerName = profile.userProfile.name ?? 'Flatmate Seeker';
                     if (profile.imageUrls != null && profile.imageUrls!.isNotEmpty) {
                       partnerProfileImageUrl = profile.imageUrls![0];
                     }

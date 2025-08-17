@@ -4,9 +4,9 @@ import 'flat_with_flatmate_profile_screen.dart';
 import 'flatmate_profile_screen.dart';
 
 class SelectionScreen extends StatefulWidget {
-  final String? initialPhoneNumber; //
+  final String? initialPhoneNumber;
 
-  const SelectionScreen({super.key, this.initialPhoneNumber}); //
+  const SelectionScreen({super.key, this.initialPhoneNumber});
 
   @override
   State<SelectionScreen> createState() => _SelectionScreenState();
@@ -146,7 +146,7 @@ class _SelectionScreenState extends State<SelectionScreen> with SingleTickerProv
                           context,
                           MaterialPageRoute(
                             builder: (context) => FlatWithFlatmateProfileScreen(
-                              initialPhoneNumber: widget.initialPhoneNumber, //
+                              initialPhoneNumber: widget.initialPhoneNumber,
                             ),
                           ),
                         );
@@ -162,7 +162,7 @@ class _SelectionScreenState extends State<SelectionScreen> with SingleTickerProv
                           context,
                           MaterialPageRoute(
                             builder: (context) => FlatmateProfileScreen(
-                              initialPhoneNumber: widget.initialPhoneNumber, //
+                              initialPhoneNumber: widget.initialPhoneNumber,
                             ),
                           ),
                         );

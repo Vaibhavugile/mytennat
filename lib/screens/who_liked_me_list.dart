@@ -158,13 +158,13 @@ class _WhoLikedMeListState extends State<WhoLikedMeList> {
         String profileId = profile.documentId;
 
         if (profile is FlatListingProfile) {
-          name = profile.ownerName ?? 'N/A';
+          name = profile.userProfile.name ?? 'N/A';
           imageUrl = profile.imageUrls != null && profile.imageUrls!.isNotEmpty ? profile.imageUrls![0] : '';
-          subtitle = 'Flat Listing by ${profile.ownerGender ?? 'N/A'}';
+          subtitle = 'Flat Listing by ${profile.userProfile.gender?? 'N/A'}';
         } else if (profile is SeekingFlatmateProfile) {
-          name = profile.name ?? 'N/A';
+          name = profile.userProfile.name ?? 'N/A';
           imageUrl = profile.imageUrls != null && profile.imageUrls!.isNotEmpty ? profile.imageUrls![0] : '';
-          subtitle = 'Seeking Flatmate, ${profile.gender ?? 'N/A'}';
+          subtitle = 'Seeking Flatmate, ${profile.userProfile.gender ?? 'N/A'}';
         }
 
         return Card(
@@ -340,7 +340,7 @@ class _WhoLikedMeListState extends State<WhoLikedMeList> {
   String profileDisplayName(String userId) {
     try {
       final matchedProfile = _likingProfiles.firstWhere((p) => p.documentId == userId);
-      return matchedProfile is FlatListingProfile ? matchedProfile.ownerName : (matchedProfile as SeekingFlatmateProfile).name;
+      return matchedProfile is FlatListingProfile ? matchedProfile.userProfile.name : (matchedProfile as SeekingFlatmateProfile).userProfile.name;
     } catch (e) {
       return 'that user';
     }

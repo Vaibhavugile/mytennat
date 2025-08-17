@@ -6,16 +6,17 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:mytennat/screens/home_page.dart';
 import 'package:mytennat/data/location_data.dart'; // Adjust path as needed
-
+import 'package:mytennat/data/user_profile.dart'; // Or the correct path to your UserProfile class
 // Data model to hold all the answers for the user listing a flat
 class FlatListingProfile {
   String documentId; // Added: To store the Firestore document ID
   String? uid; // Added: To store the user ID (UID)
-  // Basic Info
-  // String ownerName;
+  UserProfile userProfile; // The new required field
 
+  // Basic Info - Moved to UserProfile
+  // String ownerName;
   // String? ownerPhonenumber;
-  int? ownerAge; // Changed to nullable int
+  // int? ownerAge;
   // String ownerGender;
   // String ownerOccupation;
   // String ownerReligion;
@@ -23,20 +24,20 @@ class FlatListingProfile {
   // String desiredCity;
   // String areaPreference;
 
-  // Habits
+  // Habits - Moved to UserProfile
   // String smokingHabit;
   // String drinkingHabit;
   // String foodPreference;
   // String cleanlinessLevel;
   // String noiseLevel;
   // String socialPreferences;
-  // String visitorsPolicy; // Mapped from Firestore 'visitorsPolicy'
+  // String visitorsPolicy;
   // String petOwnership;
   // String petTolerance;
   // String sleepingSchedule;
   // String workSchedule;
   // String sharingCommonSpaces;
-  // String guestsOvernightPolicy; // Mapped from Firestore 'guestOvernightStays'
+  // String guestsOvernightPolicy;
   // String personalSpaceVsSocialization;
 
   // Flat Details
@@ -45,115 +46,69 @@ class FlatListingProfile {
   String furnishedStatus;
   String availableFor;
   DateTime? availabilityDate;
-  int? rentPrice; // Changed to nullable int
-  int? depositAmount; // Changed to nullable int
+  int? rentPrice;
+  int? depositAmount;
   String bathroomType;
   // String balconyAvailability;
   // String parkingAvailability;
   List<String> amenities;
   String address;
   String landmark;
-  String flatDescription; // Mapped from Firestore 'description'
+  String flatDescription;
 
   // Flatmate Preferences
-  String preferredGender; // Mapped from Firestore 'preferredFlatmateGender'
-  String preferredAgeGroup; // Mapped from Firestore 'preferredFlatmateAge'
+  String preferredGender;
+  String preferredAgeGroup;
   String preferredOccupation;
   List<String> preferredHabits;
-  List<String> flatmateIdealQualities; // Mapped from Firestore 'idealQualities'
-  List<String> flatmateDealBreakers; // Mapped from Firestore 'dealBreakers'
+  List<String> flatmateIdealQualities;
+  List<String> flatmateDealBreakers;
 
   // Added: List of image URLs for the flat
   List<String>? imageUrls;
 
   FlatListingProfile({
     this.documentId = '',
-    this.uid, // Initialize uid
-    // this.ownerName = '',
-    // this.ownerPhonenumber ='',
-    this.ownerAge,
-    // this.ownerGender = '',
-    // this.ownerOccupation = '',
-    // this.ownerReligion = '',
-    // this.ownerBio = '',
-    // this.desiredCity = '',
-    // this.areaPreference = '',
-    // this.smokingHabit = '',
-    // this.drinkingHabit = '',
-    // this.foodPreference = '',
-    // this.cleanlinessLevel = '',
-    // this.noiseLevel = '',
-    // this.socialPreferences = '',
-    // this.visitorsPolicy = '',
-    // this.petOwnership = '',
-    // this.petTolerance = '',
-    // this.sleepingSchedule = '',
-    // this.workSchedule = '',
-    // this.sharingCommonSpaces = '',
-    // this.guestsOvernightPolicy = '',
-    // this.personalSpaceVsSocialization = '',
+    this.uid,
+    required this.userProfile,
     this.flatType = '',
-    this.roomType ='',
+    this.roomType = '',
     this.furnishedStatus = '',
     this.availableFor = '',
     this.availabilityDate,
     this.rentPrice,
     this.depositAmount,
     this.bathroomType = '',
-    // this.balconyAvailability = '',
-    // this.parkingAvailability = '',
-    List<String>? amenities, // Make nullable for constructor init
+    List<String>? amenities,
     this.address = '',
     this.landmark = '',
     this.flatDescription = '',
     this.preferredGender = '',
     this.preferredAgeGroup = '',
     this.preferredOccupation = '',
-    List<String>? preferredHabits, // Make nullable for constructor init
-    List<String>? flatmateIdealQualities, // Make nullable for constructor init
-    List<String>? flatmateDealBreakers, // Make nullable for constructor init
-    List<String>? imageUrls, // Added to constructor
-  })  : amenities = amenities ?? const [], // Initialize amenities list
-        preferredHabits = preferredHabits ?? const [], // Initialize preferredHabits list
-        flatmateIdealQualities = flatmateIdealQualities ?? const [], // Initialize flatmateIdealQualities list
-        flatmateDealBreakers = flatmateDealBreakers ?? const [], // Initialize flatmateDealBreakers list
-        imageUrls = imageUrls; // Initialize imageUrls
+    List<String>? preferredHabits,
+    List<String>? flatmateIdealQualities,
+    List<String>? flatmateDealBreakers,
+    List<String>? imageUrls,
+  })  : amenities = amenities ?? const [],
+        preferredHabits = preferredHabits ?? const [],
+        flatmateIdealQualities = flatmateIdealQualities ?? const [],
+        flatmateDealBreakers = flatmateDealBreakers ?? const [],
+        imageUrls = imageUrls;
 
   factory FlatListingProfile.fromMap(Map<String, dynamic> data, String documentId) {
-    Map<String, dynamic> habits = data['habits'] ?? {};
     Map<String, dynamic> flatDetails = data['flatDetails'] ?? {};
     Map<String, dynamic> flatmatePreferences = data['flatmatePreferences'] ?? {};
+    final Map<String, dynamic>? userProfileData = data['userProfile'] as Map<String, dynamic>?;
+
+    if (userProfileData == null) {
+      throw StateError("UserProfile data is missing from the Firestore document.");
+    }
 
     return FlatListingProfile(
       documentId: documentId,
       uid: data['uid'] as String?,
-      // ownerName: data['displayName'] ?? '',
-      // ownerPhonenumber:data['phonenumber'] ?? '',// Assuming ownerName is 'displayName' at root level
-      ownerAge: data['age'] is int ? data['age'] : (data['age'] is String ? int.tryParse(data['age']) : null), // Assuming age is at root level
-      // ownerGender: data['gender'] ?? '', // Assuming gender is at root level
-      // ownerOccupation: data['occupation'] ?? '', // Assuming occupation is at root level
-      // ownerReligion: data['religion']??'',
-      // ownerBio: data['bio'] ?? '', // Assuming bio is at root level
-      // desiredCity: data['desiredCity'] ?? '', // Assuming desiredCity is at root level
-      // areaPreference: data['areaPreference'] ?? '', // Assuming areaPreference is at root level
-      //
-      // // Habits
-      // smokingHabit: habits['smoking'] ?? '',
-      // drinkingHabit: habits['drinking'] ?? '',
-      // foodPreference: habits['food'] ?? '',
-      // cleanlinessLevel: habits['cleanliness'] ?? '',
-      // noiseLevel: habits['noiseTolerance'] ?? '',
-      // socialPreferences: habits['socialPreferences'] ?? '',
-      // // visitorsPolicy: habits['visitorsPolicy'] ?? '',
-      // petOwnership: habits['petOwnership'] ?? '',
-      // petTolerance: habits['petTolerance'] ?? '',
-      // sleepingSchedule: habits['sleepingSchedule'] ?? '',
-      // workSchedule: habits['workSchedule'] ?? '',
-      // sharingCommonSpaces: habits['sharingCommonSpaces'] ?? '',
-      // guestsOvernightPolicy: habits['guestOvernightStays'] ?? '',
-      // personalSpaceVsSocialization: habits['personalSpaceVsSocializing'] ?? '',
-
-      // Flat Details
+      userProfile: UserProfile.fromMap(userProfileData, data['uid'] as String),
       flatType: flatDetails['flatType'] ?? '',
       roomType: flatDetails['roomType'] ?? '',
       furnishedStatus: flatDetails['furnishedStatus'] ?? '',
@@ -161,24 +116,27 @@ class FlatListingProfile {
       availabilityDate: (flatDetails['availabilityDate'] is Timestamp)
           ? (flatDetails['availabilityDate'] as Timestamp).toDate()
           : null,
-      rentPrice: flatDetails['rentPrice'] is int ? flatDetails['rentPrice'] : (flatDetails['rentPrice'] is String ? int.tryParse(flatDetails['rentPrice']) : null),
-      depositAmount: flatDetails['depositAmount'] is int ? flatDetails['depositAmount'] : (flatDetails['depositAmount'] is String ? int.tryParse(flatDetails['depositAmount']) : null),
+      rentPrice: flatDetails['rentPrice'] is int
+          ? flatDetails['rentPrice']
+          : (flatDetails['rentPrice'] is String
+          ? int.tryParse(flatDetails['rentPrice'])
+          : null),
+      depositAmount: flatDetails['depositAmount'] is int
+          ? flatDetails['depositAmount']
+          : (flatDetails['depositAmount'] is String
+          ? int.tryParse(flatDetails['depositAmount'])
+          : null),
       bathroomType: flatDetails['bathroomType'] ?? '',
-      // balconyAvailability: flatDetails['balconyAvailability'] ?? '',
-      // parkingAvailability: flatDetails['parkingAvailability'] ?? '',
       amenities: List<String>.from(flatDetails['amenities'] ?? []),
       address: flatDetails['address'] ?? '',
       landmark: flatDetails['landmark'] ?? '',
-      flatDescription: flatDetails['description'] ?? '', // Firestore has 'description'
-
-      // Flatmate Preferences
+      flatDescription: flatDetails['description'] ?? '',
       preferredGender: flatmatePreferences['preferredFlatmateGender'] ?? '',
       preferredAgeGroup: flatmatePreferences['preferredFlatmateAge'] ?? '',
       preferredOccupation: flatmatePreferences['preferredOccupation'] ?? '',
       preferredHabits: List<String>.from(flatmatePreferences['preferredHabits'] ?? []),
       flatmateIdealQualities: List<String>.from(flatmatePreferences['idealQualities'] ?? []),
       flatmateDealBreakers: List<String>.from(flatmatePreferences['dealBreakers'] ?? []),
-      // Parse imageUrls from Firestore map
       imageUrls: (data['imageUrls'] as List<dynamic>?)?.map((e) => e.toString()).toList(),
     );
   }
@@ -186,47 +144,21 @@ class FlatListingProfile {
   // Method to convert the object to a map for Firestore
   Map<String, dynamic> toMap() {
     return {
-      'uid': uid, // Include uid when converting to map
-      // 'ownerName': ownerName,
-      // 'ownerPhonenumber' :ownerPhonenumber,
-      'ownerAge': ownerAge,
-      // 'ownerGender': ownerGender,
-      // 'ownerOccupation': ownerOccupation,
-      // 'ownerReligion' :ownerReligion,
-      // 'ownerBio': ownerBio,
-      // 'desiredCity': desiredCity,
-      // 'areaPreference': areaPreference,
-      'habits': {
-        // 'smoking': smokingHabit,
-        // 'drinking': drinkingHabit,
-        // 'food': foodPreference,
-        // 'cleanliness': cleanlinessLevel,
-        // // 'noiseTolerance': noiseLevel,
-        // 'socialPreferences': socialPreferences,
-        // // 'visitorsPolicy': visitorsPolicy,
-        // 'petOwnership': petOwnership,
-        // 'petTolerance': petTolerance,
-        // 'sleepingSchedule': sleepingSchedule,
-        // 'workSchedule': workSchedule,
-        // 'sharingCommonSpaces': sharingCommonSpaces,
-        // 'guestOvernightStays': guestsOvernightPolicy,
-        // 'personalSpaceVsSocializing': personalSpaceVsSocialization,
-      },
+      'uid': uid,
+      'userProfile': userProfile.toMap(),
       'flatDetails': {
         'flatType': flatType,
-        'roomType':roomType,
+        'roomType': roomType,
         'furnishedStatus': furnishedStatus,
         'availableFor': availableFor,
         'availabilityDate': availabilityDate != null ? Timestamp.fromDate(availabilityDate!) : null,
         'rentPrice': rentPrice,
         'depositAmount': depositAmount,
         'bathroomType': bathroomType,
-        // 'balconyAvailability': balconyAvailability,
-        // 'parkingAvailability': parkingAvailability,
         'amenities': amenities,
         'address': address,
         'landmark': landmark,
-        'description': flatDescription, // Map to 'description' for Firestore
+        'description': flatDescription,
       },
       'flatmatePreferences': {
         'preferredFlatmateGender': preferredGender,
@@ -236,7 +168,7 @@ class FlatListingProfile {
         'idealQualities': flatmateIdealQualities,
         'dealBreakers': flatmateDealBreakers,
       },
-      'imageUrls': imageUrls, // Include imageUrls when converting to map
+      'imageUrls': imageUrls,
     };
   }
 
@@ -245,40 +177,15 @@ class FlatListingProfile {
     return 'FlatListingProfile(\n'
         '  documentId: $documentId,\n'
         '  uid: $uid,\n'
-        // '  ownerName: $ownerName,\n'
-        // '  ownerPhonenumber: $ownerPhonenumber,\n'
-        '  ownerAge: $ownerAge,\n'
-        // '  ownerGender: $ownerGender,\n'
-        // '  ownerOccupation: $ownerOccupation,\n'
-        // '  ownerReligion: $ownerReligion,\n'
-        // '  ownerBio: $ownerBio,\n'
-        // '  desiredCity: $desiredCity,\n'
-        // '  areaPreference: $areaPreference,\n'
-    //     '  smokingHabit: $smokingHabit,\n'
-    //     '  drinkingHabit: $drinkingHabit,\n'
-    //     '  foodPreference: $foodPreference,\n'
-    //     '  cleanlinessLevel: $cleanlinessLevel,\n'
-    // // '  noiseLevel: $noiseLevel,\n'
-    //     '  socialPreferences: $socialPreferences,\n'
-    // // '  visitorsPolicy: $visitorsPolicy,\n'
-    //     '  petOwnership: $petOwnership,\n'
-    //     '  petTolerance: $petTolerance,\n'
-    // '  sleepingSchedule: $sleepingSchedule,\n'
-    // '  workSchedule: $workSchedule,\n'
-    // '  sharingCommonSpaces: $sharingCommonSpaces,\n'
-    // '  guestsOvernightPolicy: $guestsOvernightPolicy,\n'
-    // '  personalSpaceVsSocialization: $personalSpaceVsSocialization,\n'
+        '  userProfile: ${userProfile.toString()},\n'
         '  flatType: $flatType,\n'
         '  roomType: $roomType,\n'
-
         '  furnishedStatus: $furnishedStatus,\n'
         '  availableFor: $availableFor,\n'
         '  availabilityDate: $availabilityDate,\n'
         '  rentPrice: $rentPrice,\n'
         '  depositAmount: $depositAmount,\n'
         '  bathroomType: $bathroomType,\n'
-    // '  balconyAvailability: $balconyAvailability,\n'
-    // '  parkingAvailability: $parkingAvailability,\n'
         '  amenities: $amenities,\n'
         '  address: $address,\n'
         '  landmark: $landmark,\n'
@@ -289,11 +196,10 @@ class FlatListingProfile {
         '  preferredHabits: $preferredHabits,\n'
         '  flatmateIdealQualities: $flatmateIdealQualities,\n'
         '  dealBreakers: $flatmateDealBreakers,\n'
-        '  imageUrls: $imageUrls,\n' // Include imageUrls in toString
+        '  imageUrls: $imageUrls,\n'
         ')';
   }
-}
-// Stateful Widget for Single Choice Questions
+}// Stateful Widget for Single Choice Questions
 class SingleChoiceQuestionWidget extends StatefulWidget {
   final String title;
   final String subtitle;
@@ -596,7 +502,8 @@ class FlatmateProfileScreen extends StatefulWidget {
 class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
 
   final PageController _pageController = PageController();
-  final FlatListingProfile _flatListingProfile = FlatListingProfile();
+  final String? currentUserUid = FirebaseAuth.instance.currentUser?.uid;
+  late final FlatListingProfile _flatListingProfile;
   int _currentPage = 0;
   bool _isSubmitting = false; // Added for loading indicator
 
@@ -605,7 +512,7 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
 
   // Declare TextEditingControllers for all text input fields
   late TextEditingController _ownerNameController;
-  late TextEditingController _ownerAgeController;
+ // late TextEditingController _ownerAgeController;
   late TextEditingController _ownerOccupationController;
   late TextEditingController _ownerBioController;
   late TextEditingController _desiredCityController;
@@ -650,9 +557,9 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
     switch (_currentPage) {
       case 0: // Owner Name
         return _ownerNameController.text.isNotEmpty;
-      case 1: // Owner Age
-        final age = int.tryParse(_ownerAgeController.text);
-        return age != null && age >= 18 && age <= 99;
+      // case 1: // Owner Age
+      //   final age = int.tryParse(_ownerAgeController.text);
+      //   return age != null && age >= 18 && age <= 99;
       // case 2: // Owner Gender
       //   return _flatListingProfile.ownerGender.isNotEmpty;
       case 3: // Owner Occupation
@@ -740,12 +647,17 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
   @override
   void initState() {
     super.initState();
-    // Initialize controllers with current profile values
+    final String? currentUserUid = FirebaseAuth.instance.currentUser?.uid;
+    _flatListingProfile = FlatListingProfile(
+      userProfile: UserProfile(uid: currentUserUid!),
+    );
+    // Initialize controllers
+    // with current profile values
     // if (widget.initialPhoneNumber != null) {
     //   _flatListingProfile.ownerPhonenumber = widget.initialPhoneNumber; // ADD THIS LINE
     // }
     // _ownerNameController = TextEditingController(text: _flatListingProfile.ownerName);
-    _ownerAgeController = TextEditingController(text: _flatListingProfile.ownerAge?.toString() ?? '');
+    //_ownerAgeController = TextEditingController(text: _flatListingProfile.ownerAge?.toString() ?? '');
     // _ownerOccupationController = TextEditingController(text: _flatListingProfile.ownerOccupation);
     // _ownerBioController = TextEditingController(text: _flatListingProfile.ownerBio);
     // _desiredCityController = TextEditingController(text: _flatListingProfile.desiredCity);
@@ -762,10 +674,10 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
     //   _flatListingProfile.ownerName = _ownerNameController.text;
     //   setState(() {}); // Trigger rebuild to update button state
     // });
-    _ownerAgeController.addListener(() {
-      _flatListingProfile.ownerAge = int.tryParse(_ownerAgeController.text);
-      setState(() {}); // Trigger rebuild to update button state
-    });
+    // _ownerAgeController.addListener(() {
+    //  // _flatListingProfile.ownerAge = int.tryParse(_ownerAgeController.text);
+    //   setState(() {}); // Trigger rebuild to update button state
+    // });
     // _ownerOccupationController.addListener(() {
     //   _flatListingProfile.ownerOccupation = _ownerOccupationController.text;
     //   setState(() {});
@@ -808,7 +720,7 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
   void dispose() {
     // Dispose all controllers
     _ownerNameController.dispose();
-    _ownerAgeController.dispose();
+    //_ownerAgeController.dispose();
     _ownerOccupationController.dispose();
     _ownerBioController.dispose();
     _desiredCityController.dispose();
@@ -1738,7 +1650,7 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
       "email": user.email, //
       // "displayName": _flatListingProfile.ownerName,
       // "phonenumber":_flatListingProfile.ownerPhonenumber,
-      "age": _flatListingProfile.ownerAge ?? 0,
+     // "age": _flatListingProfile.ownerAge ?? 0,
       // "gender": _flatListingProfile.ownerGender,
       // "occupation": _flatListingProfile.ownerOccupation,
       // "religion":_flatListingProfile.ownerReligion,

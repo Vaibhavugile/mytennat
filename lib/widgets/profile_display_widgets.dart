@@ -523,16 +523,16 @@ class SeekingFlatmateProfileDisplay extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  profile.name ?? 'N/A',
+                  profile.userProfile.name ?? 'N/A',
                   style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 ),
                 Text(
-                  '${profile.age?.toString() ?? 'N/A'} years old, ${profile.occupation ?? 'N/A'}',
+                  '${profile.userProfile.age?.toString() ?? 'N/A'} years old, ${profile.userProfile.occupation?? 'N/A'}',
                   style: TextStyle(fontSize: 14, color: Colors.grey[700]),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Looking in ${profile.desiredCity ?? 'N/A'}, ${profile.areaPreference ?? 'N/A'}',
+                  'Looking in ${profile.userProfile.city ?? 'N/A'}, ${profile.userProfile.city ?? 'N/A'}',
                   style: TextStyle(fontSize: 14, color: Colors.grey[700]),
                 ),
                 const SizedBox(height: 8),
@@ -574,18 +574,18 @@ class SeekingFlatmateProfileDisplay extends StatelessWidget {
           _buildCharacteristicGrid(
             'Basic Information',
             [
-              MapEntry('Gender', profile.gender),
-              MapEntry('Age', profile.age?.toString()),
-              MapEntry('Occupation', profile.occupation),
-              MapEntry('Religion', profile.religion),
-              MapEntry('Current Location', profile.currentLocation),
-              MapEntry('Desired City', profile.desiredCity),
-              MapEntry('Area Pref.', profile.areaPreference),
+              MapEntry('Gender', profile.userProfile.gender),
+              MapEntry('Age', profile.userProfile.age?.toString()),
+              MapEntry('Occupation', profile.userProfile.occupation),
+              MapEntry('Religion', profile.userProfile.religion),
+              MapEntry('Current Location', profile.userProfile.city),
+              MapEntry('Desired City', profile.userProfile.city),
+              MapEntry('Area Pref.', profile.userProfile.city),
               MapEntry('Move-in Date', profile.moveInDate != null
                   ? DateFormat('dd/MM/yyyy').format(profile.moveInDate!)
                   : null),
               MapEntry('Budget Range', '₹${profile.budgetMin ?? 'N/A'} - ₹${profile.budgetMax ?? 'N/A'}'),
-              MapEntry('Bio', profile.bio),
+              MapEntry('Bio', profile.userProfile.bio),
             ],
           ),
 
@@ -593,14 +593,13 @@ class SeekingFlatmateProfileDisplay extends StatelessWidget {
           _buildCharacteristicGrid(
             'Habits & Lifestyle',
             [
-              MapEntry('Cleanliness', profile.cleanliness),
-              MapEntry('Social Habits', profile.socialHabits),
-              MapEntry('Smoking Habits', profile.smokingHabits),
-              MapEntry('Drinking Habits', profile.drinkingHabits),
-              MapEntry('Food Preference', profile.foodPreference),
-              MapEntry('Guests Freq.', profile.guestsFrequency),
-              MapEntry('Pet Ownership', profile.petOwnership),
-              MapEntry('Pet Tolerance', profile.petTolerance),
+              MapEntry('Cleanliness', profile.userProfile.cleanlinessLevel),
+              MapEntry('Social Habits', profile.userProfile.socialPreferences),
+              MapEntry('Smoking Habits', profile.userProfile.smokingHabit),
+              MapEntry('Drinking Habits', profile.userProfile.drinkingHabit),
+              MapEntry('Food Preference', profile.userProfile.foodPreference),
+              MapEntry('Pet Ownership', profile.userProfile.petOwnership),
+              MapEntry('Pet Tolerance', profile.userProfile.petTolerance),
             ],
           ),
 
@@ -710,16 +709,16 @@ class FlatListingProfileDisplay extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  profile.ownerName ?? 'N/A',
+                  profile.userProfile.name ?? 'N/A',
                   style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 ),
                 Text(
-                  '${profile.ownerAge?.toString() ?? 'N/A'} years old, ${profile.ownerOccupation ?? 'N/A'}',
+                  '${profile.userProfile.age?.toString() ?? 'N/A'} years old, ${profile.userProfile.occupation ?? 'N/A'}',
                   style: TextStyle(fontSize: 14, color: Colors.grey[700]),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Flat in ${profile.desiredCity ?? 'N/A'}, ${profile.areaPreference ?? 'N/A'}',
+                  'Flat in ${profile.userProfile.city ?? 'N/A'}, ${profile.userProfile.city ?? 'N/A'}',
                   style: TextStyle(fontSize: 14, color: Colors.grey[700]),
                 ),
                 const SizedBox(height: 8),
@@ -760,12 +759,12 @@ class FlatListingProfileDisplay extends StatelessWidget {
           _buildCharacteristicGrid(
             'About The Current Flatmate',
             [
-              MapEntry('Name', profile.ownerName),
-              MapEntry('Age', profile.ownerAge?.toString()),
-              MapEntry('Gender', profile.ownerGender),
-              MapEntry('Occupation', profile.ownerOccupation),
-              MapEntry('Religion', profile.ownerReligion),
-              MapEntry('Bio', profile.ownerBio),
+              MapEntry('Name', profile.userProfile.name),
+              MapEntry('Age', profile.userProfile.age?.toString()),
+              MapEntry('Gender', profile.userProfile.gender),
+              MapEntry('Occupation', profile.userProfile.occupation),
+              MapEntry('Religion', profile.userProfile.religion),
+              MapEntry('Bio', profile.userProfile.bio),
             ],
           ),
 
@@ -773,15 +772,15 @@ class FlatListingProfileDisplay extends StatelessWidget {
           _buildCharacteristicGrid(
             'Owner\'s Habits & Lifestyle',
             [
-              MapEntry('Smoking Habits', profile.smokingHabit),
-              MapEntry('Drinking Habits', profile.drinkingHabit),
-              MapEntry('Food Preference', profile.foodPreference),
-              MapEntry('Cleanliness', profile.cleanlinessLevel),
+              MapEntry('Smoking Habits', profile.userProfile.smokingHabit),
+              MapEntry('Drinking Habits', profile.userProfile.drinkingHabit),
+              MapEntry('Food Preference', profile.userProfile.foodPreference),
+              MapEntry('Cleanliness', profile.userProfile.cleanlinessLevel),
 
-              MapEntry('Social Preferences', profile.socialPreferences),
+              MapEntry('Social Preferences', profile.userProfile.socialPreferences),
 
-              MapEntry('Pet Ownership', profile.petOwnership),
-              MapEntry('Pet Tolerance', profile.petTolerance),
+              MapEntry('Pet Ownership', profile.userProfile.petOwnership),
+              MapEntry('Pet Tolerance', profile.userProfile.petTolerance),
 
             ],
           ),
@@ -790,8 +789,8 @@ class FlatListingProfileDisplay extends StatelessWidget {
           _buildCharacteristicGrid(
             'Flat Details',
             [
-              MapEntry('City', profile.desiredCity),
-              MapEntry('Area', profile.areaPreference),
+              MapEntry('City', profile.userProfile.city),
+              MapEntry('Area', profile.userProfile.city),
               MapEntry('Address', profile.address),
               MapEntry('Landmark', profile.landmark),
               MapEntry('Description', profile.flatDescription),

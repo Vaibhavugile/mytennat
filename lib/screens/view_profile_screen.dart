@@ -69,7 +69,7 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
           .toList();
       print('[_fetchUserProfile] Fetched Flat Listing Profiles: ${_flatListingProfiles.length}');
       for (var p in _flatListingProfiles) {
-        print('  - Flat Listing ID: ${p.documentId}, Owner Name: ${p.ownerName}');
+        print('  - Flat Listing ID: ${p.documentId}, Owner Name: ${p.userProfile.name}');
       }
 
       final seekingFlatmateProfilesSnapshot = await userDocRef.collection('seekingFlatmateProfiles').get();
@@ -78,7 +78,7 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
           .toList();
       print('[_fetchUserProfile] Fetched Seeking Flatmate Profiles: ${_seekingFlatmateProfiles.length}');
       for (var p in _seekingFlatmateProfiles) {
-        print('  - Seeking Flatmate ID: ${p.documentId}, Name: ${p.name}');
+        print('  - Seeking Flatmate ID: ${p.documentId}, Name: ${p.userProfile.name}');
       }
 
       // --- Logic to prioritize displaying the specific profileDocumentId if provided ---
@@ -257,8 +257,8 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
                     ),
                   );
                   for (var profile in _flatListingProfiles) {
-                    final String displayName = (profile.ownerName != null && profile.ownerName.isNotEmpty)
-                        ? profile.ownerName
+                    final String displayName = (profile.userProfile.name != null && profile.userProfile.name.isNotEmpty)
+                        ? profile.userProfile.name
                         : 'Flat Listing (${profile.documentId.substring(0, 4)}...)';
                     items.add(
                       PopupMenuItem<String>(
@@ -277,8 +277,8 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
                     ),
                   );
                   for (var profile in _seekingFlatmateProfiles) {
-                    final String displayName = (profile.name != null && profile.name.isNotEmpty)
-                        ? profile.name
+                    final String displayName = (profile.userProfile.name != null && profile.userProfile.name.isNotEmpty)
+                        ? profile.userProfile.name
                         : 'Seeking Flatmate (${profile.documentId.substring(0, 4)}...)';
                     items.add(
                       PopupMenuItem<String>(

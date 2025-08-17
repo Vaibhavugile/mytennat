@@ -78,9 +78,10 @@ class _MatchingScreenState extends State<MatchingScreen> {
   // Helper to get display name for a profile
   String _getProfileDisplayName(dynamic profile) {
     if (profile is FlatListingProfile) {
-      return profile.ownerName ?? 'Unnamed Flat Listing';
+      return // Assuming each profile object has a `userProfile` field.
+        profile.userProfile.name ?? 'Unnamed Flat Listing';
     } else if (profile is SeekingFlatmateProfile) {
-      return profile.name ?? 'Unnamed Flatmate Seeker';
+      return profile.userProfile.name ?? 'Unnamed Flatmate Seeker';
     }
     return 'Unknown Profile';
   }
@@ -634,9 +635,9 @@ class _MatchingScreenState extends State<MatchingScreen> {
     String profileName = '';
 
     if (matchedProfile is FlatListingProfile) {
-      profileName = matchedProfile.ownerName ?? 'Flat Owner';
+      profileName = matchedProfile.userProfile.name ?? 'Flat Owner';
     } else if (matchedProfile is SeekingFlatmateProfile) {
-      profileName = matchedProfile.name ?? 'Flatmate Seeker';
+      profileName = matchedProfile.userProfile.name ?? 'Flatmate Seeker';
     }
     String? imageUrl; // Get the actual image URL here
     if ( matchedProfile  is FlatListingProfile && matchedProfile .imageUrls != null && matchedProfile .imageUrls!.isNotEmpty) {
@@ -729,11 +730,11 @@ class _MatchingScreenState extends State<MatchingScreen> {
       if (matchedProfile is FlatListingProfile) {
         // contactNumber = matchedProfile.ownerPhoneNumber ?? 'N/A'; // Assuming this property exists
         // contactEmail = matchedProfile.ownerEmail ?? 'N/A';     // Assuming this property exists
-        profileName = matchedProfile.ownerName ?? 'Flat Owner';
+        profileName = matchedProfile.userProfile.name ?? 'Flat Owner';
       } else if (matchedProfile is SeekingFlatmateProfile) {
         //contactNumber = matchedProfile.phoneNumber ?? 'N/A'; // Assuming this property exists
         //  contactEmail = matchedProfile.email ?? 'N/A';       // Assuming this property exists
-        profileName = matchedProfile.name ?? 'Flatmate Seeker';
+        profileName = matchedProfile.userProfile.name ?? 'Flatmate Seeker';
       }
       String? imageUrl; // Get the actual image URL here
       if ( matchedProfile  is FlatListingProfile && matchedProfile .imageUrls != null && matchedProfile .imageUrls!.isNotEmpty) {
@@ -1418,12 +1419,12 @@ class FlatListingProfileCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      profile.ownerName ?? 'N/A',
+                      profile.userProfile.name?? 'N/A',
                       style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87),
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      '${profile.ownerAge ?? 'N/A'} years old, ${profile.ownerGender ?? 'N/A'}',
+                      '${profile.userProfile.age ?? 'N/A'} years old, ${profile.userProfile.gender ?? 'N/A'}',
                       style: const TextStyle(fontSize: 16, color: Colors.grey),
                     ),
                     const SizedBox(height: 20),
@@ -1476,61 +1477,61 @@ class FlatListingProfileCard extends StatelessWidget {
                       children: [
                         _buildChipList(
                           title: 'City:',
-                          items: [profile.desiredCity],
+                          items: [profile.userProfile.city],
                           backgroundColor: Colors.blue.shade100,
                           textColor: Colors.blue.shade800,
                         ),
-                        _buildChipList(
-                          title: 'Area:',
-                          items: [profile.areaPreference],
-                          backgroundColor: Colors.cyan.shade100,
-                          textColor: Colors.cyan.shade800,
-                        ),
-                      ],
-                    ),
+                    //     _buildChipList(
+                    //       title: 'Area:',
+                    //       items: [profile.areaPreference],
+                    //       backgroundColor: Colors.cyan.shade100,
+                    //       textColor: Colors.cyan.shade800,
+                    //     ),
+                    //   ],
+                    // ),
                     _buildInfoSection(
                       title: 'Lifestyle & Habits',
                       icon: Icons.emoji_people,
                       children: [
                         _buildChipList(
                           title: 'Cleanliness:',
-                          items: [profile.cleanlinessLevel],
+                          items: [profile.userProfile.cleanlinessLevel],
                           backgroundColor: Colors.green.shade100,
                           textColor: Colors.green.shade800,
                         ),
                         _buildChipList(
                           title: 'Social:',
-                          items: [profile.socialPreferences],
+                          items: [profile.userProfile.socialPreferences],
                           backgroundColor: Colors.red.shade100,
                           textColor: Colors.red.shade800,
                         ),
                         _buildChipList(
                           title: 'Smoking:',
-                          items: [profile.smokingHabit],
+                          items: [profile.userProfile.smokingHabit],
                           backgroundColor: Colors.grey.shade100,
                           textColor: Colors.grey.shade800,
                         ),
                         _buildChipList(
                           title: 'Drinking:',
-                          items: [profile.drinkingHabit],
+                          items: [profile.userProfile.drinkingHabit],
                           backgroundColor: Colors.brown.shade100,
                           textColor: Colors.brown.shade800,
                         ),
                         _buildChipList(
                           title: 'Food:',
-                          items: [profile.foodPreference],
+                          items: [profile.userProfile.foodPreference],
                           backgroundColor: Colors.yellow.shade100,
                           textColor: Colors.yellow.shade800,
                         ),
                         _buildChipList(
                           title: 'Pets:',
-                          items: [profile.petOwnership],
+                          items: [profile.userProfile.petOwnership],
                           backgroundColor: Colors.orange.shade100,
                           textColor: Colors.orange.shade800,
                         ),
                         _buildChipList(
                           title: 'Pet Tolerance:',
-                          items: [profile.petTolerance],
+                          items: [profile.userProfile.petTolerance],
                           backgroundColor: Colors.deepOrange.shade100,
                           textColor: Colors.deepOrange.shade800,
                         ),
@@ -1542,7 +1543,7 @@ class FlatListingProfileCard extends StatelessWidget {
                       children: [
                         _buildChipList(
                           title: 'Occupation:',
-                          items: [profile.ownerOccupation],
+                          items: [profile.userProfile.occupation],
                           backgroundColor: Colors.indigo.shade100,
                           textColor: Colors.indigo.shade800,
                         ),
@@ -1550,10 +1551,17 @@ class FlatListingProfileCard extends StatelessWidget {
                     ),
                   ],
                 ),
-              ),
-            ],
+              ],
+      ),
+
+
+
+
           ),
-        ),
+        ],
+
+      ),
+          ),
       ),
     );
   }
@@ -1761,12 +1769,12 @@ class SeekingFlatmateProfileCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      profile.name ?? 'N/A',
+                      profile.userProfile.name ?? 'N/A',
                       style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87),
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      '${profile.age ?? 'N/A'} years old, ${profile.gender ?? 'N/A'}',
+                      '${profile.userProfile.age ?? 'N/A'} years old, ${profile.userProfile.gender ?? 'N/A'}',
                       style: const TextStyle(fontSize: 18, color: Colors.grey),
                     ),
                     const SizedBox(height: 20),
@@ -1804,16 +1812,16 @@ class SeekingFlatmateProfileCard extends StatelessWidget {
                       children: [
                         _buildChipList(
                           title: 'City:',
-                          items: [profile.desiredCity],
+                          items: [profile.userProfile.city],
                           backgroundColor: Colors.blue.shade100,
                           textColor: Colors.blue.shade800,
                         ),
-                        _buildChipList(
-                          title: 'Area:',
-                          items: [profile.areaPreference],
-                          backgroundColor: Colors.cyan.shade100,
-                          textColor: Colors.cyan.shade800,
-                        ),
+                        // _buildChipList(
+                        //   title: 'Area:',
+                        //   items: [profile.areaPreference],
+                        //   backgroundColor: Colors.cyan.shade100,
+                        //   textColor: Colors.cyan.shade800,
+                        // ),
                       ],
                     ),
                     _buildInfoSection(
@@ -1822,49 +1830,49 @@ class SeekingFlatmateProfileCard extends StatelessWidget {
                       children: [
                         _buildChipList(
                           title: 'Cleanliness:',
-                          items: [profile.cleanliness],
+                          items: [profile.userProfile.cleanlinessLevel],
                           backgroundColor: Colors.green.shade100,
                           textColor: Colors.green.shade800,
                         ),
                         _buildChipList(
                           title: 'Social Habits:',
-                          items: [profile.socialHabits],
+                          items: [profile.userProfile.socialPreferences],
                           backgroundColor: Colors.pink.shade100,
                           textColor: Colors.pink.shade800,
                         ),
                         _buildChipList(
                           title: 'Smoking Habits:',
-                          items: [profile.smokingHabits],
+                          items: [profile.userProfile.smokingHabit],
                           backgroundColor: Colors.deepOrange.shade100,
                           textColor: Colors.deepOrange.shade800,
                         ),
                         _buildChipList(
                           title: 'Drinking Habits:',
-                          items: [profile.drinkingHabits],
+                          items: [profile.userProfile.drinkingHabit],
                           backgroundColor: Colors.cyan.shade100,
                           textColor: Colors.cyan.shade800,
                         ),
                         _buildChipList(
                           title: 'Food Preference:',
-                          items: [profile.foodPreference],
+                          items: [profile.userProfile.foodPreference],
                           backgroundColor: Colors.amber.shade100,
                           textColor: Colors.amber.shade800,
                         ),
-                        _buildChipList(
-                          title: 'Guests Frequency:',
-                          items: [profile.guestsFrequency],
-                          backgroundColor: Colors.brown.shade100,
-                          textColor: Colors.brown.shade800,
-                        ),
+                        // _buildChipList(
+                        //   title: 'Guests Frequency:',
+                        //   items: [profile.guestsFrequency],
+                        //   backgroundColor: Colors.brown.shade100,
+                        //   textColor: Colors.brown.shade800,
+                        // ),
                         _buildChipList(
                           title: 'Pet Ownership:',
-                          items: [profile.petOwnership],
+                          items: [profile.userProfile.petOwnership],
                           backgroundColor: Colors.lightGreen.shade100,
                           textColor: Colors.lightGreen.shade800,
                         ),
                         _buildChipList(
                           title: 'Pet Tolerance:',
-                          items: [profile.petTolerance],
+                          items: [profile.userProfile.petTolerance],
                           backgroundColor: Colors.lime.shade100,
                           textColor: Colors.lime.shade800,
                         ),
@@ -1876,7 +1884,7 @@ class SeekingFlatmateProfileCard extends StatelessWidget {
                       children: [
                         _buildChipList(
                           title: 'Occupation:',
-                          items: [profile.occupation],
+                          items: [profile.userProfile.occupation],
                           backgroundColor: Colors.indigo.shade100,
                           textColor: Colors.indigo.shade800,
                         ),

@@ -149,13 +149,13 @@ class _LikedByMeListState extends State<LikedByMeList> {
         String profileId = profile.documentId; // This is the userId of the liked profile
 
         if (profile is FlatListingProfile) {
-          name = profile.ownerName ?? 'N/A';
+          name = profile.userProfile.name ?? 'N/A';
           imageUrl = profile.imageUrls != null && profile.imageUrls!.isNotEmpty ? profile.imageUrls![0] : '';
-          subtitle = 'Flat Listing by ${profile.ownerGender ?? 'N/A'}';
+          subtitle = 'Flat Listing by ${profile.userProfile.gender ?? 'N/A'}';
         } else if (profile is SeekingFlatmateProfile) {
-          name = profile.name ?? 'N/A';
+          name = profile.userProfile.name ?? 'N/A';
           imageUrl = profile.imageUrls != null && profile.imageUrls!.isNotEmpty ? profile.imageUrls![0] : '';
-          subtitle = 'Seeking Flatmate, ${profile.gender ?? 'N/A'}';
+          subtitle = 'Seeking Flatmate, ${profile.userProfile.gender ?? 'N/A'}';
         }
 
         return Card(
