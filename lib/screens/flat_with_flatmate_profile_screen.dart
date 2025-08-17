@@ -13,32 +13,32 @@ class SeekingFlatmateProfile {
   String documentId; // Added for Firestore document ID
   String? uid; // Added: To store the user ID (UID)
 
-  String name;
-  String ? phoneNumber;
+  // String name;
+  // String ? phoneNumber;
   int? age; // Changed to nullable int
-  String gender;
-  String occupation;
-  String religion;
-  String currentLocation;
-  String desiredCity; // New field
+  // String gender;
+  // String occupation;
+  // String religion;
+  // String currentLocation;
+  // String desiredCity; // New field
   DateTime? moveInDate;
   int? budgetMin; // Changed to nullable int
   int? budgetMax; // Changed to nullable int
-  String areaPreference; // New field
-  String bio;
+  // String areaPreference; // New field
+  // String bio;
 
   // Habits
-  String cleanliness;
-  String socialHabits;
+  // String cleanliness;
+  // String socialHabits;
   // String workSchedule;
   // String noiseLevel;
-  String smokingHabits; // Updated from isSmoker
-  String drinkingHabits; // Updated from drinkingHabit
-  String foodPreference; // Updated from dietaryPreference
-  String guestsFrequency;
+  // String smokingHabits; // Updated from isSmoker
+  // String drinkingHabits; // Updated from drinkingHabit
+  // String foodPreference; // Updated from dietaryPreference
+  // String guestsFrequency;
   // String visitorsPolicy; // New field
-  String petOwnership; // Updated from hasPets
-  String petTolerance; // New field
+  // String petOwnership; // Updated from hasPets
+  // String petTolerance; // New field
   // String sleepingSchedule; // New field
   // String sharingCommonSpaces; // New field
   // String guestsOvernightPolicy; // New field
@@ -64,30 +64,31 @@ class SeekingFlatmateProfile {
   SeekingFlatmateProfile({
     this.documentId = '', // Initialize documentId
     this.uid, // Initialize uid
-    this.name = '',
-    this.phoneNumber ='',
     this.age,
-    this.gender = '',
-    this.occupation = '',
-    this.religion='',
-    this.currentLocation = '',
-    this.desiredCity = '',
+    // this.name = '',
+    // this.phoneNumber ='',
+    //
+    // this.gender = '',
+    // this.occupation = '',
+    // this.religion='',
+    // this.currentLocation = '',
+    // this.desiredCity = '',
     this.moveInDate,
     this.budgetMin,
     this.budgetMax,
-    this.areaPreference = '',
-    this.bio = '',
-    this.cleanliness = '',
-    this.socialHabits = '',
+    // this.areaPreference = '',
+    // this.bio = '',
+    // this.cleanliness = '',
+    // this.socialHabits = '',
     // this.workSchedule = '',
     // this.noiseLevel = '',
-    this.smokingHabits = '',
-    this.drinkingHabits = '',
-    this.foodPreference = '',
-    this.guestsFrequency = '',
+    // this.smokingHabits = '',
+    // this.drinkingHabits = '',
+    // this.foodPreference = '',
+    // this.guestsFrequency = '',
     // this.visitorsPolicy = '',
-    this.petOwnership = '',
-    this.petTolerance = '',
+    // this.petOwnership = '',
+    // this.petTolerance = '',
     // this.sleepingSchedule = '',
     // this.sharingCommonSpaces = '',
     // this.guestsOvernightPolicy = '',
@@ -118,32 +119,32 @@ class SeekingFlatmateProfile {
     return SeekingFlatmateProfile(
       documentId: documentId,
       uid: data['uid'] as String?,
-      name: data['displayName'] as String? ?? '',
-      phoneNumber: data['phonenumber']as String? ?? '',// Assuming 'displayName' at root level
+      // name: data['displayName'] as String? ?? '',
+      // phoneNumber: data['phonenumber']as String? ?? '',// Assuming 'displayName' at root level
       age: data['age'] is int ? data['age'] : (data['age'] is String ? int.tryParse(data['age']) : null),
-      gender: data['gender'] as String? ?? '',
-      occupation: data['occupation'] as String? ?? '',
-      religion: data['religion'] as String? ?? '',
-      currentLocation: data['currentLocation'] as String? ?? '',
-      desiredCity: data['desiredCity'] as String? ?? '',
+      // gender: data['gender'] as String? ?? '',
+      // occupation: data['occupation'] as String? ?? '',
+      // religion: data['religion'] as String? ?? '',
+      // currentLocation: data['currentLocation'] as String? ?? '',
+      // desiredCity: data['desiredCity'] as String? ?? '',
       moveInDate: (data['moveInDate'] as Timestamp?)?.toDate(),
       budgetMin: data['budgetMin'] is int ? data['budgetMin'] : (data['budgetMin'] is String ? int.tryParse(data['budgetMin']) : null),
       budgetMax: data['budgetMax'] is int ? data['budgetMax'] : (data['budgetMax'] is String ? int.tryParse(data['budgetMax']) : null),
-      areaPreference: data['areaPreference'] as String? ?? '',
-      bio: data['bio'] as String? ?? '',
-
-      // Habits
-      cleanliness: habitsData['cleanliness'] as String? ?? '',
-      socialHabits: habitsData['socialPreferences'] as String? ?? '', // Mapped from 'socialPreferences'
-      // workSchedule: habitsData['workSchedule'] as String? ?? '',
-      // noiseLevel: habitsData['noiseTolerance'] as String? ?? '', // Mapped from 'noiseTolerance'
-      smokingHabits: habitsData['smoking'] as String? ?? '', // Mapped from 'smoking'
-      drinkingHabits: habitsData['drinking'] as String? ?? '', // Mapped from 'drinking'
-      foodPreference: habitsData['food'] as String? ?? '', // Mapped from 'food'
-      guestsFrequency: habitsData['guestsFrequency'] as String? ?? '',
-      // visitorsPolicy: habitsData['visitorsPolicy'] as String? ?? '',
-      petOwnership: habitsData['petOwnership'] as String? ?? '',
-      petTolerance: habitsData['petTolerance'] as String? ?? '',
+      // areaPreference: data['areaPreference'] as String? ?? '',
+      // bio: data['bio'] as String? ?? '',
+      //
+      // // Habits
+      // cleanliness: habitsData['cleanliness'] as String? ?? '',
+      // socialHabits: habitsData['socialPreferences'] as String? ?? '', // Mapped from 'socialPreferences'
+      // // workSchedule: habitsData['workSchedule'] as String? ?? '',
+      // // noiseLevel: habitsData['noiseTolerance'] as String? ?? '', // Mapped from 'noiseTolerance'
+      // smokingHabits: habitsData['smoking'] as String? ?? '', // Mapped from 'smoking'
+      // drinkingHabits: habitsData['drinking'] as String? ?? '', // Mapped from 'drinking'
+      // foodPreference: habitsData['food'] as String? ?? '', // Mapped from 'food'
+      // guestsFrequency: habitsData['guestsFrequency'] as String? ?? '',
+      // // visitorsPolicy: habitsData['visitorsPolicy'] as String? ?? '',
+      // petOwnership: habitsData['petOwnership'] as String? ?? '',
+      // petTolerance: habitsData['petTolerance'] as String? ?? '',
       // sleepingSchedule: habitsData['sleepingSchedule'] as String? ?? '',
       // sharingCommonSpaces: habitsData['sharingCommonSpaces'] as String? ?? '',
       // guestsOvernightPolicy: habitsData['guestOvernightStays'] as String? ?? '', // Mapped from 'guestOvernightStays'
@@ -171,31 +172,31 @@ class SeekingFlatmateProfile {
   Map<String, dynamic> toMap() {
     return {
       'uid': uid, // Include uid when converting to map
-      'name': name,
-      'phonnumber':phoneNumber,// This might need to be 'displayName' if that's how it's stored at root
+      // 'name': name,
+      // 'phonnumber':phoneNumber,// This might need to be 'displayName' if that's how it's stored at root
       'age': age,
-      'gender': gender,
-      'occupation': occupation,
-      'religion' :religion,
-      'currentLocation': currentLocation,
-      'desiredCity': desiredCity,
+      // 'gender': gender,
+      // 'occupation': occupation,
+      // 'religion' :religion,
+      // 'currentLocation': currentLocation,
+      // 'desiredCity': desiredCity,
       'moveInDate': moveInDate != null ? Timestamp.fromDate(moveInDate!) : null,
       'budgetMin': budgetMin,
       'budgetMax': budgetMax,
-      'areaPreference': areaPreference,
-      'bio': bio,
+      // 'areaPreference': areaPreference,
+      // 'bio': bio,
       'habits': {
-        'cleanliness': cleanliness,
-        'socialPreferences': socialHabits, // Mapped to 'socialPreferences'
-        // 'workSchedule': workSchedule,
-        // 'noiseTolerance': noiseLevel, // Mapped to 'noiseTolerance'
-        'smoking': smokingHabits, // Mapped to 'smoking'
-        'drinking': drinkingHabits, // Mapped to 'drinking'
-        'food': foodPreference, // Mapped to 'food'
-        'guestsFrequency': guestsFrequency,
-        // 'visitorsPolicy': visitorsPolicy,
-        'petOwnership': petOwnership,
-        'petTolerance': petTolerance,
+        // 'cleanliness': cleanliness,
+        // 'socialPreferences': socialHabits, // Mapped to 'socialPreferences'
+        // // 'workSchedule': workSchedule,
+        // // 'noiseTolerance': noiseLevel, // Mapped to 'noiseTolerance'
+        // 'smoking': smokingHabits, // Mapped to 'smoking'
+        // 'drinking': drinkingHabits, // Mapped to 'drinking'
+        // 'food': foodPreference, // Mapped to 'food'
+        // 'guestsFrequency': guestsFrequency,
+        // // 'visitorsPolicy': visitorsPolicy,
+        // 'petOwnership': petOwnership,
+        // 'petTolerance': petTolerance,
         // 'sleepingSchedule': sleepingSchedule,
         // 'sharingCommonSpaces': sharingCommonSpaces,
         // 'guestOvernightStays': guestsOvernightPolicy, // Mapped to 'guestOvernightStays'
@@ -590,42 +591,42 @@ class _FlatWithFlatmateProfileScreenState
   void initState() {
     super.initState();
     // Initialize controllers with current profile values
-    if (widget.initialPhoneNumber != null) {
-      _seekingFlatmateProfile.phoneNumber = widget.initialPhoneNumber; // ADD THIS LINE
-    }
-    _nameController = TextEditingController(text: _seekingFlatmateProfile.name);
+    // if (widget.initialPhoneNumber != null) {
+    //   _seekingFlatmateProfile.phoneNumber = widget.initialPhoneNumber; // ADD THIS LINE
+    // }
+    // _nameController = TextEditingController(text: _seekingFlatmateProfile.name);
     _ageController = TextEditingController(
         text: _seekingFlatmateProfile.age?.toString() ?? '');
-    _occupationController =
-        TextEditingController(text: _seekingFlatmateProfile.occupation);
-    _currentLocationController =
-        TextEditingController(text: _seekingFlatmateProfile.currentLocation);
-    _desiredCityController =
-        TextEditingController(text: _seekingFlatmateProfile.desiredCity);
+    // _occupationController =
+    //     TextEditingController(text: _seekingFlatmateProfile.occupation);
+    // _currentLocationController =
+    //     TextEditingController(text: _seekingFlatmateProfile.currentLocation);
+    // _desiredCityController =
+    //     TextEditingController(text: _seekingFlatmateProfile.desiredCity);
     _budgetMinController = TextEditingController(
         text: _seekingFlatmateProfile.budgetMin?.toString() ?? '');
     _budgetMaxController = TextEditingController(
         text: _seekingFlatmateProfile.budgetMax?.toString() ?? '');
-    _areaPreferenceController =
-        TextEditingController(text: _seekingFlatmateProfile.areaPreference);
-    _bioController = TextEditingController(text: _seekingFlatmateProfile.bio);
+    // _areaPreferenceController =
+    //     TextEditingController(text: _seekingFlatmateProfile.areaPreference);
+    // _bioController = TextEditingController(text: _seekingFlatmateProfile.bio);
 
     // Add listeners to update the profile model as text changes
-    _nameController.addListener(() {
-      _seekingFlatmateProfile.name = _nameController.text;
-    });
+    // _nameController.addListener(() {
+    //   _seekingFlatmateProfile.name = _nameController.text;
+    // });
     _ageController.addListener(() {
       _seekingFlatmateProfile.age = int.tryParse(_ageController.text);
     });
-    _occupationController.addListener(() {
-      _seekingFlatmateProfile.occupation = _occupationController.text;
-    });
-    _currentLocationController.addListener(() {
-      _seekingFlatmateProfile.currentLocation = _currentLocationController.text;
-    });
-    _desiredCityController.addListener(() {
-      _seekingFlatmateProfile.desiredCity = _desiredCityController.text;
-    });
+    // _occupationController.addListener(() {
+    //   _seekingFlatmateProfile.occupation = _occupationController.text;
+    // });
+    // _currentLocationController.addListener(() {
+    //   _seekingFlatmateProfile.currentLocation = _currentLocationController.text;
+    // });
+    // _desiredCityController.addListener(() {
+    //   _seekingFlatmateProfile.desiredCity = _desiredCityController.text;
+    // });
     _budgetMinController.addListener(() {
       _seekingFlatmateProfile.budgetMin =
           int.tryParse(_budgetMinController.text);
@@ -634,12 +635,12 @@ class _FlatWithFlatmateProfileScreenState
       _seekingFlatmateProfile.budgetMax =
           int.tryParse(_budgetMaxController.text);
     });
-    _areaPreferenceController.addListener(() {
-      _seekingFlatmateProfile.areaPreference = _areaPreferenceController.text;
-    });
-    _bioController.addListener(() {
-      _seekingFlatmateProfile.bio = _bioController.text;
-    });
+    // _areaPreferenceController.addListener(() {
+    //   _seekingFlatmateProfile.areaPreference = _areaPreferenceController.text;
+    // });
+    // _bioController.addListener(() {
+    //   _seekingFlatmateProfile.bio = _bioController.text;
+    // });
   }
 
   @override
@@ -901,35 +902,35 @@ class _FlatWithFlatmateProfileScreenState
     return [
       // --- Section 1: Your Basic Info (Pages 0-10) ---
       // Page 0: Name
-      _buildTextQuestion(
-        title: "What's your name?",
-        subtitle: "This will be visible to potential flatmates/owners.",
-        hintText: "Enter your name",
-        controller: _nameController,
-      ),
+      // _buildTextQuestion(
+      //   title: "What's your name?",
+      //   subtitle: "This will be visible to potential flatmates/owners.",
+      //   hintText: "Enter your name",
+      //   controller: _nameController,
+      // ),
 
       // Page 1: Age
-      _buildTextQuestion(
-        title: "How old are you?",
-        subtitle: "This helps flatmates/owners understand your age group.",
-        hintText: "e.g., 25",
-        keyboardType: TextInputType.number,
-        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-        controller: _ageController,
-      ),
+      // _buildTextQuestion(
+      //   title: "How old are you?",
+      //   subtitle: "This helps flatmates/owners understand your age group.",
+      //   hintText: "e.g., 25",
+      //   keyboardType: TextInputType.number,
+      //   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+      //   controller: _ageController,
+      // ),
 
       // Page 2: Gender
-      SingleChoiceQuestionWidget(
-        title: "What's your gender?",
-        subtitle: "This helps potential flatmates/owners relate to you.",
-        options: ['Male', 'Female', 'Non-binary', 'Prefer not to say'],
-        onSelected: (value) {
-          setState(() {
-            _seekingFlatmateProfile.gender = value;
-          });
-        },
-        initialValue: _seekingFlatmateProfile.gender,
-      ),
+      // SingleChoiceQuestionWidget(
+      //   title: "What's your gender?",
+      //   subtitle: "This helps potential flatmates/owners relate to you.",
+      //   options: ['Male', 'Female', 'Non-binary', 'Prefer not to say'],
+      //   onSelected: (value) {
+      //     setState(() {
+      //       _seekingFlatmateProfile.gender = value;
+      //     });
+      //   },
+      //   initialValue: _seekingFlatmateProfile.gender,
+      // ),
       // TextFormField(
       //   initialValue: _seekingFlatmateProfile.phoneNumber, // Set the initial value
       //   decoration: InputDecoration(
@@ -946,61 +947,61 @@ class _FlatWithFlatmateProfileScreenState
       // ),
 
       // Page 3: Occupation
-      _buildTextQuestion(
-        title: "What do you do for a living?",
-        subtitle: "Share your profession or student status.",
-        hintText: "e.g., Software Engineer, Student, Freelancer",
-        controller: _occupationController,
-      ),
-      SingleChoiceQuestionWidget(
-        title: "What's your Religion?",
-        subtitle: "This helps potential flatmates relate to you.",
-        options: ['Hindu', 'Muslim', 'Christian','Sikh','Buddhism','Prefer not to say'],
-        onSelected: (value) {
-          setState(() {
-            _seekingFlatmateProfile.religion = value;
-          });
-        },
-        initialValue: _seekingFlatmateProfile.religion,
-      ),
+      // _buildTextQuestion(
+      //   title: "What do you do for a living?",
+      //   subtitle: "Share your profession or student status.",
+      //   hintText: "e.g., Software Engineer, Student, Freelancer",
+      //   controller: _occupationController,
+      // ),
+      // SingleChoiceQuestionWidget(
+      //   title: "What's your Religion?",
+      //   subtitle: "This helps potential flatmates relate to you.",
+      //   options: ['Hindu', 'Muslim', 'Christian','Sikh','Buddhism','Prefer not to say'],
+      //   onSelected: (value) {
+      //     setState(() {
+      //       _seekingFlatmateProfile.religion = value;
+      //     });
+      //   },
+      //   initialValue: _seekingFlatmateProfile.religion,
+      // ),
 
 
       // Page 4: Current Location
-      _buildTextQuestion(
-        title: "Where are you currently located?",
-        subtitle: "This helps us understand your current city/area.",
-        hintText: "e.g., Pune, Mumbai",
-        controller: _currentLocationController,
-      ),
+      // _buildTextQuestion(
+      //   title: "Where are you currently located?",
+      //   subtitle: "This helps us understand your current city/area.",
+      //   hintText: "e.g., Pune, Mumbai",
+      //   controller: _currentLocationController,
+      // ),
 
       // Page 5: Desired City
-      _buildCitySelectionQuestion(
-        title: "Which city are you looking for a flat/flatmate in?",
-        subtitle: "This helps us filter relevant listings for you.",
-        onCitySelected: (value) {
-          setState(() {
-            _seekingFlatmateProfile.desiredCity = value;
-            // Clear area preference when city changes
-            _seekingFlatmateProfile.areaPreference = '';
-            _areaPreferenceController.clear();
-          });
-        },
-        initialValue: _seekingFlatmateProfile.desiredCity,
-        cities: maharashtraLocations.keys.toList(),
-      ),
-
-      _buildAreaSelectionQuestion(
-        title: "What are your preferred areas/localities?",
-        subtitle: "Select preferred areas within ${(_seekingFlatmateProfile.desiredCity.isNotEmpty ? _seekingFlatmateProfile.desiredCity : 'the selected city')}.",
-        onAreaSelected: (value) {
-          setState(() {
-            _seekingFlatmateProfile.areaPreference = value;
-          });
-        },
-        initialValue: _seekingFlatmateProfile.areaPreference,
-        areas: maharashtraLocations[_seekingFlatmateProfile.desiredCity] ?? [], // Dynamically load areas
-        selectedCity: _seekingFlatmateProfile.desiredCity, // Pass selected city to enable/disable
-      ),
+      // _buildCitySelectionQuestion(
+      //   title: "Which city are you looking for a flat/flatmate in?",
+      //   subtitle: "This helps us filter relevant listings for you.",
+      //   onCitySelected: (value) {
+      //     setState(() {
+      //       _seekingFlatmateProfile.desiredCity = value;
+      //       // Clear area preference when city changes
+      //       _seekingFlatmateProfile.areaPreference = '';
+      //       _areaPreferenceController.clear();
+      //     });
+      //   },
+      //   initialValue: _seekingFlatmateProfile.desiredCity,
+      //   cities: maharashtraLocations.keys.toList(),
+      // ),
+      //
+      // _buildAreaSelectionQuestion(
+      //   title: "What are your preferred areas/localities?",
+      //   subtitle: "Select preferred areas within ${(_seekingFlatmateProfile.desiredCity.isNotEmpty ? _seekingFlatmateProfile.desiredCity : 'the selected city')}.",
+      //   onAreaSelected: (value) {
+      //     setState(() {
+      //       _seekingFlatmateProfile.areaPreference = value;
+      //     });
+      //   },
+      //   initialValue: _seekingFlatmateProfile.areaPreference,
+      //   areas: maharashtraLocations[_seekingFlatmateProfile.desiredCity] ?? [], // Dynamically load areas
+      //   selectedCity: _seekingFlatmateProfile.desiredCity, // Pass selected city to enable/disable
+      // ),
 
       // Page 6: Move-in Date
       _buildDateQuestion(
@@ -1045,46 +1046,46 @@ class _FlatWithFlatmateProfileScreenState
       // Page 9: Area Preference
 
       // Page 10: Bio
-      _buildTextQuestion(
-        title: "Tell us a bit about yourself.",
-        subtitle:
-        "Share something interesting! This helps others get to know you.",
-        hintText: "e.g., I'm a quiet person who loves reading...",
-        controller: _bioController,
-        maxLines: 5,
-      ),
+      // _buildTextQuestion(
+      //   title: "Tell us a bit about yourself.",
+      //   subtitle:
+      //   "Share something interesting! This helps others get to know you.",
+      //   hintText: "e.g., I'm a quiet person who loves reading...",
+      //   controller: _bioController,
+      //   maxLines: 5,
+      // ),
 
       // --- Section 2: Your Habits (Pages 11-24) ---
       // Page 11: Cleanliness
-      SingleChoiceQuestionWidget(
-        title: "How clean are you?",
-        subtitle: "Be honest! This helps manage expectations.",
-        options: [
-          'Very Tidy',
-          'Moderately Tidy',
-          'Flexible',
-          'Can be messy at times'
-        ],
-        onSelected: (value) {
-          setState(() {
-            _seekingFlatmateProfile.cleanliness = value;
-          });
-        },
-        initialValue: _seekingFlatmateProfile.cleanliness,
-      ),
+      // SingleChoiceQuestionWidget(
+      //   title: "How clean are you?",
+      //   subtitle: "Be honest! This helps manage expectations.",
+      //   options: [
+      //     'Very Tidy',
+      //     'Moderately Tidy',
+      //     'Flexible',
+      //     'Can be messy at times'
+      //   ],
+      //   onSelected: (value) {
+      //     setState(() {
+      //       _seekingFlatmateProfile.cleanliness = value;
+      //     });
+      //   },
+      //   initialValue: _seekingFlatmateProfile.cleanliness,
+      // ),
 
       // Page 12: Social Habits
-      SingleChoiceQuestionWidget(
-        title: "What are your social habits?",
-        subtitle: "Do you enjoy social gatherings or prefer quiet?",
-        options: ['Social & outgoing', 'Occasional gatherings', 'Quiet & private', 'Flexible'],
-        onSelected: (value) {
-          setState(() {
-            _seekingFlatmateProfile.socialHabits = value;
-          });
-        },
-        initialValue: _seekingFlatmateProfile.socialHabits,
-      ),
+      // SingleChoiceQuestionWidget(
+      //   title: "What are your social habits?",
+      //   subtitle: "Do you enjoy social gatherings or prefer quiet?",
+      //   options: ['Social & outgoing', 'Occasional gatherings', 'Quiet & private', 'Flexible'],
+      //   onSelected: (value) {
+      //     setState(() {
+      //       _seekingFlatmateProfile.socialHabits = value;
+      //     });
+      //   },
+      //   initialValue: _seekingFlatmateProfile.socialHabits,
+      // ),
 
       // Page 13: Work Schedule
       // SingleChoiceQuestionWidget(
@@ -1119,68 +1120,68 @@ class _FlatWithFlatmateProfileScreenState
       // ),
 
       // Page 15: Smoking Habits
-      SingleChoiceQuestionWidget(
-        title: "What are your smoking habits?",
-        subtitle: "This helps in matching with compatible flatmates.",
-        options: ['Never', 'Occasionally', 'Socially', 'Regularly'],
-        onSelected: (value) {
-          setState(() {
-            _seekingFlatmateProfile.smokingHabits = value;
-          });
-        },
-        initialValue: _seekingFlatmateProfile.smokingHabits,
-      ),
+      // SingleChoiceQuestionWidget(
+      //   title: "What are your smoking habits?",
+      //   subtitle: "This helps in matching with compatible flatmates.",
+      //   options: ['Never', 'Occasionally', 'Socially', 'Regularly'],
+      //   onSelected: (value) {
+      //     setState(() {
+      //       _seekingFlatmateProfile.smokingHabits = value;
+      //     });
+      //   },
+      //   initialValue: _seekingFlatmateProfile.smokingHabits,
+      // ),
 
       // Page 16: Drinking Habits
-      SingleChoiceQuestionWidget(
-        title: "What are your drinking habits?",
-        subtitle: "Are you a non-drinker, social drinker, or regular drinker?",
-        options: ['Never', 'Occasionally', 'Socially', 'Regularly'],
-        onSelected: (value) {
-          setState(() {
-            _seekingFlatmateProfile.drinkingHabits = value;
-          });
-        },
-        initialValue: _seekingFlatmateProfile.drinkingHabits,
-      ),
+      // SingleChoiceQuestionWidget(
+      //   title: "What are your drinking habits?",
+      //   subtitle: "Are you a non-drinker, social drinker, or regular drinker?",
+      //   options: ['Never', 'Occasionally', 'Socially', 'Regularly'],
+      //   onSelected: (value) {
+      //     setState(() {
+      //       _seekingFlatmateProfile.drinkingHabits = value;
+      //     });
+      //   },
+      //   initialValue: _seekingFlatmateProfile.drinkingHabits,
+      // ),
 
       // Page 17: Food Preference
-      SingleChoiceQuestionWidget(
-        title: "What is your food preference?",
-        subtitle: "Any specific dietary habits or restrictions?",
-        options: [
-          'Vegetarian',
-          'Non-Vegetarian',
-          'Vegan',
-          'Eggetarian',
-          'Jain',
-          'Other'
-        ],
-        onSelected: (value) {
-          setState(() {
-            _seekingFlatmateProfile.foodPreference = value;
-          });
-        },
-        initialValue: _seekingFlatmateProfile.foodPreference,
-      ),
-
-      // Page 18: Guests Frequency
-      SingleChoiceQuestionWidget(
-        title: "How often do you have guests over?",
-        subtitle: "This helps manage expectations with flatmates/owners.",
-        options: [
-          'Frequently (1-2 times/week)',
-          'Occasionally (1-2 times/month)',
-          'Rarely',
-          'Never'
-        ],
-        onSelected: (value) {
-          setState(() {
-            _seekingFlatmateProfile.guestsFrequency = value;
-          });
-        },
-        initialValue: _seekingFlatmateProfile.guestsFrequency,
-      ),
+      // SingleChoiceQuestionWidget(
+      //   title: "What is your food preference?",
+      //   subtitle: "Any specific dietary habits or restrictions?",
+      //   options: [
+      //     'Vegetarian',
+      //     'Non-Vegetarian',
+      //     'Vegan',
+      //     'Eggetarian',
+      //     'Jain',
+      //     'Other'
+      //   ],
+      //   onSelected: (value) {
+      //     setState(() {
+      //       _seekingFlatmateProfile.foodPreference = value;
+      //     });
+      //   },
+      //   initialValue: _seekingFlatmateProfile.foodPreference,
+      // ),
+      //
+      // // Page 18: Guests Frequency
+      // SingleChoiceQuestionWidget(
+      //   title: "How often do you have guests over?",
+      //   subtitle: "This helps manage expectations with flatmates/owners.",
+      //   options: [
+      //     'Frequently (1-2 times/week)',
+      //     'Occasionally (1-2 times/month)',
+      //     'Rarely',
+      //     'Never'
+      //   ],
+      //   onSelected: (value) {
+      //     setState(() {
+      //       _seekingFlatmateProfile.guestsFrequency = value;
+      //     });
+      //   },
+      //   initialValue: _seekingFlatmateProfile.guestsFrequency,
+      // ),
 
       // Page 19: Visitors Policy
       // SingleChoiceQuestionWidget(
@@ -1208,35 +1209,35 @@ class _FlatWithFlatmateProfileScreenState
       // ),
 
       // Page 20: Pet Ownership
-      SingleChoiceQuestionWidget(
-        title: "Do you currently own pets?",
-        subtitle: "Are you bringing any furry friends?",
-        options: ['Yes', 'No', 'Planning to get one'],
-        onSelected: (value) {
-          setState(() {
-            _seekingFlatmateProfile.petOwnership = value;
-          });
-        },
-        initialValue: _seekingFlatmateProfile.petOwnership,
-      ),
+      // SingleChoiceQuestionWidget(
+      //   title: "Do you currently own pets?",
+      //   subtitle: "Are you bringing any furry friends?",
+      //   options: ['Yes', 'No', 'Planning to get one'],
+      //   onSelected: (value) {
+      //     setState(() {
+      //       _seekingFlatmateProfile.petOwnership = value;
+      //     });
+      //   },
+      //   initialValue: _seekingFlatmateProfile.petOwnership,
+      // ),
 
       // Page 21: Pet Tolerance
-      SingleChoiceQuestionWidget(
-        title: "What's your tolerance for flatmates/owners with pets?",
-        subtitle: "Are you comfortable living with pets?",
-        options: [
-          'Comfortable with pets',
-          'Tolerant of pets',
-          'Prefer no pets',
-          'Allergic to pets'
-        ],
-        onSelected: (value) {
-          setState(() {
-            _seekingFlatmateProfile.petTolerance = value;
-          });
-        },
-        initialValue: _seekingFlatmateProfile.petTolerance,
-      ),
+      // SingleChoiceQuestionWidget(
+      //   title: "What's your tolerance for flatmates/owners with pets?",
+      //   subtitle: "Are you comfortable living with pets?",
+      //   options: [
+      //     'Comfortable with pets',
+      //     'Tolerant of pets',
+      //     'Prefer no pets',
+      //     'Allergic to pets'
+      //   ],
+      //   onSelected: (value) {
+      //     setState(() {
+      //       _seekingFlatmateProfile.petTolerance = value;
+      //     });
+      //   },
+      //   initialValue: _seekingFlatmateProfile.petTolerance,
+      // ),
 
       // Page 22: Sleeping Schedule
       // SingleChoiceQuestionWidget(
@@ -1565,33 +1566,33 @@ class _FlatWithFlatmateProfileScreenState
     final Map<String, dynamic> profileData = {
       "uid": user.uid,
       "email": user.email,//
-      "displayName": _seekingFlatmateProfile.name, // Using 'name' for displayName
-      "phonenumber":_seekingFlatmateProfile.phoneNumber,
+      // "displayName": _seekingFlatmateProfile.name, // Using 'name' for displayName
+      // "phonenumber":_seekingFlatmateProfile.phoneNumber,
       "age": _seekingFlatmateProfile.age ?? 0,
-      "gender": _seekingFlatmateProfile.gender,
-      "occupation": _seekingFlatmateProfile.occupation,
-      "religion": _seekingFlatmateProfile.religion,
-      "currentLocation": _seekingFlatmateProfile.currentLocation,//
-      "desiredCity": _seekingFlatmateProfile.desiredCity,
+      // "gender": _seekingFlatmateProfile.gender,
+      // "occupation": _seekingFlatmateProfile.occupation,
+      // "religion": _seekingFlatmateProfile.religion,
+      // "currentLocation": _seekingFlatmateProfile.currentLocation,//
+      // "desiredCity": _seekingFlatmateProfile.desiredCity,
       "moveInDate": _seekingFlatmateProfile.moveInDate != null
           ? Timestamp.fromDate(_seekingFlatmateProfile.moveInDate!)
           : null,
       "budgetMin": _seekingFlatmateProfile.budgetMin ?? 0,
       "budgetMax": _seekingFlatmateProfile.budgetMax ?? 0,
-      "areaPreference": _seekingFlatmateProfile.areaPreference,
-      "bio": _seekingFlatmateProfile.bio,
+      // "areaPreference": _seekingFlatmateProfile.areaPreference,
+      // "bio": _seekingFlatmateProfile.bio,
       "userType": "seeking_flatmate",
       "habits": {
-        "cleanliness": _seekingFlatmateProfile.cleanliness,
-        "socialPreferences": _seekingFlatmateProfile.socialHabits,
-        // "workSchedule": _seekingFlatmateProfile.workSchedule,//
-        // "noiseTolerance": _seekingFlatmateProfile.noiseLevel,//
-        "smoking": _seekingFlatmateProfile.smokingHabits,
-        "drinking": _seekingFlatmateProfile.drinkingHabits,
-        "food": _seekingFlatmateProfile.foodPreference,
-        // "visitorsPolicy": _seekingFlatmateProfile.visitorsPolicy,//
-        "petOwnership": _seekingFlatmateProfile.petOwnership,
-        "petTolerance": _seekingFlatmateProfile.petTolerance,
+        // "cleanliness": _seekingFlatmateProfile.cleanliness,
+        // "socialPreferences": _seekingFlatmateProfile.socialHabits,
+        // // "workSchedule": _seekingFlatmateProfile.workSchedule,//
+        // // "noiseTolerance": _seekingFlatmateProfile.noiseLevel,//
+        // "smoking": _seekingFlatmateProfile.smokingHabits,
+        // "drinking": _seekingFlatmateProfile.drinkingHabits,
+        // "food": _seekingFlatmateProfile.foodPreference,
+        // // "visitorsPolicy": _seekingFlatmateProfile.visitorsPolicy,//
+        // "petOwnership": _seekingFlatmateProfile.petOwnership,
+        // "petTolerance": _seekingFlatmateProfile.petTolerance,
         // "sleepingSchedule": _seekingFlatmateProfile.sleepingSchedule,//
         // "sharingCommonSpaces": _seekingFlatmateProfile.sharingCommonSpaces,//
         // "guestOvernightStays": _seekingFlatmateProfile.guestsOvernightPolicy,//

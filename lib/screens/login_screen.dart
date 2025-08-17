@@ -7,6 +7,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'selection_screen.dart';
 import 'home_page.dart';
 import 'package:flutter/foundation.dart';
+import 'package:mytennat/screens/initial_profile_screen.dart'; // Import InitialProfileScreen
+import 'package:mytennat/screens/complete_user_profile_screen.dart'; // Import CompleteUserProfileScreen
+
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -192,22 +195,51 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       final String? userPhoneNumber = user.phoneNumber;
       debugPrint('Authenticated user phone number: $userPhoneNumber');
 
+      final userProfileSnapshot = await userDocRef.get(); // Get the user's main profile document
+
       final flatListingsSnapshot = await userDocRef.collection('flatListings').limit(1).get();
       final bool hasFlatListingProfile = flatListingsSnapshot.docs.isNotEmpty;
 
       final seekingFlatmateProfilesSnapshot = await userDocRef.collection('seekingFlatmateProfiles').limit(1).get();
       final bool hasSeekingFlatmateProfile = seekingFlatmateProfilesSnapshot.docs.isNotEmpty;
 
-      if (hasFlatListingProfile || hasSeekingFlatmateProfile) {
-        debugPrint('User has an existing profile (flat listing or seeking flatmate). Navigating to HomePage.');
+      if (userProfileSnapshot.exists && userProfileSnapshot.data() != null &&
+          userProfileSnapshot.data()!.containsKey('name') &&
+          userProfileSnapshot.data()!.containsKey('age') &&
+          userProfileSnapshot.data()!.containsKey('gender') &&
+          userProfileSnapshot.data()!.containsKey('city')) {
+        // User has initial profile. Check for complete profile or existing listings.
+        if (userProfileSnapshot.data()!.containsKey('occupation') &&
+            userProfileSnapshot.data()!.containsKey('religion') &&
+            userProfileSnapshot.data()!.containsKey('bio')) {
+          // User has a complete profile.
+          debugPrint('User has a complete profile. Navigating to HomePage.');
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const HomePage()),
+                (Route<dynamic> route) => false,
+          );
+        } else {
+          // User has initial profile but not complete.
+          debugPrint('User has initial profile but not complete. Navigating to CompleteUserProfileScreen.');
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const CompleteUserProfileScreen()),
+                (Route<dynamic> route) => false,
+          );
+        }
+      } else if (hasFlatListingProfile || hasSeekingFlatmateProfile) {
+        // User doesn't have a main user profile but has a flat listing or seeking flatmate profile
+        // This case might indicate an older flow or partial data. For now, we'll direct them to HomePage.
+        debugPrint('User has existing flat listing or seeking flatmate profile. Navigating to HomePage.');
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const HomePage()),
               (Route<dynamic> route) => false,
         );
-      } else {
-        debugPrint('New user. No existing profiles found. Navigating to profile creation (SelectionScreen).');
+      }
+      else {
+        // New user. No existing profiles found (initial, complete, flat listing, or seeking flatmate).
+        debugPrint('New user. No existing profiles found. Navigating to InitialProfileScreen.');
         Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => SelectionScreen(initialPhoneNumber: userPhoneNumber)),
+          MaterialPageRoute(builder: (context) => const InitialProfileScreen()),
               (Route<dynamic> route) => false,
         );
       }

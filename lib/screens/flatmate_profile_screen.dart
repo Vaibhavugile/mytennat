@@ -12,27 +12,27 @@ class FlatListingProfile {
   String documentId; // Added: To store the Firestore document ID
   String? uid; // Added: To store the user ID (UID)
   // Basic Info
-  String ownerName;
+  // String ownerName;
 
-  String? ownerPhonenumber;
+  // String? ownerPhonenumber;
   int? ownerAge; // Changed to nullable int
-  String ownerGender;
-  String ownerOccupation;
-  String ownerReligion;
-  String ownerBio;
-  String desiredCity;
-  String areaPreference;
+  // String ownerGender;
+  // String ownerOccupation;
+  // String ownerReligion;
+  // String ownerBio;
+  // String desiredCity;
+  // String areaPreference;
 
   // Habits
-  String smokingHabit;
-  String drinkingHabit;
-  String foodPreference;
-  String cleanlinessLevel;
+  // String smokingHabit;
+  // String drinkingHabit;
+  // String foodPreference;
+  // String cleanlinessLevel;
   // String noiseLevel;
-  String socialPreferences;
+  // String socialPreferences;
   // String visitorsPolicy; // Mapped from Firestore 'visitorsPolicy'
-  String petOwnership;
-  String petTolerance;
+  // String petOwnership;
+  // String petTolerance;
   // String sleepingSchedule;
   // String workSchedule;
   // String sharingCommonSpaces;
@@ -69,24 +69,24 @@ class FlatListingProfile {
   FlatListingProfile({
     this.documentId = '',
     this.uid, // Initialize uid
-    this.ownerName = '',
-    this.ownerPhonenumber ='',
+    // this.ownerName = '',
+    // this.ownerPhonenumber ='',
     this.ownerAge,
-    this.ownerGender = '',
-    this.ownerOccupation = '',
-    this.ownerReligion = '',
-    this.ownerBio = '',
-    this.desiredCity = '',
-    this.areaPreference = '',
-    this.smokingHabit = '',
-    this.drinkingHabit = '',
-    this.foodPreference = '',
-    this.cleanlinessLevel = '',
+    // this.ownerGender = '',
+    // this.ownerOccupation = '',
+    // this.ownerReligion = '',
+    // this.ownerBio = '',
+    // this.desiredCity = '',
+    // this.areaPreference = '',
+    // this.smokingHabit = '',
+    // this.drinkingHabit = '',
+    // this.foodPreference = '',
+    // this.cleanlinessLevel = '',
     // this.noiseLevel = '',
-    this.socialPreferences = '',
+    // this.socialPreferences = '',
     // this.visitorsPolicy = '',
-    this.petOwnership = '',
-    this.petTolerance = '',
+    // this.petOwnership = '',
+    // this.petTolerance = '',
     // this.sleepingSchedule = '',
     // this.workSchedule = '',
     // this.sharingCommonSpaces = '',
@@ -127,26 +127,26 @@ class FlatListingProfile {
     return FlatListingProfile(
       documentId: documentId,
       uid: data['uid'] as String?,
-      ownerName: data['displayName'] ?? '',
-      ownerPhonenumber:data['phonenumber'] ?? '',// Assuming ownerName is 'displayName' at root level
+      // ownerName: data['displayName'] ?? '',
+      // ownerPhonenumber:data['phonenumber'] ?? '',// Assuming ownerName is 'displayName' at root level
       ownerAge: data['age'] is int ? data['age'] : (data['age'] is String ? int.tryParse(data['age']) : null), // Assuming age is at root level
-      ownerGender: data['gender'] ?? '', // Assuming gender is at root level
-      ownerOccupation: data['occupation'] ?? '', // Assuming occupation is at root level
-      ownerReligion: data['religion']??'',
-      ownerBio: data['bio'] ?? '', // Assuming bio is at root level
-      desiredCity: data['desiredCity'] ?? '', // Assuming desiredCity is at root level
-      areaPreference: data['areaPreference'] ?? '', // Assuming areaPreference is at root level
-
-      // Habits
-      smokingHabit: habits['smoking'] ?? '',
-      drinkingHabit: habits['drinking'] ?? '',
-      foodPreference: habits['food'] ?? '',
-      cleanlinessLevel: habits['cleanliness'] ?? '',
+      // ownerGender: data['gender'] ?? '', // Assuming gender is at root level
+      // ownerOccupation: data['occupation'] ?? '', // Assuming occupation is at root level
+      // ownerReligion: data['religion']??'',
+      // ownerBio: data['bio'] ?? '', // Assuming bio is at root level
+      // desiredCity: data['desiredCity'] ?? '', // Assuming desiredCity is at root level
+      // areaPreference: data['areaPreference'] ?? '', // Assuming areaPreference is at root level
+      //
+      // // Habits
+      // smokingHabit: habits['smoking'] ?? '',
+      // drinkingHabit: habits['drinking'] ?? '',
+      // foodPreference: habits['food'] ?? '',
+      // cleanlinessLevel: habits['cleanliness'] ?? '',
       // noiseLevel: habits['noiseTolerance'] ?? '',
-      socialPreferences: habits['socialPreferences'] ?? '',
-      // visitorsPolicy: habits['visitorsPolicy'] ?? '',
-      petOwnership: habits['petOwnership'] ?? '',
-      petTolerance: habits['petTolerance'] ?? '',
+      // socialPreferences: habits['socialPreferences'] ?? '',
+      // // visitorsPolicy: habits['visitorsPolicy'] ?? '',
+      // petOwnership: habits['petOwnership'] ?? '',
+      // petTolerance: habits['petTolerance'] ?? '',
       // sleepingSchedule: habits['sleepingSchedule'] ?? '',
       // workSchedule: habits['workSchedule'] ?? '',
       // sharingCommonSpaces: habits['sharingCommonSpaces'] ?? '',
@@ -187,25 +187,25 @@ class FlatListingProfile {
   Map<String, dynamic> toMap() {
     return {
       'uid': uid, // Include uid when converting to map
-      'ownerName': ownerName,
-      'ownerPhonenumber' :ownerPhonenumber,
+      // 'ownerName': ownerName,
+      // 'ownerPhonenumber' :ownerPhonenumber,
       'ownerAge': ownerAge,
-      'ownerGender': ownerGender,
-      'ownerOccupation': ownerOccupation,
-      'ownerReligion' :ownerReligion,
-      'ownerBio': ownerBio,
-      'desiredCity': desiredCity,
-      'areaPreference': areaPreference,
+      // 'ownerGender': ownerGender,
+      // 'ownerOccupation': ownerOccupation,
+      // 'ownerReligion' :ownerReligion,
+      // 'ownerBio': ownerBio,
+      // 'desiredCity': desiredCity,
+      // 'areaPreference': areaPreference,
       'habits': {
-        'smoking': smokingHabit,
-        'drinking': drinkingHabit,
-        'food': foodPreference,
-        'cleanliness': cleanlinessLevel,
-        // 'noiseTolerance': noiseLevel,
-        'socialPreferences': socialPreferences,
-        // 'visitorsPolicy': visitorsPolicy,
-        'petOwnership': petOwnership,
-        'petTolerance': petTolerance,
+        // 'smoking': smokingHabit,
+        // 'drinking': drinkingHabit,
+        // 'food': foodPreference,
+        // 'cleanliness': cleanlinessLevel,
+        // // 'noiseTolerance': noiseLevel,
+        // 'socialPreferences': socialPreferences,
+        // // 'visitorsPolicy': visitorsPolicy,
+        // 'petOwnership': petOwnership,
+        // 'petTolerance': petTolerance,
         // 'sleepingSchedule': sleepingSchedule,
         // 'workSchedule': workSchedule,
         // 'sharingCommonSpaces': sharingCommonSpaces,
@@ -245,29 +245,29 @@ class FlatListingProfile {
     return 'FlatListingProfile(\n'
         '  documentId: $documentId,\n'
         '  uid: $uid,\n'
-        '  ownerName: $ownerName,\n'
-        '  ownerPhonenumber: $ownerPhonenumber,\n'
+        // '  ownerName: $ownerName,\n'
+        // '  ownerPhonenumber: $ownerPhonenumber,\n'
         '  ownerAge: $ownerAge,\n'
-        '  ownerGender: $ownerGender,\n'
-        '  ownerOccupation: $ownerOccupation,\n'
-        '  ownerReligion: $ownerReligion,\n'
-        '  ownerBio: $ownerBio,\n'
-        '  desiredCity: $desiredCity,\n'
-        '  areaPreference: $areaPreference,\n'
-        '  smokingHabit: $smokingHabit,\n'
-        '  drinkingHabit: $drinkingHabit,\n'
-        '  foodPreference: $foodPreference,\n'
-        '  cleanlinessLevel: $cleanlinessLevel,\n'
-        // '  noiseLevel: $noiseLevel,\n'
-        '  socialPreferences: $socialPreferences,\n'
-        // '  visitorsPolicy: $visitorsPolicy,\n'
-        '  petOwnership: $petOwnership,\n'
-        '  petTolerance: $petTolerance,\n'
-        // '  sleepingSchedule: $sleepingSchedule,\n'
-        // '  workSchedule: $workSchedule,\n'
-        // '  sharingCommonSpaces: $sharingCommonSpaces,\n'
-        // '  guestsOvernightPolicy: $guestsOvernightPolicy,\n'
-        // '  personalSpaceVsSocialization: $personalSpaceVsSocialization,\n'
+        // '  ownerGender: $ownerGender,\n'
+        // '  ownerOccupation: $ownerOccupation,\n'
+        // '  ownerReligion: $ownerReligion,\n'
+        // '  ownerBio: $ownerBio,\n'
+        // '  desiredCity: $desiredCity,\n'
+        // '  areaPreference: $areaPreference,\n'
+    //     '  smokingHabit: $smokingHabit,\n'
+    //     '  drinkingHabit: $drinkingHabit,\n'
+    //     '  foodPreference: $foodPreference,\n'
+    //     '  cleanlinessLevel: $cleanlinessLevel,\n'
+    // // '  noiseLevel: $noiseLevel,\n'
+    //     '  socialPreferences: $socialPreferences,\n'
+    // // '  visitorsPolicy: $visitorsPolicy,\n'
+    //     '  petOwnership: $petOwnership,\n'
+    //     '  petTolerance: $petTolerance,\n'
+    // '  sleepingSchedule: $sleepingSchedule,\n'
+    // '  workSchedule: $workSchedule,\n'
+    // '  sharingCommonSpaces: $sharingCommonSpaces,\n'
+    // '  guestsOvernightPolicy: $guestsOvernightPolicy,\n'
+    // '  personalSpaceVsSocialization: $personalSpaceVsSocialization,\n'
         '  flatType: $flatType,\n'
         '  roomType: $roomType,\n'
 
@@ -277,8 +277,8 @@ class FlatListingProfile {
         '  rentPrice: $rentPrice,\n'
         '  depositAmount: $depositAmount,\n'
         '  bathroomType: $bathroomType,\n'
-        // '  balconyAvailability: $balconyAvailability,\n'
-        // '  parkingAvailability: $parkingAvailability,\n'
+    // '  balconyAvailability: $balconyAvailability,\n'
+    // '  parkingAvailability: $parkingAvailability,\n'
         '  amenities: $amenities,\n'
         '  address: $address,\n'
         '  landmark: $landmark,\n'
@@ -653,46 +653,46 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
       case 1: // Owner Age
         final age = int.tryParse(_ownerAgeController.text);
         return age != null && age >= 18 && age <= 99;
-      case 2: // Owner Gender
-        return _flatListingProfile.ownerGender.isNotEmpty;
+      // case 2: // Owner Gender
+      //   return _flatListingProfile.ownerGender.isNotEmpty;
       case 3: // Owner Occupation
         return _ownerOccupationController.text.isNotEmpty;
-      case 3: // Owner Occupation
-        return _flatListingProfile.ownerReligion.isNotEmpty;
+      // case 3: // Owner Occupation
+      //   return _flatListingProfile.ownerReligion.isNotEmpty;
       case 4: // Owner Bio
         return _ownerBioController.text.isNotEmpty;
       case 5: // Desired City (Flat Location)
         return _desiredCityController.text.isNotEmpty;
       case 6: // Area Preference
         return _areaPreferenceController.text.isNotEmpty;
-      case 7: // Smoking Habits
-        return _flatListingProfile.smokingHabit.isNotEmpty;
-      case 8: // Drinking Habits
-        return _flatListingProfile.drinkingHabit.isNotEmpty;
-      case 9: // Food Preference
-        return _flatListingProfile.foodPreference.isNotEmpty;
-      case 10: // Cleanliness Level
-        return _flatListingProfile.cleanlinessLevel.isNotEmpty;
-      // case 11: // Noise Level
-      //   return _flatListingProfile.noiseLevel.isNotEmpty;
-      case 12: // Social Habits
-        return _flatListingProfile.socialPreferences.isNotEmpty;
-      // case 13: // Visitors policy
-      //   return _flatListingProfile.visitorsPolicy.isNotEmpty;
-      case 14: // Pet ownership
-        return _flatListingProfile.petOwnership.isNotEmpty;
-      case 15: // Pet tolerance
-        return _flatListingProfile.petTolerance.isNotEmpty;
-      // case 16: // Sleeping schedule
-      //   return _flatListingProfile.sleepingSchedule.isNotEmpty;
-      // case 17: // Work schedule
-      //   return _flatListingProfile.workSchedule.isNotEmpty;
-      // case 18: // Sharing Common Spaces
-      //   return _flatListingProfile.sharingCommonSpaces.isNotEmpty;
-      // case 19: // Guests Policy for Overnight Stays
-      //   return _flatListingProfile.guestsOvernightPolicy.isNotEmpty;
-      // case 20: // Personal Space
-      //   return _flatListingProfile.personalSpaceVsSocialization.isNotEmpty;
+      // case 7: // Smoking Habits
+      //   return _flatListingProfile.smokingHabit.isNotEmpty;
+      // case 8: // Drinking Habits
+      //   return _flatListingProfile.drinkingHabit.isNotEmpty;
+      // case 9: // Food Preference
+      //   return _flatListingProfile.foodPreference.isNotEmpty;
+      // case 10: // Cleanliness Level
+      //   return _flatListingProfile.cleanlinessLevel.isNotEmpty;
+    // case 11: // Noise Level
+    //   return _flatListingProfile.noiseLevel.isNotEmpty;
+    //   case 12: // Social Habits
+    //     return _flatListingProfile.socialPreferences.isNotEmpty;
+    // case 13: // Visitors policy
+    //   return _flatListingProfile.visitorsPolicy.isNotEmpty;
+    //   case 14: // Pet ownership
+    //     return _flatListingProfile.petOwnership.isNotEmpty;
+    //   case 15: // Pet tolerance
+    //     return _flatListingProfile.petTolerance.isNotEmpty;
+    // case 16: // Sleeping schedule
+    //   return _flatListingProfile.sleepingSchedule.isNotEmpty;
+    // case 17: // Work schedule
+    //   return _flatListingProfile.workSchedule.isNotEmpty;
+    // case 18: // Sharing Common Spaces
+    //   return _flatListingProfile.sharingCommonSpaces.isNotEmpty;
+    // case 19: // Guests Policy for Overnight Stays
+    //   return _flatListingProfile.guestsOvernightPolicy.isNotEmpty;
+    // case 20: // Personal Space
+    //   return _flatListingProfile.personalSpaceVsSocialization.isNotEmpty;
       case 21: // Flat Type
         return _flatListingProfile.flatType.isNotEmpty;
       case 21: // Flat Type
@@ -741,15 +741,15 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
   void initState() {
     super.initState();
     // Initialize controllers with current profile values
-    if (widget.initialPhoneNumber != null) {
-      _flatListingProfile.ownerPhonenumber = widget.initialPhoneNumber; // ADD THIS LINE
-    }
-    _ownerNameController = TextEditingController(text: _flatListingProfile.ownerName);
+    // if (widget.initialPhoneNumber != null) {
+    //   _flatListingProfile.ownerPhonenumber = widget.initialPhoneNumber; // ADD THIS LINE
+    // }
+    // _ownerNameController = TextEditingController(text: _flatListingProfile.ownerName);
     _ownerAgeController = TextEditingController(text: _flatListingProfile.ownerAge?.toString() ?? '');
-    _ownerOccupationController = TextEditingController(text: _flatListingProfile.ownerOccupation);
-    _ownerBioController = TextEditingController(text: _flatListingProfile.ownerBio);
-    _desiredCityController = TextEditingController(text: _flatListingProfile.desiredCity);
-    _areaPreferenceController = TextEditingController(text: _flatListingProfile.areaPreference);
+    // _ownerOccupationController = TextEditingController(text: _flatListingProfile.ownerOccupation);
+    // _ownerBioController = TextEditingController(text: _flatListingProfile.ownerBio);
+    // _desiredCityController = TextEditingController(text: _flatListingProfile.desiredCity);
+    // _areaPreferenceController = TextEditingController(text: _flatListingProfile.areaPreference);
     _rentPriceController = TextEditingController(text: _flatListingProfile.rentPrice?.toString() ?? '');
     _depositAmountController = TextEditingController(text: _flatListingProfile.depositAmount?.toString() ?? '');
     _addressController = TextEditingController(text: _flatListingProfile.address);
@@ -758,30 +758,30 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
 
 
     // Add listeners to update the profile model as text changes
-    _ownerNameController.addListener(() {
-      _flatListingProfile.ownerName = _ownerNameController.text;
-      setState(() {}); // Trigger rebuild to update button state
-    });
+    // _ownerNameController.addListener(() {
+    //   _flatListingProfile.ownerName = _ownerNameController.text;
+    //   setState(() {}); // Trigger rebuild to update button state
+    // });
     _ownerAgeController.addListener(() {
       _flatListingProfile.ownerAge = int.tryParse(_ownerAgeController.text);
       setState(() {}); // Trigger rebuild to update button state
     });
-    _ownerOccupationController.addListener(() {
-      _flatListingProfile.ownerOccupation = _ownerOccupationController.text;
-      setState(() {});
-    });
-    _ownerBioController.addListener(() {
-      _flatListingProfile.ownerBio = _ownerBioController.text;
-      setState(() {});
-    });
-    _desiredCityController.addListener(() {
-      _flatListingProfile.desiredCity = _desiredCityController.text;
-      setState(() {});
-    });
-    _areaPreferenceController.addListener(() {
-      _flatListingProfile.areaPreference = _areaPreferenceController.text;
-      setState(() {});
-    });
+    // _ownerOccupationController.addListener(() {
+    //   _flatListingProfile.ownerOccupation = _ownerOccupationController.text;
+    //   setState(() {});
+    // });
+    // _ownerBioController.addListener(() {
+    //   _flatListingProfile.ownerBio = _ownerBioController.text;
+    //   setState(() {});
+    // });
+    // _desiredCityController.addListener(() {
+    //   _flatListingProfile.desiredCity = _desiredCityController.text;
+    //   setState(() {});
+    // });
+    // _areaPreferenceController.addListener(() {
+    //   _flatListingProfile.areaPreference = _areaPreferenceController.text;
+    //   setState(() {});
+    // });
     _rentPriceController.addListener(() {
       _flatListingProfile.rentPrice = int.tryParse(_rentPriceController.text);
       setState(() {});
@@ -1072,144 +1072,144 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
     return [
       // --- Section 1: About You (Pages 0-6) ---
       // Page 0: Owner Name
-      _buildTextQuestion(
-        title: "What's your name?",
-        subtitle: "This will be visible to potential flatmates.",
-        hintText: "Enter your name",
-        controller: _ownerNameController,
-      ),
+      // _buildTextQuestion(
+      //   title: "What's your name?",
+      //   subtitle: "This will be visible to potential flatmates.",
+      //   hintText: "Enter your name",
+      //   controller: _ownerNameController,
+      // ),
 
       // Page 1: Owner Age
-      _buildTextQuestion(
-        title: "How old are you?",
-        subtitle: "This helps flatmates understand your age group.",
-        hintText: "e.g., 25",
-        keyboardType: TextInputType.number,
-        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-        controller: _ownerAgeController,
-      ),
+      // _buildTextQuestion(
+      //   title: "How old are you?",
+      //   subtitle: "This helps flatmates understand your age group.",
+      //   hintText: "e.g., 25",
+      //   keyboardType: TextInputType.number,
+      //   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+      //   controller: _ownerAgeController,
+      // ),
 
       // Page 2: Owner Gender
-      SingleChoiceQuestionWidget(
-        title: "What's your gender?",
-        subtitle: "This helps potential flatmates relate to you.",
-        options: ['Male', 'Female', 'Non-binary', 'Prefer not to say'],
-        onSelected: (value) {
-          setState(() {
-            _flatListingProfile.ownerGender = value;
-          });
-        },
-        initialValue: _flatListingProfile.ownerGender,
-      ),
+      // SingleChoiceQuestionWidget(
+      //   title: "What's your gender?",
+      //   subtitle: "This helps potential flatmates relate to you.",
+      //   options: ['Male', 'Female', 'Non-binary', 'Prefer not to say'],
+      //   onSelected: (value) {
+      //     setState(() {
+      //       _flatListingProfile.ownerGender = value;
+      //     });
+      //   },
+      //   initialValue: _flatListingProfile.ownerGender,
+      // ),
 
       // Page 3: Owner Occupation
-      _buildTextQuestion(
-        title: "What do you do for a living?",
-        subtitle: "Share your profession or student status.",
-        hintText: "e.g., Software Engineer, Student, Freelancer",
-        controller: _ownerOccupationController,
-      ),
-      SingleChoiceQuestionWidget(
-        title: "What's your Religion?",
-        subtitle: "This helps potential flatmates relate to you.",
-        options: ['Hindu', 'Muslim', 'Christian','Sikh','Buddhism','Prefer not to say'],
-        onSelected: (value) {
-          setState(() {
-            _flatListingProfile.ownerReligion = value;
-          });
-        },
-        initialValue: _flatListingProfile.ownerReligion,
-      ),
+      // _buildTextQuestion(
+      //   title: "What do you do for a living?",
+      //   subtitle: "Share your profession or student status.",
+      //   hintText: "e.g., Software Engineer, Student, Freelancer",
+      //   controller: _ownerOccupationController,
+      // ),
+      // SingleChoiceQuestionWidget(
+      //   title: "What's your Religion?",
+      //   subtitle: "This helps potential flatmates relate to you.",
+      //   options: ['Hindu', 'Muslim', 'Christian','Sikh','Buddhism','Prefer not to say'],
+      //   onSelected: (value) {
+      //     setState(() {
+      //       _flatListingProfile.ownerReligion = value;
+      //     });
+      //   },
+      //   initialValue: _flatListingProfile.ownerReligion,
+      // ),
 
       // Page 4: Owner Bio
-      _buildTextQuestion(
-        title: "Tell us a bit about yourself as a flat owner/current flatmate.",
-        subtitle: "Share something interesting! This helps others get to know you.",
-        hintText: "e.g., I'm a quiet person who loves reading...",
-        controller: _ownerBioController,
-        maxLines: 5,
-      ),
+      // _buildTextQuestion(
+      //   title: "Tell us a bit about yourself as a flat owner/current flatmate.",
+      //   subtitle: "Share something interesting! This helps others get to know you.",
+      //   hintText: "e.g., I'm a quiet person who loves reading...",
+      //   controller: _ownerBioController,
+      //   maxLines: 5,
+      // ),
 
       // Page 5: Desired City (This is the city the flat is *in*)
 
 
       // Page 6: Area Preference (This is for the flat's area)
-      _buildCitySelectionQuestion(
-        title: "Which city does your flat located ?",
-        subtitle: "This helps us filter relevant listings for you.",
-        onCitySelected: (value) {
-          setState(() {
-            _flatListingProfile.desiredCity = value;
-            // Clear area preference when city changes
-            _flatListingProfile.areaPreference = '';
-            _areaPreferenceController.clear();
-          });
-        },
-        initialValue: _flatListingProfile.desiredCity,
-        cities: maharashtraLocations.keys.toList(),
-      ),
-      _buildAreaSelectionQuestion(
-        title: "What is your flat located  areas/localities?",
-        subtitle: "Select preferred areas within ${(_flatListingProfile.desiredCity.isNotEmpty ? _flatListingProfile.desiredCity : 'the selected city')}.",
-        onAreaSelected: (value) {
-          setState(() {
-            _flatListingProfile.areaPreference = value;
-          });
-        },
-        initialValue: _flatListingProfile.areaPreference,
-        areas: maharashtraLocations[_flatListingProfile.desiredCity] ?? [], // Dynamically load areas
-        selectedCity: _flatListingProfile.desiredCity, // Pass selected city to enable/disable
-      ),
+      // _buildCitySelectionQuestion(
+      //   title: "Which city does your flat located ?",
+      //   subtitle: "This helps us filter relevant listings for you.",
+      //   onCitySelected: (value) {
+      //     setState(() {
+      //       _flatListingProfile.desiredCity = value;
+      //       // Clear area preference when city changes
+      //       _flatListingProfile.areaPreference = '';
+      //       _areaPreferenceController.clear();
+      //     });
+      //   },
+      //   initialValue: _flatListingProfile.desiredCity,
+      //   cities: maharashtraLocations.keys.toList(),
+      // ),
+      // _buildAreaSelectionQuestion(
+      //   title: "What is your flat located  areas/localities?",
+      //   subtitle: "Select preferred areas within ${(_flatListingProfile.desiredCity.isNotEmpty ? _flatListingProfile.desiredCity : 'the selected city')}.",
+      //   onAreaSelected: (value) {
+      //     setState(() {
+      //       _flatListingProfile.areaPreference = value;
+      //     });
+      //   },
+      //   initialValue: _flatListingProfile.areaPreference,
+      //   areas: maharashtraLocations[_flatListingProfile.desiredCity] ?? [], // Dynamically load areas
+      //   selectedCity: _flatListingProfile.desiredCity, // Pass selected city to enable/disable
+      // ),
       // --- Section 2: Your Habits (Owner's Habits) (Pages 7-20) ---
       // Page 7: Smoking Habits (Owner's)
-      SingleChoiceQuestionWidget(
-        title: "What are your smoking habits?",
-        subtitle: "This helps in matching with compatible flatmates.",
-        options: ['Never', 'Occasionally', 'Socially', 'Regularly'],
-        onSelected: (value) {
-          setState(() {
-            _flatListingProfile.smokingHabit = value;
-          });
-        },
-        initialValue: _flatListingProfile.smokingHabit,
-      ),
+      // SingleChoiceQuestionWidget(
+      //   title: "What are your smoking habits?",
+      //   subtitle: "This helps in matching with compatible flatmates.",
+      //   options: ['Never', 'Occasionally', 'Socially', 'Regularly'],
+      //   onSelected: (value) {
+      //     setState(() {
+      //       _flatListingProfile.smokingHabit = value;
+      //     });
+      //   },
+      //   initialValue: _flatListingProfile.smokingHabit,
+      // ),
       // Page 8: Drinking Habits (Owner's)
-      SingleChoiceQuestionWidget(
-        title: "What are your drinking habits?",
-        subtitle: "Are you a non-drinker, social drinker, or regular drinker?",
-        options: ['Never', 'Occasionally', 'Socially', 'Regularly'],
-        onSelected: (value) {
-          setState(() {
-            _flatListingProfile.drinkingHabit = value;
-          });
-        },
-        initialValue: _flatListingProfile.drinkingHabit,
-      ),
+      // SingleChoiceQuestionWidget(
+      //   title: "What are your drinking habits?",
+      //   subtitle: "Are you a non-drinker, social drinker, or regular drinker?",
+      //   options: ['Never', 'Occasionally', 'Socially', 'Regularly'],
+      //   onSelected: (value) {
+      //     setState(() {
+      //       _flatListingProfile.drinkingHabit = value;
+      //     });
+      //   },
+      //   initialValue: _flatListingProfile.drinkingHabit,
+      // ),
       // Page 9: Food Preference (Owner's)
-      SingleChoiceQuestionWidget(
-        title: "What is your food preference?",
-        subtitle: "Any specific dietary habits or restrictions?",
-        options: ['Vegetarian', 'Non-Vegetarian', 'Vegan', 'Eggetarian', 'Jain', 'Other'],
-        onSelected: (value) {
-          setState(() {
-            _flatListingProfile.foodPreference = value;
-          });
-        },
-        initialValue: _flatListingProfile.foodPreference,
-      ),
+      // SingleChoiceQuestionWidget(
+      //   title: "What is your food preference?",
+      //   subtitle: "Any specific dietary habits or restrictions?",
+      //   options: ['Vegetarian', 'Non-Vegetarian', 'Vegan', 'Eggetarian', 'Jain', 'Other'],
+      //   onSelected: (value) {
+      //     setState(() {
+      //       _flatListingProfile.foodPreference = value;
+      //     });
+      //   },
+      //   initialValue: _flatListingProfile.foodPreference,
+      // ),
 
       // Page 10: Cleanliness Level (Owner's)
-      SingleChoiceQuestionWidget(
-        title: "How clean are you?",
-        subtitle: "Be honest! This helps manage expectations.",
-        options: ['Very Tidy', 'Moderately Tidy', 'Flexible', 'Can be messy at times'],
-        onSelected: (value) {
-          setState(() {
-            _flatListingProfile.cleanlinessLevel = value;
-          });
-        },
-        initialValue: _flatListingProfile.cleanlinessLevel,
-      ),
+      // SingleChoiceQuestionWidget(
+      //   title: "How clean are you?",
+      //   subtitle: "Be honest! This helps manage expectations.",
+      //   options: ['Very Tidy', 'Moderately Tidy', 'Flexible', 'Can be messy at times'],
+      //   onSelected: (value) {
+      //     setState(() {
+      //       _flatListingProfile.cleanlinessLevel = value;
+      //     });
+      //   },
+      //   initialValue: _flatListingProfile.cleanlinessLevel,
+      // ),
 
       // Page 11: Noise level (Owner's preference)
       // SingleChoiceQuestionWidget(
@@ -1225,17 +1225,17 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
       // ),
 
       // Page 12: Social Habits (Owner's)
-      SingleChoiceQuestionWidget(
-        title: "What are your social habits?",
-        subtitle: "Do you enjoy social gatherings or prefer quiet?",
-        options: ['Social & outgoing', 'Occasional gatherings', 'Quiet & private', 'Flexible'],
-        onSelected: (value) {
-          setState(() {
-            _flatListingProfile.socialPreferences = value;
-          });
-        },
-        initialValue: _flatListingProfile.socialPreferences,
-      ),
+      // SingleChoiceQuestionWidget(
+      //   title: "What are your social habits?",
+      //   subtitle: "Do you enjoy social gatherings or prefer quiet?",
+      //   options: ['Social & outgoing', 'Occasional gatherings', 'Quiet & private', 'Flexible'],
+      //   onSelected: (value) {
+      //     setState(() {
+      //       _flatListingProfile.socialPreferences = value;
+      //     });
+      //   },
+      //   initialValue: _flatListingProfile.socialPreferences,
+      // ),
 
       // Page 13: Visitors policy (Owner's)
       // SingleChoiceQuestionWidget(
@@ -1251,29 +1251,29 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
       // ),
 
       // Page 14: Pet ownership (Owner's)
-      SingleChoiceQuestionWidget(
-        title: "Do you currently own pets?",
-        subtitle: "Are you bringing any furry friends?",
-        options: ['Yes', 'No', 'Planning to get one'],
-        onSelected: (value) {
-          setState(() {
-            _flatListingProfile.petOwnership = value;
-          });
-        },
-        initialValue: _flatListingProfile.petOwnership,
-      ),
+      // SingleChoiceQuestionWidget(
+      //   title: "Do you currently own pets?",
+      //   subtitle: "Are you bringing any furry friends?",
+      //   options: ['Yes', 'No', 'Planning to get one'],
+      //   onSelected: (value) {
+      //     setState(() {
+      //       _flatListingProfile.petOwnership = value;
+      //     });
+      //   },
+      //   initialValue: _flatListingProfile.petOwnership,
+      // ),
       // Page 15: Pet tolerance (Owner's)
-      SingleChoiceQuestionWidget(
-        title: "What's your tolerance for flatmates with pets?",
-        subtitle: "Are you comfortable living with pets?",
-        options: ['Comfortable with pets', 'Tolerant of pets', 'Prefer no pets', 'Allergic to pets'],
-        onSelected: (value) {
-          setState(() {
-            _flatListingProfile.petTolerance = value;
-          });
-        },
-        initialValue: _flatListingProfile.petTolerance,
-      ),
+      // SingleChoiceQuestionWidget(
+      //   title: "What's your tolerance for flatmates with pets?",
+      //   subtitle: "Are you comfortable living with pets?",
+      //   options: ['Comfortable with pets', 'Tolerant of pets', 'Prefer no pets', 'Allergic to pets'],
+      //   onSelected: (value) {
+      //     setState(() {
+      //       _flatListingProfile.petTolerance = value;
+      //     });
+      //   },
+      //   initialValue: _flatListingProfile.petTolerance,
+      // ),
       // // Page 16: Sleeping schedule (Owner's)
       // SingleChoiceQuestionWidget(
       //   title: "What's your typical sleeping schedule?",
@@ -1736,26 +1736,26 @@ class _FlatmateProfileScreenState extends State<FlatmateProfileScreen> {
     final Map<String, dynamic> profileData = {
       "uid": user.uid,
       "email": user.email, //
-      "displayName": _flatListingProfile.ownerName,
-      "phonenumber":_flatListingProfile.ownerPhonenumber,
+      // "displayName": _flatListingProfile.ownerName,
+      // "phonenumber":_flatListingProfile.ownerPhonenumber,
       "age": _flatListingProfile.ownerAge ?? 0,
-      "gender": _flatListingProfile.ownerGender,
-      "occupation": _flatListingProfile.ownerOccupation,
-      "religion":_flatListingProfile.ownerReligion,
-      "bio": _flatListingProfile.ownerBio,
-      "desiredCity": _flatListingProfile.desiredCity,//
-      "areaPreference": _flatListingProfile.areaPreference,//
+      // "gender": _flatListingProfile.ownerGender,
+      // "occupation": _flatListingProfile.ownerOccupation,
+      // "religion":_flatListingProfile.ownerReligion,
+      // "bio": _flatListingProfile.ownerBio,
+      // "desiredCity": _flatListingProfile.desiredCity,//
+      // "areaPreference": _flatListingProfile.areaPreference,//
       "userType": "flat_listing",
       "habits": {
-        "smoking": _flatListingProfile.smokingHabit,
-        "drinking": _flatListingProfile.drinkingHabit,
-        "food": _flatListingProfile.foodPreference,
-        "cleanliness": _flatListingProfile.cleanlinessLevel,
+        // "smoking": _flatListingProfile.smokingHabit,
+        // "drinking": _flatListingProfile.drinkingHabit,
+        // "food": _flatListingProfile.foodPreference,
+        // "cleanliness": _flatListingProfile.cleanlinessLevel,
         // "noiseTolerance": _flatListingProfile.noiseLevel,//
-        "socialPreferences": _flatListingProfile.socialPreferences,
+        // "socialPreferences": _flatListingProfile.socialPreferences,
         // "visitorsPolicy": _flatListingProfile.visitorsPolicy,//
-        "petOwnership": _flatListingProfile.petOwnership,
-        "petTolerance": _flatListingProfile.petTolerance,
+        // "petOwnership": _flatListingProfile.petOwnership,
+        // "petTolerance": _flatListingProfile.petTolerance,
         // "sleepingSchedule": _flatListingProfile.sleepingSchedule,//
         // "workSchedule": _flatListingProfile.workSchedule,//
         // "sharingCommonSpaces": _flatListingProfile.sharingCommonSpaces,//

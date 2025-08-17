@@ -12,7 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mytennat/screens/user_activity_screen.dart';
 import 'package:mytennat/screens/flatmate_profile_screen.dart';
 import 'package:mytennat/screens/flat_with_flatmate_profile_screen.dart';
-import 'package:mytennat/screens/PlansScreen.dart'; // Import the PlansScreen
+import 'package:mytennat/screens/PlansScreen.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -31,7 +31,11 @@ class _HomePageState extends State<HomePage> {
   int? _currentPlanContacts;
   int? _remainingContacts;
 
+  String _userName = 'User'; // Default user name
+
   static const String _lastSelectedProfileKey = 'lastSelectedProfileId_';
+
+  int _selectedIndex = 0; // For Bottom Navigation Bar
 
   @override
   void initState() {
@@ -48,6 +52,7 @@ class _HomePageState extends State<HomePage> {
       _currentPlanName = null;
       _currentPlanContacts = null;
       _remainingContacts = null;
+      _userName = 'User'; // Reset to a default before fetching
     });
 
     final user = FirebaseAuth.instance.currentUser;
@@ -60,6 +65,7 @@ class _HomePageState extends State<HomePage> {
           final userData = userDocSnapshot.data();
           if (userData != null) {
             setState(() {
+              _userName = userData['name'] as String? ?? 'User'; // Fetch user's name
               _currentPlanName = userData['currentPlan'] as String?;
               _currentPlanContacts = userData['currentPlanContacts'] as int?;
               _remainingContacts = userData['remainingContacts'] as int?;
@@ -81,8 +87,11 @@ class _HomePageState extends State<HomePage> {
         if (flatListings.isEmpty && seekingFlatmateProfiles.isEmpty) {
           setState(() {
             _userProfileType = null;
+            // No active profile, so nothing to set for _currentActiveProfileId or _activeProfileObject
+            // _isLoadingProfileType will be set to false at the end of the method
           });
-          return;
+          // REMOVED THE 'return;' STATEMENT HERE
+          // The function should continue to the final setState to turn off loading.
         }
 
         final prefs = await SharedPreferences.getInstance();
@@ -147,6 +156,7 @@ class _HomePageState extends State<HomePage> {
           _currentPlanName = null;
           _currentPlanContacts = null;
           _remainingContacts = null;
+          _userName = 'User';
         });
       }
     } else {
@@ -157,66 +167,133 @@ class _HomePageState extends State<HomePage> {
         _currentPlanName = null;
         _currentPlanContacts = null;
         _remainingContacts = null;
+        _userName = 'User';
       });
     }
 
+    // This must always run to turn off the loading indicator
     setState(() {
       _isLoadingProfileType = false;
     });
   }
 
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+
+    // Handle navigation based on the selected index
+    switch (index) {
+      case 0: // Home
+      // Stay on HomePage, or refresh if needed
+        break;
+      case 1: // Matches - Now navigates to MatchingScreen
+        if (_userProfileType != null && _currentActiveProfileId != null) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => MatchingScreen(
+                profileType: _userProfileType!,
+                profileId: _currentActiveProfileId!,
+              ),
+            ),
+          );
+        } else {
+          // This message is shown if the user doesn't have a 'flatListing' or 'seekingFlatmate' profile yet.
+          // This is appropriate as matches are based on these profiles.
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Please complete your profile to view matches.')),
+          );
+        }
+        break;
+      case 2: // Chat - Still navigates to MatchesListScreen as per previous instruction
+        if (_userProfileType != null && _currentActiveProfileId != null) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => MatchesListScreen(
+                profileType: _userProfileType!,
+                profileId: _currentActiveProfileId!,
+              ),
+            ),
+          );
+        } else {
+          // This message is shown if the user doesn't have a 'flatListing' or 'seekingFlatmate' profile yet.
+          // This is appropriate as chat/matches are based on these profiles.
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Please complete your profile to view chat/matches.')),
+          );
+        }
+        break;
+      case 3: // Activity
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const UserActivityScreen()),
+        );
+        break;
+      case 4: // More
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const MoreProfileScreen()),
+        );
+        break;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    String profileName = '';
-    if (_activeProfileObject != null) {
-      if (_userProfileType == 'flat_listing' && _activeProfileObject is FlatListingProfile) {
-        profileName = (_activeProfileObject as FlatListingProfile).ownerName ?? 'Your Flat Listing';
-      } else if (_userProfileType == 'seeking_flatmate' && _activeProfileObject is SeekingFlatmateProfile) {
-        profileName = (_activeProfileObject as SeekingFlatmateProfile).name ?? 'Your Flatmate Profile';
-      }
-    }
-
     return Scaffold(
+      backgroundColor: Colors.transparent, // Make Scaffold background transparent
       appBar: AppBar(
-        title: const Text('MyTennant', style: TextStyle(color: Colors.white)),
-        // Make AppBar transparent to blend with the gradient background
-        backgroundColor: Colors.transparent,
-        elevation: 0,
+        backgroundColor: Colors.transparent, // Make AppBar transparent
+        elevation: 0, // No shadow
+        toolbarHeight: 90, // Adjusted height for AppBar (increase if text feels too high)
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min, // Make column take minimum space
+          children: [
+            // No SizedBox here to push text down, relying on body padding
+            Text(
+              'Hi $_userName Welcome To MyTennant!',
+              style: const TextStyle(
+                color: Colors.white, // White text for visibility on gradient
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const Text(
+              'Let\'s find your perfect FlatMate & Home',
+              style: TextStyle(
+                color: Colors.white, // White text for visibility on gradient
+                fontSize:18,
+                fontWeight: FontWeight.normal,
+              ),
+            ),
+          ],
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.card_membership, color: Colors.white),
-            tooltip: 'View Plans',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const PlansScreen()),
-              ).then((_) => _fetchUserData());
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.person, color: Colors.white),
+            icon: const CircleAvatar(
+              radius: 20,
+              backgroundColor: Colors.white, // White background for the icon circle
+              child: Icon(Icons.person, color: Color(0xFFAD1457)), // A color that stands out
+            ),
             tooltip: 'My Profile',
             onPressed: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const ViewProfileScreen()),
-              ).then((_) => _fetchUserData());
+              ).then((_) => _fetchUserData()); // Refresh data after returning
             },
           ),
-          IconButton(
-            icon: const Icon(Icons.more_vert, color: Colors.white),
-            tooltip: 'More Options',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const MoreProfileScreen()),
-              );
-            },
-          ),
+          const SizedBox(width: 16), // Padding for the profile icon
         ],
       ),
       extendBodyBehindAppBar: true, // This allows the body to extend behind the app bar
-      body: Container( // Wrap the existing body content in a Container
+      body: Container(
+        // Ensure the Container fills the entire screen
+        width: double.infinity,
+        height: double.infinity,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             colors: [Color(0xFF6A1B9A), Color(0xFFAD1457)], // Deep Purple to Pink-Red
@@ -225,191 +302,208 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
         child: _isLoadingProfileType
-            ? const Center(child: CircularProgressIndicator(color: Colors.white)) // Changed color for visibility on dark background
-            : Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: SingleChildScrollView( // Added SingleChildScrollView to prevent overflow if content is too long
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                SizedBox(height: AppBar().preferredSize.height + 20), // Add spacing for the transparent AppBar
-                Image.asset(
-                  'assets/images/MyTennant.png',
-                  height: 150,
-                ),
-                const SizedBox(height: 30),
-                const Text(
-                  'Welcome to MyTennant!',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white), // Changed text color to white
-                ),
-                const SizedBox(height: 10),
-                const Text(
-                  'Find your perfect flatmate or flat with ease.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16, color: Colors.white70), // Changed text color to white70
-                ),
-                const SizedBox(height: 40),
-                if (_userProfileType != null && _currentActiveProfileId != null)
-                  Column(
-                    children: [
-                      if (profileName.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 10.0),
-                          child: Text(
-                            'Active Profile: $profileName',
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white), // Changed text color to white
-                          ),
-                        ),
-                      if (_userProfileType == 'flat_listing')
-                        const Text(
-                          'You are currently looking for flatmates for your flat.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 16, color: Colors.white70), // Changed text color to white70
-                        )
-                      else if (_userProfileType == 'seeking_flatmate')
-                        const Text(
-                          'You are currently looking for a flat.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 16, color: Colors.white70), // Changed text color to white70
-                        ),
-                      const SizedBox(height: 20),
-                    ],
-                  ),
+            ? const Center(child: CircularProgressIndicator(color: Colors.white))
+            : SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0), // Consistent padding
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // This SizedBox dynamically pushes content lower, adjust value as needed
+              SizedBox(height: MediaQuery.of(context).padding.top + AppBar().preferredSize.height + 80), // Pushes content below status bar + app bar + 30px gap
 
-                if (_currentPlanName != null)
-                  Column(
-                    children: [
-                      const Divider(height: 30, thickness: 1, color: Colors.white54), // Changed divider color
-                      Text(
-                        'Your Current Plan: $_currentPlanName',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white), // Changed text color to white
-                      ),
-                      if (_currentPlanContacts != null)
-                        Text(
-                          'Total Contacts: $_currentPlanContacts',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(fontSize: 16, color: Colors.white70), // Changed text color to white70
-                        ),
-                      if (_remainingContacts != null)
-                        Text(
-                          'Remaining Contacts: $_remainingContacts',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(fontSize: 16, color: Colors.white70), // Changed text color to white70
-                        ),
-                      const SizedBox(height: 20),
-                      const Divider(height: 30, thickness: 1, color: Colors.white54), // Changed divider color
-                      const SizedBox(height: 20),
-                    ],
-                  ),
-                _userProfileType != null && _currentActiveProfileId != null
-                    ? Column(
-                  children: [
-                    ElevatedButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => MatchingScreen(
-                              profileType: _userProfileType!,
-                              profileId: _currentActiveProfileId!,
-                            ),
-                          ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white, // Changed button background to white
-                        foregroundColor: const Color(0xFFAD1457), // Changed text color to match end gradient color
-                        padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                        textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
-                      child: const Text('Start Matching'),
-                    ),
-                    const SizedBox(height: 15),
-                    ElevatedButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => MatchesListScreen(
-                              profileType: _userProfileType!,
-                              profileId: _currentActiveProfileId!,
-                            ),
-                          ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white, // Changed button background to white
-                        foregroundColor: const Color(0xFF6A1B9A), // Changed text color to match start gradient color
-                        padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                        textStyle: const TextStyle(fontSize: 18),
-                      ),
-                      child: const Text('View Matches'),
-                    ),
-                    const SizedBox(height: 15),
-                    ElevatedButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const UserActivityScreen(),
-                          ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white, // Changed button background to white
-                        foregroundColor: Colors.teal, // Choose a complementary color
-                        padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                        textStyle: const TextStyle(fontSize: 18),
-                      ),
-                      child: const Text('View Activity'),
-                    ),
-                  ],
-                )
-                    : Column(
-                  children: [
-                    const Text(
-                      'Please complete your profile to start matching.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 16, color: Colors.white), // Changed text color to white
-                    ),
-                    const SizedBox(height: 20),
-                    ElevatedButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const EditProfileScreen(),
-                          ),
-                        ).then((_) => _fetchUserData());
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white, // Changed button background to white
-                        foregroundColor: Colors.blueAccent, // Choose a complementary color
-                        padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                      ),
-                      child: const Text('Go to Profile Setup'),
-                    ),
-                  ],
+              // Search Location Bar - Background should be white to contrast with gradient
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white, // White background for search bar
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.grey.shade300),
                 ),
-              ],
-            ),
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: const TextField(
+                  decoration: InputDecoration(
+                    hintText: 'Search location...',
+                    hintStyle: TextStyle(color: Colors.grey),
+                    border: InputBorder.none,
+                    prefixIcon: Icon(Icons.search, color: Colors.grey),
+                  ),
+                  style: TextStyle(color: Colors.black87), // Ensure input text is visible
+                ),
+              ),
+              const SizedBox(height: 50),
+
+              // Post Your Requirement Section
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Post Your Requirement',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white), // White text on gradient
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade500, // Green background for FREE tag
+                      borderRadius: BorderRadius.circular(5),
+                    ),
+                    child: const Text(
+                      'FREE',
+                      style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 15),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildRequirementCard(
+                      context,
+                      title: 'Need Room',
+                      subtitle: 'with roommate',
+                      imagePath: 'assets/images/need_room_illustration.png', // Placeholder image
+                      color: const Color(0xFFC7BCEF), // Good-looking light lavender
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => FlatWithFlatmateProfileScreen(initialPhoneNumber: null)),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _buildRequirementCard(
+                      context,
+                      title: 'Need Roommate',
+                      subtitle: 'for your room',
+                      imagePath: 'assets/images/need_roommate_illustration.png', // Placeholder image
+                      color: const Color(0xFFFFD1DC), // Good-looking light rosy pink
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => FlatmateProfileScreen(initialPhoneNumber: null)),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20), // Padding before bottom nav bar (adjust as needed)
+            ],
           ),
         ),
       ),
+      bottomNavigationBar: BottomNavigationBar(
+        backgroundColor: Colors.white, // Set a background color for the bottom nav bar
+        type: BottomNavigationBarType.fixed, // Ensures all items are visible and evenly spaced
+        selectedItemColor: const Color(0xFFAD1457), // Changed from green to matching pink-red
+        unselectedItemColor: Colors.grey[600], // Muted color for unselected icons
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.group), // Matches icon
+            label: 'Matches',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.chat_bubble_outline), // Chat icon
+            label: 'Chat',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.local_activity), // Activity icon
+            label: 'Activity',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.more_horiz), // More icon
+            label: 'More',
+          ),
+        ],
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+      ),
     );
+  }
+
+  // Helper widget for "Post Your Requirement" cards
+  Widget _buildRequirementCard(
+      BuildContext context, {
+        required String title,
+        required String subtitle,
+        required String imagePath,
+        required Color color,
+        required VoidCallback onTap,
+      }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 180, // Height for the cards
+        decoration: BoxDecoration(
+          color: color, // Background color for the card
+          borderRadius: BorderRadius.circular(15), // Rounded corners
+        ),
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Align(
+              alignment: Alignment.topRight,
+              child: Icon(Icons.arrow_forward_ios, size: 18, color: Colors.black54), // Arrow icon
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.black54,
+                  ),
+                ),
+              ],
+            ),
+            // The image is at the bottom of the card, adjust its position
+            Align(
+              alignment: Alignment.bottomRight,
+              child: Image.asset(
+                imagePath,
+                height: 80, // Adjust image height as needed
+                fit: BoxFit.contain,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Dummy classes for FlatListingProfile and SeekingFlatmateProfile
+// You should ensure these are correctly defined in your 'profile_display_widgets.dart' or similar file
+class FlatListingProfile {
+  final String documentId;
+  final String? ownerName;
+  FlatListingProfile({required this.documentId, this.ownerName});
+  factory FlatListingProfile.fromMap(Map<String, dynamic> data, String id) {
+    return FlatListingProfile(documentId: id, ownerName: data['ownerName']);
+  }
+}
+
+class SeekingFlatmateProfile {
+  final String documentId;
+  final String? name;
+  SeekingFlatmateProfile({required this.documentId, this.name});
+  factory SeekingFlatmateProfile.fromMap(Map<String, dynamic> data, String id) {
+    return SeekingFlatmateProfile(documentId: id, name: data['name']);
   }
 }

@@ -6,6 +6,11 @@ import 'package:mytennat/screens/flat_with_flatmate_profile_screen.dart'; // For
 import 'package:mytennat/screens/chat_screen.dart'; // For ChatScreen
 import 'package:mytennat/screens/view_profile_screen.dart'; // For ViewProfileScreen
 import 'package:url_launcher/url_launcher.dart'; // Import for making phone calls
+import 'package:mytennat/screens/home_page.dart'; // Import HomePage
+import 'package:mytennat/screens/matching_screen.dart'; // Import MatchingScreen
+import 'package:mytennat/screens/matches_list_screen.dart'; // Import MatchesListScreen
+import 'package:mytennat/screens/more_profile_screen.dart'; // Import MoreProfileScreen
+
 
 class UserActivityScreen extends StatefulWidget {
   const UserActivityScreen({super.key});
@@ -14,19 +19,13 @@ class UserActivityScreen extends StatefulWidget {
   State<UserActivityScreen> createState() => _UserActivityScreenState();
 }
 
-class _UserActivityScreenState extends State<UserActivityScreen> with SingleTickerProviderStateMixin {
+class _UserActivityScreenState extends State<UserActivityScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   User? _currentUser;
   bool _isLoading = true;
 
-  // Data structures to hold aggregated information
-  List<dynamic> _userProfilesList = []; // List of current user's profiles
-  int _currentProfileDisplayIndex = 0; // Index for the PageView
-
-  // Declared as state variables to be accessible consistently
-  String _currentProfileDisplayName = 'No Profiles';
-  String _currentProfileTypeDisplay = '';
+  List<dynamic> _userProfilesList = []; // List of all current user's profiles (FlatListing and SeekingFlatmate)
 
   // key: userProfileId, value: list of profiles that liked it
   final Map<String, List<dynamic>> _incomingLikes = {};
@@ -35,19 +34,15 @@ class _UserActivityScreenState extends State<UserActivityScreen> with SingleTick
   // key: userProfileId, value: list of matched profiles with chatRoomId
   final Map<String, List<Map<String, dynamic>>> _matches = {};
 
-  // Notification tracking per profile
-  final Map<String, bool> _profileHasNewNotification = {};
+  // Bottom Navigation Bar state
+  int _selectedIndex = 3; // Set initial index to 3 for 'Activity'
 
-  // For TabBar
-  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
     _currentUser = _auth.currentUser;
     print('initState: _currentUser is ${_currentUser != null ? _currentUser!.uid : 'null'}');
-    _tabController = TabController(length: 3, vsync: this);
-    _tabController.addListener(_handleTabSelection); // Add listener for tab changes
 
     if (_currentUser == null) {
       setState(() {
@@ -63,44 +58,13 @@ class _UserActivityScreenState extends State<UserActivityScreen> with SingleTick
     }
   }
 
-  @override
-  void dispose() {
-    _tabController.removeListener(_handleTabSelection); // Remove listener
-    _tabController.dispose();
-    super.dispose();
-  }
-
-  // Method to handle tab selection and clear notifications
-  void _handleTabSelection() {
-    if (!_tabController.indexIsChanging && _userProfilesList.isNotEmpty) {
-      final currentProfileId = _userProfilesList[_currentProfileDisplayIndex].documentId!;
-      // If user views 'Liked Me' (index 0) or 'Matches' (index 2) tab, mark notification as seen
-      if (_tabController.index == 0 || _tabController.index == 2) {
-        if (_profileHasNewNotification[currentProfileId] == true) {
-          setState(() {
-            _profileHasNewNotification[currentProfileId] = false;
-            print('Notification for profile $currentProfileId marked as seen on tab switch to ${_tabController.index}');
-          });
-        }
-      }
-    }
-  }
-
-  // Method to update display names based on current profile index
-  void _updateCurrentProfileDisplayInfo() {
-    if (_userProfilesList.isNotEmpty && _currentProfileDisplayIndex < _userProfilesList.length) {
-      final dynamic profile = _userProfilesList[_currentProfileDisplayIndex];
-      _currentProfileDisplayName = _getProfileDisplayName(profile);
-      _currentProfileTypeDisplay = _getProfileTypeDisplay(profile);
-    } else {
-      _currentProfileDisplayName = 'No Profiles';
-      _currentProfileTypeDisplay = '';
-    }
-  }
-
   Future<void> _fetchUserActivities() async {
     setState(() {
       _isLoading = true;
+      _userProfilesList.clear();
+      _incomingLikes.clear();
+      _outgoingLikes.clear();
+      _matches.clear();
     });
 
     try {
@@ -111,7 +75,6 @@ class _UserActivityScreenState extends State<UserActivityScreen> with SingleTick
       print('Fetching all user profiles...');
       await _fetchAllUserProfiles(currentUserId);
       print('Fetched user profiles: ${_userProfilesList.length} profiles found.');
-      _updateCurrentProfileDisplayInfo(); // Update display info after initial fetch
 
       // 2. Fetch incoming likes for each of the user's profiles
       print('Fetching incoming likes...');
@@ -128,19 +91,6 @@ class _UserActivityScreenState extends State<UserActivityScreen> with SingleTick
       await _fetchMatches(currentUserId);
       print('Matches processed. Total entries: ${_matches.keys.length}');
 
-      // Initialize/Update notification status based on fetched data
-      _userProfilesList.forEach((profile) {
-        final profileId = profile.documentId!;
-        final hasIncoming = _incomingLikes.containsKey(profileId) && _incomingLikes[profileId]!.isNotEmpty;
-        final hasMatches = _matches.containsKey(profileId) && _matches[profileId]!.isNotEmpty;
-        if (hasIncoming || hasMatches) {
-          _profileHasNewNotification[profileId] = true;
-        } else {
-          _profileHasNewNotification[profileId] = false; // Ensure it's false if no likes/matches
-        }
-      });
-      print('Initial notification states: $_profileHasNewNotification');
-
     } catch (e) {
       print('Error fetching user activities: $e');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -156,11 +106,7 @@ class _UserActivityScreenState extends State<UserActivityScreen> with SingleTick
 
   Future<void> _fetchAllUserProfiles(String userId) async {
     _userProfilesList.clear();
-    _incomingLikes.clear();
-    _outgoingLikes.clear();
-    _matches.clear();
-    _profileHasNewNotification.clear(); // Clear notification states too
-    print('fetchAllUserProfiles: Clearing existing profiles and related data.');
+    print('fetchAllUserProfiles: Clearing existing profiles.');
 
     // Fetch Flat Listings
     print('fetchAllUserProfiles: Fetching flatListings for $userId');
@@ -187,21 +133,11 @@ class _UserActivityScreenState extends State<UserActivityScreen> with SingleTick
       _userProfilesList.add(SeekingFlatmateProfile.fromMap(doc.data() as Map<String, dynamic>, doc.id));
       print('fetchAllUserProfiles: Added SeekingFlatmateProfile ${doc.id}');
     }
-    // Set initial index to 0, or handle if no profiles are found
-    if (_userProfilesList.isEmpty) {
-      _currentProfileDisplayIndex = 0;
-    } else {
-      _currentProfileDisplayIndex = 0;
-    }
   }
 
   Future<void> _fetchIncomingLikes(String userId) async {
     _incomingLikes.clear();
     print('fetchIncomingLikes: Clearing existing incoming likes.');
-    if (_userProfilesList.isEmpty) { // Added for debugging
-      print('fetchIncomingLikes: _userProfilesList is empty. Cannot fetch incoming likes.');
-      return;
-    }
 
     for (var userProfile in _userProfilesList) {
       final String userProfileId = userProfile.documentId!;
@@ -218,12 +154,10 @@ class _UserActivityScreenState extends State<UserActivityScreen> with SingleTick
         final likingUserId = data['likingUserId'];
         final likingUserProfileId = data['likingUserProfileId'];
         final likingUserProfileType = data['likingUserProfileType'];
-        print('fetchIncomingLikes: Processing incoming like from likingUserId: $likingUserId, likingUserProfileId: $likingUserProfileId, type: $likingUserProfileType, data: $data');
 
         dynamic likedByProfile;
         try {
           if (likingUserProfileType == 'flat_listing') {
-            print('fetchIncomingLikes: Attempting to fetch FlatListing for $likingUserId/$likingUserProfileId');
             DocumentSnapshot otherDoc = await _firestore
                 .collection('users')
                 .doc(likingUserId)
@@ -232,12 +166,8 @@ class _UserActivityScreenState extends State<UserActivityScreen> with SingleTick
                 .get();
             if (otherDoc.exists) {
               likedByProfile = FlatListingProfile.fromMap(otherDoc.data() as Map<String, dynamic>, otherDoc.id);
-              print('fetchIncomingLikes: FlatListing found: ${otherDoc.id} (Name: ${likedByProfile.ownerName})');
-            } else {
-              print('fetchIncomingLikes: FlatListing NOT found for $likingUserId/$likingUserProfileId');
             }
           } else if (likingUserProfileType == 'seeking_flatmate') {
-            print('fetchIncomingLikes: Attempting to fetch SeekingFlatmateProfile for $likingUserId/$likingUserProfileId');
             DocumentSnapshot otherDoc = await _firestore
                 .collection('users')
                 .doc(likingUserId)
@@ -246,9 +176,6 @@ class _UserActivityScreenState extends State<UserActivityScreen> with SingleTick
                 .get();
             if (otherDoc.exists) {
               likedByProfile = SeekingFlatmateProfile.fromMap(otherDoc.data() as Map<String, dynamic>, otherDoc.id);
-              print('fetchIncomingLikes: SeekingFlatmateProfile found: ${otherDoc.id} (Name: ${likedByProfile.name})');
-            } else {
-              print('fetchIncomingLikes: SeekingFlatmateProfile NOT found for $likingUserId/$likingUserProfileId');
             }
           }
         } catch (e) {
@@ -257,19 +184,12 @@ class _UserActivityScreenState extends State<UserActivityScreen> with SingleTick
 
         if (likedByProfile != null) {
           profilesThatLikedMe.add(likedByProfile);
-          print('fetchIncomingLikes: Added likedByProfile: ${likedByProfile.documentId} to list.');
-        } else {
-          print('fetchIncomingLikes: likedByProfile was null, not added.');
         }
       }
       if (profilesThatLikedMe.isNotEmpty) {
         _incomingLikes[userProfileId] = profilesThatLikedMe;
-        print('fetchIncomingLikes: _incomingLikes[$userProfileId] populated with ${profilesThatLikedMe.length} profiles.');
-      } else {
-        print('fetchIncomingLikes: No profiles liked this userProfile ($userProfileId). _incomingLikes not updated for it.');
       }
     }
-    print('fetchIncomingLikes: Final _incomingLikes state: ${_incomingLikes.keys.map((k) => '$k: ${_incomingLikes[k]?.length} profiles').join(', ')}');
   }
 
   Future<void> _fetchOutgoingLikes(String userId) async {
@@ -283,7 +203,6 @@ class _UserActivityScreenState extends State<UserActivityScreen> with SingleTick
           .collection('likes')
           .where('likingUserProfileId', isEqualTo: userProfileId)
           .get();
-      print('fetchOutgoingLikes: Found ${outgoingLikesSnapshot.docs.length} outgoing likes for profile $userProfileId.');
 
       List<dynamic> profilesLikedByMe = [];
       for (var doc in outgoingLikesSnapshot.docs) {
@@ -291,12 +210,10 @@ class _UserActivityScreenState extends State<UserActivityScreen> with SingleTick
         final likedUserId = data['likedUserId'];
         final likedProfileDocumentId = data['likedProfileDocumentId'];
         final likedUserProfileType = data['likedUserProfileType'];
-        print('fetchOutgoingLikes: Processing outgoing like to likedUserId: $likedUserId, likedProfileDocumentId: $likedProfileDocumentId, type: $likedUserProfileType');
 
         dynamic likedProfile;
         try {
           if (likedUserProfileType == 'flat_listing') {
-            print('fetchOutgoingLikes: Fetching FlatListing for $likedUserId/$likedProfileDocumentId');
             DocumentSnapshot otherDoc = await _firestore
                 .collection('users')
                 .doc(likedUserId)
@@ -305,12 +222,8 @@ class _UserActivityScreenState extends State<UserActivityScreen> with SingleTick
                 .get();
             if (otherDoc.exists) {
               likedProfile = FlatListingProfile.fromMap(otherDoc.data() as Map<String, dynamic>, otherDoc.id);
-              print('fetchOutgoingLikes: FlatListing found: ${otherDoc.id}');
-            } else {
-              print('fetchOutgoingLikes: FlatListing not found for $likedUserId/$likedProfileDocumentId');
             }
           } else if (likedUserProfileType == 'seeking_flatmate') {
-            print('fetchOutgoingLikes: Fetching SeekingFlatmateProfile for $likedUserId/$likedProfileDocumentId');
             DocumentSnapshot otherDoc = await _firestore
                 .collection('users')
                 .doc(likedUserId)
@@ -319,9 +232,6 @@ class _UserActivityScreenState extends State<UserActivityScreen> with SingleTick
                 .get();
             if (otherDoc.exists) {
               likedProfile = SeekingFlatmateProfile.fromMap(otherDoc.data() as Map<String, dynamic>, otherDoc.id);
-              print('fetchOutgoingLikes: SeekingFlatmateProfile found: ${otherDoc.id}');
-            } else {
-              print('fetchOutgoingLikes: SeekingFlatmateProfile not found for $likedUserId/$likedProfileDocumentId');
             }
           }
         } catch (e) {
@@ -342,20 +252,15 @@ class _UserActivityScreenState extends State<UserActivityScreen> with SingleTick
     _matches.clear();
     print('fetchMatches: Clearing existing matches.');
 
-    print('fetchMatches: Querying matches where user1_uid is $userId');
     QuerySnapshot matchesSnapshot1 = await _firestore.collection('matches')
         .where('user1_uid', isEqualTo: userId)
         .get();
-    print('fetchMatches: Found ${matchesSnapshot1.docs.length} matches as user1.');
 
-    print('fetchMatches: Querying matches where user2_uid is $userId');
     QuerySnapshot matchesSnapshot2 = await _firestore.collection('matches')
         .where('user2_uid', isEqualTo: userId)
         .get();
-    print('fetchMatches: Found ${matchesSnapshot2.docs.length} matches as user2.');
 
     final allMatchDocs = {...matchesSnapshot1.docs, ...matchesSnapshot2.docs};
-    print('fetchMatches: Total unique match documents: ${allMatchDocs.length}');
 
     for (var doc in allMatchDocs) {
       final data = doc.data() as Map<String, dynamic>;
@@ -366,8 +271,6 @@ class _UserActivityScreenState extends State<UserActivityScreen> with SingleTick
       final String user1ProfileType = data['user1_profile_type'];
       final String user2ProfileType = data['user2_profile_type'];
       final String chatRoomId = data['chatRoomId'];
-      print('fetchMatches: Processing match document: ${doc.id}');
-      print('fetchMatches: Match details - user1: $user1Uid ($user1ProfileId, $user1ProfileType), user2: $user2Uid ($user2ProfileId, $user2ProfileType), chatRoomId: $chatRoomId');
 
       String currentUserProfileIdInMatch;
       String otherUserUid;
@@ -379,20 +282,17 @@ class _UserActivityScreenState extends State<UserActivityScreen> with SingleTick
         otherUserUid = user2Uid;
         otherUserProfileId = user2ProfileId;
         otherUserProfileType = user2ProfileType;
-        print('fetchMatches: Current user is user1. Matched with user2: $otherUserUid');
       } else {
         currentUserProfileIdInMatch = user2ProfileId;
         otherUserUid = user1Uid;
         otherUserProfileId = user1ProfileId;
         otherUserProfileType = user1ProfileType;
-        print('fetchMatches: Current user is user2. Matched with user1: $otherUserUid');
       }
 
       // Fetch the details of the other user's profile involved in the match
       dynamic otherProfile;
       try {
         if (otherUserProfileType == 'flat_listing') {
-          print('fetchMatches: Fetching matched FlatListing for $otherUserUid/$otherUserProfileId');
           DocumentSnapshot otherDoc = await _firestore
               .collection('users')
               .doc(otherUserUid)
@@ -401,12 +301,8 @@ class _UserActivityScreenState extends State<UserActivityScreen> with SingleTick
               .get();
           if (otherDoc.exists) {
             otherProfile = FlatListingProfile.fromMap(otherDoc.data() as Map<String, dynamic>, otherDoc.id);
-            print('fetchMatches: Matched FlatListing found: ${otherDoc.id}');
-          } else {
-            print('fetchMatches: Matched FlatListing NOT found: $otherUserUid/$otherUserProfileId');
           }
         } else if (otherUserProfileType == 'seeking_flatmate') {
-          print('fetchMatches: Fetching matched SeekingFlatmateProfile for $otherUserUid/$otherUserProfileId');
           DocumentSnapshot otherDoc = await _firestore
               .collection('users')
               .doc(otherUserUid)
@@ -415,9 +311,6 @@ class _UserActivityScreenState extends State<UserActivityScreen> with SingleTick
               .get();
           if (otherDoc.exists) {
             otherProfile = SeekingFlatmateProfile.fromMap(otherDoc.data() as Map<String, dynamic>, otherDoc.id);
-            print('fetchMatches: Matched SeekingFlatmateProfile found: ${otherDoc.id}');
-          } else {
-            print('fetchMatches: Matched SeekingFlatmateProfile NOT found: $otherUserUid/$otherUserProfileId');
           }
         }
       } catch (e) {
@@ -427,13 +320,11 @@ class _UserActivityScreenState extends State<UserActivityScreen> with SingleTick
       if (otherProfile != null) {
         if (!_matches.containsKey(currentUserProfileIdInMatch)) {
           _matches[currentUserProfileIdInMatch] = [];
-          print('fetchMatches: Initializing match list for profile $currentUserProfileIdInMatch');
         }
         _matches[currentUserProfileIdInMatch]!.add({
           'profile': otherProfile,
           'chatRoomId': chatRoomId,
         });
-        print('fetchMatches: Added match for profile $currentUserProfileIdInMatch: ${otherProfile.documentId}');
       }
     }
   }
@@ -441,18 +332,16 @@ class _UserActivityScreenState extends State<UserActivityScreen> with SingleTick
   String? _findChatRoomId(String currentUserProfileId, String otherUserUid, String otherUserProfileId) {
     final List<Map<String, dynamic>>? matchesForCurrentUserProfile = _matches[currentUserProfileId];
     if (matchesForCurrentUserProfile == null) {
-      print('_findChatRoomId: No matches found for current profile ID: $currentUserProfileId');
       return null;
     }
 
     for (var match in matchesForCurrentUserProfile) {
       final dynamic matchedProfile = match['profile'];
+      // Assuming 'uid' is a property on both FlatListingProfile and SeekingFlatmateProfile
       if (matchedProfile != null && matchedProfile.uid == otherUserUid && matchedProfile.documentId == otherUserProfileId) {
-        print('_findChatRoomId: Found chatRoomId ${match['chatRoomId']} for matched profile ${otherUserProfileId}');
         return match['chatRoomId'];
       }
     }
-    print('_findChatRoomId: No chatRoomId found for current profile ID: $currentUserProfileId and other profile ID: $otherUserProfileId');
     return null;
   }
 
@@ -467,11 +356,11 @@ class _UserActivityScreenState extends State<UserActivityScreen> with SingleTick
 
   String _getProfileTypeDisplay(dynamic profile) {
     if (profile is FlatListingProfile) {
-      return 'Flat Listing';
+      return 'flat_listing'; // Return raw type for filtering
     } else if (profile is SeekingFlatmateProfile) {
-      return 'Seeking Flatmate';
+      return 'seeking_flatmate'; // Return raw type for filtering
     }
-    return 'Unknown';
+    return 'unknown';
   }
 
   // New function for making phone calls
@@ -489,366 +378,493 @@ class _UserActivityScreenState extends State<UserActivityScreen> with SingleTick
     }
   }
 
-  // Method to show the profile selection sheet
-  void _showProfileSelectionSheet() {
-    showModalBottomSheet(
-      context: context,
-      builder: (BuildContext context) {
-        return Container(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min, // Make column only take required space
-            children: [
-              Text(
-                'Select Your Active Profile',
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-              const SizedBox(height: 16),
-              // Use Flexible or Expanded if ListView could be very long
-              Flexible( // Use Flexible to prevent render overflow if many profiles
-                child: ListView.builder(
-                  shrinkWrap: true, // Allow ListView to take only as much space as its children
-                  itemCount: _userProfilesList.length,
-                  itemBuilder: (context, index) {
-                    final profile = _userProfilesList[index];
-                    final profileName = _getProfileDisplayName(profile);
-                    final profileType = _getProfileTypeDisplay(profile);
-                    final isSelected = index == _currentProfileDisplayIndex;
-                    final hasNotification = _profileHasNewNotification[profile.documentId!] == true; // Check notification for this specific profile
+  // --- New Aggregation Methods ---
 
-                    return Card(
-                      color: isSelected ? const Color(0xFF6A1B9A).withOpacity(0.1) : null, // Highlight selected with gradient color
-                      elevation: isSelected ? 2 : 1,
-                      margin: const EdgeInsets.symmetric(vertical: 4.0),
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: isSelected ? const Color(0xFFAD1457) : Colors.blueGrey, // Use a gradient color for selected
-                          child: Icon(
-                            profile is FlatListingProfile ? Icons.home : Icons.group,
-                            color: Colors.white,
-                          ),
-                        ),
-                        title: Text(profileName),
-                        subtitle: Text(profileType),
-                        trailing: hasNotification
-                            ? const Icon(Icons.notifications_active, color: Colors.amber) // Show notification icon in list
-                            : null,
-                        onTap: () {
-                          setState(() {
-                            _currentProfileDisplayIndex = index; // Update the index
-                            _updateCurrentProfileDisplayInfo(); // Update display names
-                            // Mark notification for the newly selected profile as seen
-                            final selectedProfileId = _userProfilesList[_currentProfileDisplayIndex].documentId!;
-                            _profileHasNewNotification[selectedProfileId] = false;
-                            print('Notification for profile $selectedProfileId marked as seen on selection from sheet');
-                          });
-                          Navigator.pop(context); // Close the bottom sheet
-                          ScaffoldMessenger.of(context).showSnackBar( // Show confirmation
-                            SnackBar(
-                              content: Text('Switched to: $_currentProfileDisplayName'),
-                              duration: const Duration(seconds: 1),
-                            ),
-                          );
-                        },
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
+  List<dynamic> _getAggregatedIncomingLikes(String profileType) {
+    List<dynamic> aggregatedProfiles = [];
+    for (var profile in _userProfilesList) {
+      if (_getProfileTypeDisplay(profile) == profileType) {
+        final profileId = profile.documentId!;
+        if (_incomingLikes.containsKey(profileId)) {
+          aggregatedProfiles.addAll(_incomingLikes[profileId]!);
+        }
+      }
+    }
+    // You might want to remove duplicates if the same 'liking' profile liked multiple of your profiles of the same type.
+    return aggregatedProfiles.toSet().toList(); // Using toSet().toList() for basic deduplication
   }
+
+  List<dynamic> _getAggregatedOutgoingLikes(String profileType) {
+    List<dynamic> aggregatedProfiles = [];
+    for (var profile in _userProfilesList) {
+      if (_getProfileTypeDisplay(profile) == profileType) {
+        final profileId = profile.documentId!;
+        if (_outgoingLikes.containsKey(profileId)) {
+          aggregatedProfiles.addAll(_outgoingLikes[profileId]!);
+        }
+      }
+    }
+    return aggregatedProfiles.toSet().toList();
+  }
+
+  List<Map<String, dynamic>> _getAggregatedMatches(String profileType) {
+    List<Map<String, dynamic>> aggregatedMatches = [];
+    for (var profile in _userProfilesList) {
+      if (_getProfileTypeDisplay(profile) == profileType) {
+        final profileId = profile.documentId!;
+        if (_matches.containsKey(profileId)) {
+          // Add the matched profiles along with their chatRoomId
+          for (var matchEntry in _matches[profileId]!) {
+            // Check if this specific match (profile + chatRoomId) is already added
+            bool isDuplicate = aggregatedMatches.any((existingMatch) =>
+            existingMatch['profile'].documentId == matchEntry['profile'].documentId &&
+                existingMatch['profile'].uid == matchEntry['profile'].uid && // Also check UID for uniqueness
+                existingMatch['chatRoomId'] == matchEntry['chatRoomId']
+            );
+            if (!isDuplicate) {
+              // Add a reference to the current user's profile ID that generated this match
+              aggregatedMatches.add({
+                ...matchEntry,
+                'currentOwnerProfileId': profileId, // Add this crucial piece of information
+              });
+            }
+          }
+        }
+      }
+    }
+    return aggregatedMatches;
+  }
+
+
+  // Method to handle bottom navigation bar taps
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+
+    switch (index) {
+      case 0: // Home
+        Navigator.popUntil(context, (route) => route.isFirst);
+        break;
+      case 1: // Matches (Now refers to MatchingScreen)
+        if (_userProfilesList.isNotEmpty) {
+          String? defaultProfileType = _getProfileTypeDisplay(_userProfilesList[0]);
+          String? defaultProfileId = _userProfilesList[0].documentId;
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => MatchingScreen(
+                profileType: defaultProfileType!,
+                profileId: defaultProfileId!,
+              ),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Please create a profile to view matches.')),
+          );
+        }
+        break;
+      case 2: // Chat (MatchesListScreen)
+        if (_userProfilesList.isNotEmpty) {
+          String? defaultProfileType = _getProfileTypeDisplay(_userProfilesList[0]);
+          String? defaultProfileId = _userProfilesList[0].documentId;
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => MatchesListScreen(
+                profileType: defaultProfileType!,
+                profileId: defaultProfileId!,
+              ),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Please create a profile to view chat/matches.')),
+          );
+        }
+        break;
+      case 3: // Activity
+      // Stay on UserActivityScreen, or pop if it's not the root
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        }
+        break;
+      case 4: // More
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const MoreProfileScreen()),
+        );
+        break;
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
-    dynamic currentDisplayedProfile;
-    String currentProfileId = '';
-
-    if (_userProfilesList.isNotEmpty && _currentProfileDisplayIndex < _userProfilesList.length) {
-      currentDisplayedProfile = _userProfilesList[_currentProfileDisplayIndex];
-      currentProfileId = currentDisplayedProfile.documentId!;
-    }
-
-    return DefaultTabController(
-      length: 3,
+    return DefaultTabController( // Outer Tab Controller for "Room Listings" and "Seeking Flatmates"
+      length: 2,
       child: Scaffold(
         appBar: AppBar(
           title: const Text(
             'My Connections',
             style: TextStyle(
-              color: Colors.white, // Ensure title is visible on the gradient
+              color: Colors.white,
               fontWeight: FontWeight.bold,
             ),
           ),
           centerTitle: true,
-          elevation: 0, // No shadow for the app bar
-          iconTheme: const IconThemeData(color: Colors.white), // Back button color
+          elevation: 0,
+          iconTheme: const IconThemeData(color: Colors.white),
           flexibleSpace: Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFF6A1B9A), Color(0xFFAD1457)], // Deep Purple to Pink-Red
+                colors: [Color(0xFF6A1B9A), Color(0xFFAD1457)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
             ),
           ),
-          actions: [
-            if (_userProfilesList.isNotEmpty)
-              Stack(
-                alignment: Alignment.topRight,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.person_outline, size: 28, color: Colors.white),
-                    onPressed: () {
-                      // Now, clicking the icon shows the selection sheet
-                      _showProfileSelectionSheet();
-                    },
-                  ),
-                  // Check notification status for the CURRENTLY active profile
-                  if (currentProfileId.isNotEmpty && _profileHasNewNotification[currentProfileId] == true)
-                    Positioned(
-                      right: 8,
-                      top: 8,
-                      child: Container(
-                        padding: const EdgeInsets.all(2),
-                        decoration: BoxDecoration(
-                          color: Colors.yellow,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        constraints: const BoxConstraints(
-                          minWidth: 12,
-                          minHeight: 12,
-                        ),
-                        child: const Text(
-                          '!',
-                          style: TextStyle(
-                            color: Colors.red,
-                            fontSize: 8,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    )
-                ],
-              ),
-            const SizedBox(width: 10),
-          ],
-          bottom: TabBar(
-            controller: _tabController,
+          bottom: const TabBar( // The main tabs in the AppBar
             indicatorColor: Colors.white,
             labelColor: Colors.white,
             unselectedLabelColor: Colors.white70,
-            tabs: const [
-              Tab(text: 'Liked Me', icon: Icon(Icons.favorite)),
-              Tab(text: 'Liked By Me', icon: Icon(Icons.thumb_up)),
-              Tab(text: 'Matches', icon: Icon(Icons.handshake)),
+            tabs: [
+              Tab(text: 'Room Listings', icon: Icon(Icons.home)),
+              Tab(text: 'Seeking Flatmates', icon: Icon(Icons.group)),
             ],
           ),
         ),
         body: _isLoading
             ? const Center(child: CircularProgressIndicator())
-            : _userProfilesList.isEmpty
-            ? const Center(child: Text('No profiles found for this user. Please create one.'))
-            : Column(
+            : TabBarView( // Outer TabBarView corresponding to the AppBar tabs
           children: [
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Card(
-                elevation: 4.0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
-                child: Container(
-                  height: 120,
-                  padding: const EdgeInsets.all(16.0),
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 35,
-                        backgroundColor: const Color(0xFF6A1B9A), // Changed color here
-                        child: Icon(
-                          currentDisplayedProfile is FlatListingProfile ? Icons.home : Icons.group,
-                          color: Colors.white,
-                          size: 40,
-                        ),
-                      ),
-                      const SizedBox(width: 15),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              'Your Active Profile:',
-                              style: TextStyle(fontSize: 14, color: Colors.grey[700]),
-                            ),
-                            Text(
-                              _currentProfileDisplayName,
-                              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            Text(
-                              '(${_currentProfileTypeDisplay})',
-                              style: TextStyle(fontSize: 14, fontStyle: FontStyle.italic, color: Colors.grey[600]),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+            // Content for "Room Listings" tab
+            _buildProfileActivityView(
+              profileType: 'flat_listing',
+              emptyMessage: 'No Room Listing profiles available.',
             ),
-            const SizedBox(height: 10),
-
-            Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  _buildSectionContent(
-                    profiles: _incomingLikes[currentProfileId],
-                    emptyMessage: 'No one has liked this profile yet.',
-                    onTapProfile: (profile) {
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => ViewProfileScreen(
-                        userId: profile.uid!,
-                        profileDocumentId: profile.documentId!,
-                      )));
-                    },
-                    getChatRoomId: (profile) => _findChatRoomId(currentProfileId, profile.uid!, profile.documentId!),
-                    isMatchSection: false,
-                    isLikedByMeSection: false, // Changed: Call button NOT on Liked Me
-                  ),
-
-                  _buildSectionContent(
-                    profiles: _outgoingLikes[currentProfileId],
-                    emptyMessage: 'This profile has not liked anyone yet.',
-                    onTapProfile: (profile) {
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => ViewProfileScreen(
-                        userId: profile.uid!,
-                        profileDocumentId: profile.documentId!,
-                      )));
-                    },
-                    getChatRoomId: (profile) => _findChatRoomId(currentProfileId, profile.uid!, profile.documentId!),
-                    isMatchSection: false,
-                    isLikedByMeSection: true, // Changed: Call button IS on Liked By Me
-                  ),
-
-                  _buildSectionContent(
-                    profiles: _matches[currentProfileId]?.map((m) => m['profile']).toList(),
-                    emptyMessage: 'No matches for this profile yet.',
-                    onTapProfile: (profile) {
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => ViewProfileScreen(
-                        userId: profile.uid!,
-                        profileDocumentId: profile.documentId!,
-                      )));
-                    },
-                    getChatRoomId: (profile) => _findChatRoomId(currentProfileId, profile.uid!, profile.documentId!),
-                    isMatchSection: true,
-                    isLikedByMeSection: false, // Changed: Call button NOT on Matches
-                  ),
-                ],
-              ),
+            // Content for "Seeking Flatmates" tab
+            _buildProfileActivityView(
+              profileType: 'seeking_flatmate',
+              emptyMessage: 'No Seeking Flatmate profiles available.',
             ),
           ],
+        ),
+        bottomNavigationBar: BottomNavigationBar(
+          backgroundColor: Colors.white,
+          type: BottomNavigationBarType.fixed,
+          selectedItemColor: const Color(0xFFAD1457),
+          unselectedItemColor: Colors.grey[600],
+          items: const <BottomNavigationBarItem>[
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home),
+              label: 'Home',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.group), // Matches icon
+              label: 'Matches',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.chat_bubble_outline), // Chat icon
+              label: 'Chat',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.local_activity), // Activity icon
+              label: 'Activity',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.more_horiz), // More icon
+              label: 'More',
+            ),
+          ],
+          currentIndex: _selectedIndex,
+          onTap: _onItemTapped,
         ),
       ),
     );
   }
 
-  Widget _buildSectionContent({
-    List<dynamic>? profiles,
+  // Renamed from _buildMainProfileSection to represent the content of each main tab
+  Widget _buildProfileActivityView({
+    required String profileType,
     required String emptyMessage,
-    required Function(dynamic profile) onTapProfile,
-    required String? Function(dynamic profile) getChatRoomId,
-    bool isMatchSection = false,
-    bool isLikedByMeSection = false, // Changed: Renamed from isLikedMeSection
   }) {
-    print('Building section content. Profiles count: ${profiles?.length ?? 0}. Is Match Section: $isMatchSection. Is Liked By Me Section: $isLikedByMeSection');
-    return profiles == null || profiles.isEmpty
-        ? Center(child: Text(emptyMessage, style: const TextStyle(color: Colors.grey, fontSize: 16)))
-        : ListView.builder(
-      padding: const EdgeInsets.all(8.0),
+    // Filter profiles belonging to this type
+    final List<dynamic> profilesOfType = _userProfilesList.where((p) => _getProfileTypeDisplay(p) == profileType).toList();
+
+    return DefaultTabController( // Inner Tab Controller for "Liked Me", "Liked By Me", "Matches"
+        length: 3,
+        child: Column(
+            children: [
+            // Optional: You can add a small header here if you want text like "Activity for Room Listings"
+            // but the top level tab already gives context.
+            if (profilesOfType.isEmpty)
+        Expanded( // Use Expanded to ensure it takes available space in the column
+    child: Center(
+    child: Text(emptyMessage, style: const TextStyle(color: Colors.grey, fontSize: 16)),
+    ),
+    )
+    else ...[
+    TabBar( // Inner TabBar
+    indicatorColor: const Color(0xFFAD1457), // Match app bar accent
+    labelColor: const Color(0xFF6A1B9A), // Match app bar primary
+    unselectedLabelColor: Colors.grey[600],
+    tabs: const [
+    Tab(text: 'Liked Me', icon: Icon(Icons.favorite)),
+    Tab(text: 'Liked By Me', icon: Icon(Icons.thumb_up)),
+    Tab(text: 'Matches', icon: Icon(Icons.handshake)),
+    ],
+    ),
+    Expanded( // Crucial: Expanded makes TabBarView fill remaining space
+    child: TabBarView( // Inner TabBarView
+    children: [
+    _buildSectionContent(
+    profiles: _getAggregatedIncomingLikes(profileType),
+    emptyMessage: 'No one has liked these profiles yet.',
+    isMatchSection: false,
+    isLikedByMeSection: false,
+    profileTypeFilter: profileType,
+    ),
+    _buildSectionContent(
+    profiles: _getAggregatedOutgoingLikes(profileType),
+    emptyMessage: 'These profiles have not liked anyone yet.',
+    isMatchSection: false,
+    isLikedByMeSection: true,
+    profileTypeFilter: profileType,
+    ),
+    _buildSectionContent(
+    profiles: _getAggregatedMatches(profileType),
+    emptyMessage: 'No matches for these profiles yet.',
+    isMatchSection: true,
+    isLikedByMeSection: false,
+    profileTypeFilter: profileType,
+    ),
+    ],
+    ),
+    ),
+    ],
+
+    ]
+        )
+    );
+  }
+
+  // Re-designed _buildSectionContent to be more generic and use aggregated data
+  Widget _buildSectionContent({
+    List<dynamic>? profiles, // This can now be List<dynamic> (for incoming/outgoing) or List<Map<String, dynamic>> (for matches)
+    required String emptyMessage,
+    required bool isMatchSection,
+    required bool isLikedByMeSection,
+    required String profileTypeFilter, // The type of profiles this section is displaying activities for
+  }) {
+    if (profiles == null || profiles.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Text(emptyMessage, style: const TextStyle(color: Colors.grey, fontSize: 16)),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      // Important: Use AlwaysScrollableScrollPhysics if the content within the inner tab
+      // might exceed the TabBarView's height. This will make only this inner list scrollable.
+      physics: const AlwaysScrollableScrollPhysics(),
+      shrinkWrap: true, // This is crucial for ListView.builder inside an Expanded
       itemCount: profiles.length,
       itemBuilder: (context, index) {
-        final profile = profiles[index];
+        dynamic profile;
+        String? chatRoomId;
+        String? currentOwnerProfileId;
+
+        if (isMatchSection) {
+          final Map<String, dynamic> matchEntry = profiles[index];
+          profile = matchEntry['profile'];
+          chatRoomId = matchEntry['chatRoomId'];
+          currentOwnerProfileId = matchEntry['currentOwnerProfileId'];
+        } else {
+          profile = profiles[index];
+        }
+
+
         String name = _getProfileDisplayName(profile);
-        String typeDisplay = _getProfileTypeDisplay(profile);
+        String typeDisplay = _getProfileTypeDisplay(profile); // Still used for icon/label
         String? profileImageUrl;
-        String? phoneNumber; // To hold the phone number
+        String? phoneNumber;
 
         if (profile is FlatListingProfile) {
-          //profileImageUrl = profile.ownerImageUrl;
+          // profileImageUrl = profile.ownerImageUrl; // Uncomment if you have this field
           phoneNumber = profile.ownerPhonenumber;
         } else if (profile is SeekingFlatmateProfile) {
-          //rprofileImageUrl = profile.profileImageUrl;
+          // profileImageUrl = profile.profileImageUrl; // Uncomment if you have this field
           phoneNumber = profile.phoneNumber;
         }
 
-        final chatRoomId = getChatRoomId(profile);
-        final canChat = isMatchSection && chatRoomId != null;
 
-        // Determine if call button should be shown
-        final bool showCallButton = isLikedByMeSection && phoneNumber != null && phoneNumber.isNotEmpty; // Changed: Use isLikedByMeSection
-
-        print('ListTile for profile: $name (ID: ${profile.documentId}), Can Chat: $canChat (chatRoomId: $chatRoomId), Show Call Button: $showCallButton (Phone: $phoneNumber)');
-
-        return Card(
-          margin: const EdgeInsets.symmetric(vertical: 4.0),
-          elevation: 2.0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
-          child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            leading: CircleAvatar(
-              backgroundColor: Colors.blueAccent,
-              backgroundImage: profileImageUrl != null && profileImageUrl.isNotEmpty
-                  ? NetworkImage(profileImageUrl)
-                  : null,
-              child: profileImageUrl == null || profileImageUrl.isEmpty
-                  ? Icon(
-                profile is FlatListingProfile ? Icons.home : Icons.group,
-                color: Colors.white,
-              )
-                  : null,
-            ),
-            title: Text(name, style: const TextStyle(fontWeight: FontWeight.w600)),
-            subtitle: Text('$typeDisplay (ID: ${profile.documentId})', style: const TextStyle(color: Colors.grey)),
-            trailing: Row( // Use a Row to potentially hold multiple trailing widgets
-              mainAxisSize: MainAxisSize.min, // Essential to prevent layout errors
-              children: [
-                if (canChat)
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => ChatScreen(
-                        chatPartnerId: profile.uid!,
-                        chatPartnerName: name,
-                        chatRoomId: chatRoomId,
-                      )));
-                    },
-                    icon: const Icon(Icons.chat),
-                    label: const Text('Chat'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                    ),
-                  ),
-                if (showCallButton) // Only show call button for Liked By Me section if phone number exists
-                  Padding(
-                    padding: EdgeInsets.only(left: canChat ? 8.0 : 0.0), // Add spacing if chat button is also present
-                    child: IconButton(
-                      icon: const Icon(Icons.call, color: Colors.blue), // Changed color for distinction
-                      onPressed: () => _makePhoneCall(phoneNumber!),
-                      tooltip: 'Call $name',
-                    ),
-                  ),
-              ],
-            ),
-            onTap: () => onTapProfile(profile),
-          ),
+        return _buildProfileCard(
+          profile: profile,
+          onTap: () {
+            Navigator.push(context, MaterialPageRoute(builder: (context) => ViewProfileScreen(
+              userId: profile.uid!,
+              profileDocumentId: profile.documentId!,
+            )));
+          },
+          showChatButton: isMatchSection && chatRoomId != null && currentOwnerProfileId != null,
+          showCallButton: isLikedByMeSection && phoneNumber != null && phoneNumber.isNotEmpty,
+          chatRoomId: chatRoomId,
+          currentOwnerProfileId: currentOwnerProfileId,
         );
       },
     );
   }
+
+  // Reusable card widget for displaying profiles in lists
+  Widget _buildProfileCard({
+    required dynamic profile,
+    required VoidCallback onTap,
+    required bool showChatButton,
+    required bool showCallButton,
+    String? chatRoomId,
+    String? currentOwnerProfileId, // The ID of the user's own profile involved in this match
+  }) {
+    String name = _getProfileDisplayName(profile);
+    String typeDisplay = _getProfileTypeDisplay(profile); // Still used for icon/label
+    String? profileImageUrl;
+    String? phoneNumber;
+
+    if (profile is FlatListingProfile) {
+      // profileImageUrl = profile.ownerImageUrl; // Uncomment if you have this field
+      phoneNumber = profile.ownerPhonenumber;
+    } else if (profile is SeekingFlatmateProfile) {
+      // profileImageUrl = profile.profileImageUrl; // Uncomment if you have this field
+      phoneNumber = profile.phoneNumber;
+    }
+
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0), // Added horizontal margin
+      elevation: 2.0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+        leading: CircleAvatar(
+          backgroundColor: Colors.blueAccent,
+          backgroundImage: profileImageUrl != null && profileImageUrl.isNotEmpty
+              ? NetworkImage(profileImageUrl)
+              : null,
+          child: profileImageUrl == null || profileImageUrl.isEmpty
+              ? Icon(
+            typeDisplay == 'flat_listing' ? Icons.home : Icons.group,
+            color: Colors.white,
+          )
+              : null,
+        ),
+        title: Text(name, style: const TextStyle(fontWeight: FontWeight.w600)),
+        subtitle: Text(
+          typeDisplay == 'flat_listing' ? 'Room Listing' : 'Seeking Flatmate',
+          style: const TextStyle(color: Colors.grey),
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (showChatButton) // chatRoomId and currentOwnerProfileId checked in _buildSectionContent
+              ElevatedButton.icon(
+                onPressed: () {
+                  // Ensure chatRoomId and currentOwnerProfileId are non-null here
+                  if (chatRoomId != null && currentOwnerProfileId != null) {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => ChatScreen(
+                      chatPartnerId: profile.uid!,
+                      chatPartnerName: name,
+                      chatRoomId: chatRoomId,
+                    )));
+                  }
+                },
+                icon: const Icon(Icons.chat),
+                label: const Text('Chat'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                ),
+              ),
+            if (showCallButton && phoneNumber != null && phoneNumber.isNotEmpty)
+              Padding(
+                padding: EdgeInsets.only(left: showChatButton ? 8.0 : 0.0),
+                child: IconButton(
+                  icon: const Icon(Icons.call, color: Colors.blue),
+                  onPressed: () => _makePhoneCall(phoneNumber!),
+                  tooltip: 'Call $name',
+                ),
+              ),
+          ],
+        ),
+        onTap: onTap,
+      ),
+    );
+  }
+}
+
+// Dummy classes for FlatListingProfile and SeekingFlatmateProfile
+// (Ensure these match your actual implementations, potentially in a shared models file)
+// Make sure these classes have a 'uid' field if you are using it for navigation.
+class FlatListingProfile {
+  final String documentId;
+  final String? ownerName;
+  final String? ownerPhonenumber;
+  final String? uid; // Add UID
+  // Add other fields from your FlatListingProfile here
+
+  FlatListingProfile({required this.documentId, this.ownerName, this.ownerPhonenumber, this.uid});
+
+  factory FlatListingProfile.fromMap(Map<String, dynamic> data, String id) {
+    return FlatListingProfile(
+      documentId: id,
+      ownerName: data['ownerName'],
+      ownerPhonenumber: data['ownerPhonenumber'],
+      uid: data['uid'], // Assuming 'uid' is stored in Firestore document
+    );
+  }
+
+  // Override hashCode and equals for proper deduplication with toSet()
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+          other is FlatListingProfile &&
+              runtimeType == other.runtimeType &&
+              documentId == other.documentId &&
+              uid == other.uid; // Also compare UID for uniqueness
+
+  @override
+  int get hashCode => documentId.hashCode ^ uid.hashCode; // Combine hash codes
+}
+
+class SeekingFlatmateProfile {
+  final String documentId;
+  final String? name;
+  final String? phoneNumber;
+  final String? uid; // Add UID
+  // Add other fields from your SeekingFlatmateProfile here
+
+  SeekingFlatmateProfile({required this.documentId, this.name, this.phoneNumber, this.uid});
+
+  factory SeekingFlatmateProfile.fromMap(Map<String, dynamic> data, String id) {
+    return SeekingFlatmateProfile(
+      documentId: id,
+      name: data['name'],
+      phoneNumber: data['phoneNumber'],
+      uid: data['uid'], // Assuming 'uid' is stored in Firestore document
+    );
+  }
+
+  // Override hashCode and equals for proper deduplication with toSet()
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+          other is SeekingFlatmateProfile &&
+              runtimeType == other.runtimeType &&
+              documentId == other.documentId &&
+              uid == other.uid; // Also compare UID for uniqueness
+
+  @override
+  int get hashCode => documentId.hashCode ^ uid.hashCode; // Combine hash codes
 }
