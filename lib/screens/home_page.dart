@@ -13,7 +13,7 @@ import 'package:mytennat/screens/user_activity_screen.dart';
 import 'package:mytennat/screens/flatmate_profile_screen.dart';
 import 'package:mytennat/screens/flat_with_flatmate_profile_screen.dart';
 import 'package:mytennat/screens/PlansScreen.dart';
-
+import 'package:mytennat/screens/user_screen.dart';
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -280,10 +280,11 @@ class _HomePageState extends State<HomePage> {
             ),
             tooltip: 'My Profile',
             onPressed: () {
+              // Navigate to the new user screen
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const ViewProfileScreen()),
-              ).then((_) => _fetchUserData()); // Refresh data after returning
+                MaterialPageRoute(builder: (context) => const UserScreen()),
+              );
             },
           ),
           const SizedBox(width: 16), // Padding for the profile icon

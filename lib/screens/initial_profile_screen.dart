@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart'; // For picking image
-import 'dart:io'; // For File
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart'; // For uploading image
-import 'package:mytennat/data/user_profile.dart'; // Import your UserProfile model
-import 'package:mytennat/screens/complete_user_profile_screen.dart'; // New screen for complete profile
-import 'package:mytennat/screens/home_page.dart'; // Your main home screen
-
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:mytennat/data/user_profile.dart';
+import 'package:mytennat/screens/complete_user_profile_screen.dart';
+import 'package:mytennat/screens/home_page.dart';
+import 'package:lottie/lottie.dart';
 class InitialProfileScreen extends StatefulWidget {
   const InitialProfileScreen({Key? key}) : super(key: key);
 
@@ -20,7 +20,7 @@ class _InitialProfileScreenState extends State<InitialProfileScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _ageController = TextEditingController();
   final TextEditingController _cityController = TextEditingController();
-  String _selectedGender = 'Male'; // Default gender
+  String _selectedGender = 'Male';
   File? _profileImageFile;
   bool _isLoading = false;
 
@@ -52,7 +52,6 @@ class _InitialProfileScreenState extends State<InitialProfileScreen> {
 
       User? user = FirebaseAuth.instance.currentUser;
       if (user == null) {
-        // Handle case where user is not logged in (shouldn't happen if redirected after login)
         print("User not logged in.");
         setState(() {
           _isLoading = false;
@@ -77,15 +76,13 @@ class _InitialProfileScreenState extends State<InitialProfileScreen> {
       try {
         await FirebaseFirestore.instance.collection('users').doc(user.uid).set(
           userProfile.toMap(),
-          SetOptions(merge: true), // Use merge to avoid overwriting existing fields if any
+          SetOptions(merge: true),
         );
 
-        // Show success message or navigate
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Profile saved successfully!')),
         );
 
-        // Navigate to the "Complete Profile" or "Home" screen choice
         _showProfileCompletionDialog();
       } catch (e) {
         print("Error saving initial profile: $e");
@@ -100,169 +97,439 @@ class _InitialProfileScreenState extends State<InitialProfileScreen> {
     }
   }
 
+  // New function to calculate profile completion percentage
+  Future<double> _calculateProfileCompletionPercentage(String uid) async {
+    try {
+      final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      if (!doc.exists) {
+        return 0.0;
+      }
+
+      final data = doc.data() as Map<String, dynamic>;
+
+      // A list of all fields that contribute to profile completion
+      final fields = [
+        'name',
+        'age',
+        'gender',
+        'city',
+        'profilePhotoUrl',
+        'occupation',
+        'religion',
+        'bio',
+        'smokingHabit',
+        'drinkingHabit',
+        'foodPreference',
+        'cleanlinessLevel',
+        'socialPreferences',
+        'petOwnership',
+        'petTolerance',
+        'guestsFrequency',
+      ];
+
+      int completedFields = 0;
+      for (var field in fields) {
+        if (data.containsKey(field) && data[field] != null && data[field].toString().isNotEmpty) {
+          completedFields++;
+        }
+      }
+
+      return (completedFields / fields.length) * 100;
+    } catch (e) {
+      print("Error calculating profile completion: $e");
+      return 0.0;
+    }
+  }
+
   void _showProfileCompletionDialog() {
     showDialog(
       context: context,
-      barrierDismissible: false, // User must make a choice
+      barrierDismissible: false,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Profile Created!'),
-          content: const Text('Your basic profile is X% complete. Do you want to complete your profile for better matches, or skip to view available listings?'),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('Skip to View Listings'),
-              onPressed: () {
-                Navigator.of(context).pop(); // Close dialog
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const HomePage()), // Navigate to your HomeScreen
-                );
-              },
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20.0),
+          ),
+          elevation: 0,
+          backgroundColor: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.all(20.0),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20.0),
+              boxShadow: const [
+                BoxShadow(
+                  color: Colors.black26,
+                  blurRadius: 10,
+                  offset: Offset(0, 5),
+                ),
+              ],
             ),
-            ElevatedButton(
-              child: const Text('Complete Your Profile'),
-              onPressed: () {
-                Navigator.of(context).pop(); // Close dialog
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const CompleteUserProfileScreen()), // Navigate to the new Complete Profile screen
-                );
-              },
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Lottie.asset(
+                  'assets/congrats_animation.json', // Replace with your animation file path
+                  height: 150,
+                  repeat: false,
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'Profile Created!',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 10),
+                const Text(
+                  'Your profile is 25% complete. Would you like to continue filling it out now?',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.black54,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const CompleteUserProfileScreen(),
+                        ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFAD1457),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    child: const Text(
+                      'Complete Now',
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const HomePage(),
+                        ),
+                      );
+                    },
+                    style: TextButton.styleFrom(
+                      foregroundColor: const Color(0xFFAD1457),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: const BorderSide(color: Color(0xFFAD1457)),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    child: const Text(
+                      'Skip for now',
+                      style: TextStyle(
+                        fontSize: 18,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         );
       },
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Create Your Profile'),
+        title: const Text(
+          'Create Your Profile',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 22,
+          ),
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: GestureDetector(
-                  onTap: _pickImage,
-                  child: CircleAvatar(
-                    radius: 60,
-                    backgroundColor: Colors.grey[200],
-                    backgroundImage: _profileImageFile != null
-                        ? FileImage(_profileImageFile!)
-                        : null,
-                    child: _profileImageFile == null
-                        ? Icon(
-                      Icons.camera_alt,
-                      size: 40,
-                      color: Colors.grey[600],
-                    )
-                        : null,
+      extendBodyBehindAppBar: true,
+      body: Stack(
+        children: [
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF6A1B9A), Color(0xFFAD1457)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+          ),
+          _isLoading
+              ? const Center(child: CircularProgressIndicator(color: Colors.white))
+              : SingleChildScrollView(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              children: [
+                SizedBox(height: MediaQuery.of(context).padding.top + kToolbarHeight),
+                const Text(
+                  'Tell Us About Yourself!',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    shadows: [
+                      Shadow(
+                        blurRadius: 10.0,
+                        color: Colors.black38,
+                        offset: Offset(2.0, 2.0),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-              const SizedBox(height: 20),
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Name',
-                  border: OutlineInputBorder(),
+                const SizedBox(height: 10),
+                const Text(
+                  'Your profile helps you find the perfect match.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 17,
+                    color: Colors.white70,
+                  ),
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your name';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _ageController,
-                decoration: const InputDecoration(
-                  labelText: 'Age',
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.number,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your age';
-                  }
-                  if (int.tryParse(value) == null || int.parse(value) <= 0) {
-                    return 'Please enter a valid age';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                value: _selectedGender,
-                decoration: const InputDecoration(
-                  labelText: 'Gender',
-                  border: OutlineInputBorder(),
-                ),
-                items: <String>['Male', 'Female', 'Other']
-                    .map<DropdownMenuItem<String>>((String value) {
-                  return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(value),
-                  );
-                }).toList(),
-                onChanged: (String? newValue) {
-                  setState(() {
-                    _selectedGender = newValue!;
-                  });
-                },
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please select your gender';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _cityController,
-                decoration: const InputDecoration(
-                  labelText: 'City',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your city';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _saveInitialProfile,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                const SizedBox(height: 30),
+                Container(
+                  padding: const EdgeInsets.all(25.0),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        spreadRadius: 2,
+                        blurRadius: 15,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      children: [
+                        _buildProfileImagePicker(),
+                        const SizedBox(height: 20),
+                        _buildTextFormField(
+                          controller: _nameController,
+                          label: 'Name',
+                          icon: Icons.person,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter your name';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        _buildTextFormField(
+                          controller: _ageController,
+                          label: 'Age',
+                          icon: Icons.cake,
+                          keyboardType: TextInputType.number,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter your age';
+                            }
+                            if (int.tryParse(value) == null || int.parse(value) <= 0) {
+                              return 'Please enter a valid age';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        _buildGenderDropdown(),
+                        const SizedBox(height: 16),
+                        _buildTextFormField(
+                          controller: _cityController,
+                          label: 'City',
+                          icon: Icons.location_city,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter your city';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 30),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: _saveInitialProfile,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFAD1457),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 18),
+                              elevation: 8,
+                              shadowColor: const Color(0xFFAD1457).withOpacity(0.6),
+                            ),
+                            child: const Text(
+                              'Submit',
+                              style: TextStyle(
+                                fontSize: 19,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  child: const Text(
-                    'Submit',
-                    style: TextStyle(fontSize: 18),
-                  ),
                 ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProfileImagePicker() {
+    return Center(
+      child: GestureDetector(
+        onTap: _pickImage,
+        child: Container(
+          width: 120,
+          height: 120,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.grey[200],
+            border: Border.all(color: Colors.deepPurple.shade200, width: 3),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                spreadRadius: 1,
+                blurRadius: 5,
+                offset: const Offset(0, 3),
               ),
             ],
           ),
+          child: _profileImageFile != null
+              ? ClipOval(
+            child: Image.file(
+              _profileImageFile!,
+              fit: BoxFit.cover,
+              width: 120,
+              height: 120,
+            ),
+          )
+              : Icon(
+            Icons.camera_alt,
+            size: 50,
+            color: Colors.deepPurple[400],
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _buildTextFormField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    required String? Function(String?) validator,
+    TextInputType keyboardType = TextInputType.text,
+  }) {
+    return TextFormField(
+      controller: controller,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon, color: Colors.deepPurple[300]),
+        labelStyle: TextStyle(color: Colors.grey[700]),
+        filled: true,
+        fillColor: Colors.grey[50],
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.deepPurple, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.red, width: 2),
+        ),
+      ),
+      keyboardType: keyboardType,
+      validator: validator,
+    );
+  }
+
+  Widget _buildGenderDropdown() {
+    return DropdownButtonFormField<String>(
+      value: _selectedGender,
+      decoration: InputDecoration(
+        labelText: 'Gender',
+        prefixIcon: Icon(Icons.transgender, color: Colors.deepPurple[300]),
+        labelStyle: TextStyle(color: Colors.grey[700]),
+        filled: true,
+        fillColor: Colors.grey[50],
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.deepPurple, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.red, width: 2),
+        ),
+      ),
+      items: <String>['Male', 'Female', 'Other']
+          .map<DropdownMenuItem<String>>((String value) {
+        return DropdownMenuItem<String>(
+          value: value,
+          child: Text(value),
+        );
+      }).toList(),
+      onChanged: (String? newValue) {
+        setState(() {
+          _selectedGender = newValue!;
+        });
+      },
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Please select your gender';
+        }
+        return null;
+      },
     );
   }
 }
