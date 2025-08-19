@@ -30,27 +30,11 @@ class _CompleteUserProfileScreenState extends State<CompleteUserProfileScreen> {
   String? _bio;
 
   final List<String> _occupationOptions = [
-    'Student',
-    'Engineer',
-    'Doctor',
-    'Artist',
-    'Teacher',
-    'IT Professional',
-    'Freelancer',
-    'Marketing',
-    'Other',
+    'Student', 'Working Professional', 'Both', 'No preference'
   ];
 
   final List<String> _religionOptions = [
-    'Christianity',
-    'Islam',
-    'Hinduism',
-    'Buddhism',
-    'Sikhism',
-    'Judaism',
-    'Agnostic',
-    'Atheist',
-    'Other',
+    'Hindu', 'Muslim', 'Christian','Sikh','Buddhism','Prefer not to say'
   ];
 
   bool _isLoading = false;
@@ -464,7 +448,7 @@ class _CompleteUserProfileScreenState extends State<CompleteUserProfileScreen> {
                         _buildDropdownField(
                           labelText: 'Smoking Habit',
                           value: _smokingHabit,
-                          items: ['Socially', 'Never', 'Occasionally', 'Regularly'],
+                          items: ['Never', 'Occasionally', 'Socially', 'Regularly'],
                           onChanged: (val) {
                             setState(() => _smokingHabit = val);
                             _calculateAndSetCompletionPercentage();
@@ -475,7 +459,7 @@ class _CompleteUserProfileScreenState extends State<CompleteUserProfileScreen> {
                         _buildDropdownField(
                           labelText: 'Drinking Habit',
                           value: _drinkingHabit,
-                          items: ['Socially', 'Never', 'Occasionally', 'Regularly'],
+                          items: ['Never', 'Occasionally', 'Socially', 'Regularly'],
                           onChanged: (val) {
                             setState(() => _drinkingHabit = val);
                             _calculateAndSetCompletionPercentage();
@@ -486,7 +470,7 @@ class _CompleteUserProfileScreenState extends State<CompleteUserProfileScreen> {
                         _buildDropdownField(
                           labelText: 'Food Preference',
                           value: _foodPreference,
-                          items: ['Veg', 'Non-Veg', 'Both'],
+                          items: ['Vegetarian','Non-Vegetarian', 'Vegan','Eggetarian', 'Jain', 'Other'],
                           onChanged: (val) {
                             setState(() => _foodPreference = val);
                             _calculateAndSetCompletionPercentage();
@@ -508,7 +492,10 @@ class _CompleteUserProfileScreenState extends State<CompleteUserProfileScreen> {
                         _buildDropdownField(
                           labelText: 'Social Preferences',
                           value: _socialPreferences,
-                          items: ['Extrovert', 'Introvert', 'Both'],
+                          items: ['Value personal space highly',
+                               'Enjoy a balance',
+                              'Prefer more socialization',
+                           'Flexible'],
                           onChanged: (val) {
                             setState(() => _socialPreferences = val);
                             _calculateAndSetCompletionPercentage();
@@ -519,7 +506,7 @@ class _CompleteUserProfileScreenState extends State<CompleteUserProfileScreen> {
                         _buildDropdownField(
                           labelText: 'Pet Ownership',
                           value: _petOwnership,
-                          items: ['Yes', 'No'],
+                          items: ['Yes', 'No', 'Planning to get one'],
                           onChanged: (val) {
                             setState(() => _petOwnership = val);
                             _calculateAndSetCompletionPercentage();
@@ -530,7 +517,7 @@ class _CompleteUserProfileScreenState extends State<CompleteUserProfileScreen> {
                         _buildDropdownField(
                           labelText: 'Pet Tolerance',
                           value: _petTolerance,
-                          items: ['Yes', 'No', 'Sometimes'],
+                          items: [ 'Comfortable with pets', 'Tolerant of pets', 'Prefer no pets', 'Allergic to pets'],
                           onChanged: (val) {
                             setState(() => _petTolerance = val);
                             _calculateAndSetCompletionPercentage();
