@@ -144,8 +144,8 @@ class _FilterScreenState extends State<FilterScreen> with SingleTickerProviderSt
       builder: (context, child) {
         return Theme(
           data: ThemeData.light().copyWith(
-            primaryColor: Colors.redAccent,
-            colorScheme: const ColorScheme.light(primary: Colors.redAccent),
+            primaryColor: const Color(0xFFAD1457), // Changed from Colors.redAccent
+            colorScheme: const ColorScheme.light(primary: Color(0xFFAD1457)), // Changed from Colors.redAccent
             buttonTheme: const ButtonThemeData(textTheme: ButtonTextTheme.primary),
           ),
           child: child!,
@@ -214,7 +214,15 @@ class _FilterScreenState extends State<FilterScreen> with SingleTickerProviderSt
     return Scaffold(
       appBar: AppBar(
         title: const Text('Filter Profiles', style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.redAccent,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF6A1B9A), Color(0xFFAD1457)], // Changed to consistent gradient
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
         iconTheme: const IconThemeData(color: Colors.white),
         elevation: 0, // Remove app bar shadow for a flatter look
         actions: [
@@ -241,9 +249,9 @@ class _FilterScreenState extends State<FilterScreen> with SingleTickerProviderSt
                 Tab(text: 'Filters'),
                 Tab(text: 'Premium Filters'),
               ],
-              labelColor: Colors.redAccent,
+              labelColor: const Color(0xFFAD1457), // Changed from Colors.redAccent
               unselectedLabelColor: Colors.grey.shade600, // Darker grey for better contrast
-              indicatorColor: Colors.redAccent,
+              indicatorColor: const Color(0xFFAD1457), // Changed from Colors.redAccent
               indicatorSize: TabBarIndicatorSize.tab,
               indicatorWeight: 3.0,
               labelStyle: const TextStyle(fontWeight: FontWeight.bold), // Bold active tab text
@@ -514,11 +522,11 @@ class _FilterScreenState extends State<FilterScreen> with SingleTickerProviderSt
                 icon: const Icon(Icons.check, color: Colors.white),
                 label: const Text('Apply Filters', style: TextStyle(color: Colors.white, fontSize: 18)),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.redAccent,
+                  backgroundColor: const Color(0xFFAD1457), // Changed from Colors.redAccent
                   padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                   elevation: 5,
-                  shadowColor: Colors.redAccent.shade200,
+                  shadowColor: const Color(0xFFAD1457).withOpacity(0.2), // Changed from Colors.redAccent.shade200
                 ),
               ),
             ),
@@ -554,7 +562,7 @@ class _FilterScreenState extends State<FilterScreen> with SingleTickerProviderSt
       style: const TextStyle(
         fontSize: 24, // Slightly larger title font
         fontWeight: FontWeight.w700, // Bolder title
-        color: Colors.redAccent,
+        color: Color(0xFFAD1457), // Changed from Colors.redAccent
       ),
     );
   }
@@ -562,7 +570,7 @@ class _FilterScreenState extends State<FilterScreen> with SingleTickerProviderSt
   InputDecoration _buildInputDecoration(String labelText, {IconData? icon}) {
     return InputDecoration(
       labelText: labelText,
-      prefixIcon: icon != null ? Icon(icon, color: Colors.redAccent.shade400) : null, // Icon color
+      prefixIcon: icon != null ? Icon(icon, color: const Color(0xFF6A1B9A).withOpacity(0.4)) : null, // Changed from Colors.redAccent.shade400
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12), // More rounded input borders
         borderSide: BorderSide(color: Colors.grey.shade300),
@@ -573,7 +581,7 @@ class _FilterScreenState extends State<FilterScreen> with SingleTickerProviderSt
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.redAccent, width: 2.5), // Prominent focused border
+        borderSide: const BorderSide(color: Color(0xFFAD1457), width: 2.5), // Prominent focused border
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14), // More padding
       filled: true,
@@ -607,7 +615,7 @@ class _FilterScreenState extends State<FilterScreen> with SingleTickerProviderSt
               );
             }).toList(),
             onChanged: onChanged,
-            icon: Icon(Icons.keyboard_arrow_down_rounded, color: Colors.redAccent.shade400, size: 28), // Modern dropdown icon
+            icon: Icon(Icons.keyboard_arrow_down_rounded, color: const Color(0xFF6A1B9A).withOpacity(0.4), size: 28), // Modern dropdown icon
             style: const TextStyle(color: Colors.black87, fontSize: 16),
             dropdownColor: Colors.white,
             elevation: 2, // Add elevation to dropdown menu
@@ -637,7 +645,7 @@ class _FilterScreenState extends State<FilterScreen> with SingleTickerProviderSt
           const SizedBox(height: 10),
           Row(
             children: [
-              if (icon != null) Icon(icon, color: Colors.redAccent.shade400),
+              if (icon != null) Icon(icon, color: const Color(0xFF6A1B9A).withOpacity(0.4)), // Changed from Colors.redAccent.shade400
               if (icon != null) const SizedBox(width: 10),
               SizedBox(
                 width: 70, // Increased width for values
@@ -650,14 +658,14 @@ class _FilterScreenState extends State<FilterScreen> with SingleTickerProviderSt
               Expanded(
                 child: SliderTheme(
                   data: SliderTheme.of(context).copyWith(
-                    activeTrackColor: Colors.redAccent,
-                    inactiveTrackColor: Colors.redAccent.withOpacity(0.2), // Lighter inactive track
-                    thumbColor: Colors.redAccent,
-                    overlayColor: Colors.redAccent.withOpacity(0.1),
+                    activeTrackColor: const Color(0xFFAD1457), // Changed from Colors.redAccent
+                    inactiveTrackColor: const Color(0xFFAD1457).withOpacity(0.2), // Lighter inactive track
+                    thumbColor: const Color(0xFFAD1457), // Changed from Colors.redAccent
+                    overlayColor: const Color(0xFFAD1457).withOpacity(0.1), // Changed from Colors.redAccent.withOpacity(0.1)
                     thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 12.0), // Slightly larger thumb
                     overlayShape: const RoundSliderOverlayShape(overlayRadius: 24.0), // Larger overlay
                     trackHeight: 6.0, // Thicker track
-                    valueIndicatorColor: Colors.redAccent.shade700,
+                    valueIndicatorColor: const Color(0xFFAD1457).withOpacity(0.7), // Changed from Colors.redAccent.shade700
                     valueIndicatorTextStyle: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
                   ),
                   child: RangeSlider(
@@ -705,7 +713,7 @@ class _FilterScreenState extends State<FilterScreen> with SingleTickerProviderSt
         inputFormatters: inputFormatters,
         onChanged: onChanged,
         style: const TextStyle(color: Colors.black87, fontSize: 16),
-        cursorColor: Colors.redAccent, // Custom cursor color
+        cursorColor: const Color(0xFFAD1457), // Custom cursor color
       ),
     );
   }
@@ -816,16 +824,16 @@ class _FilterChipGroupState extends State<_FilterChipGroup> {
                     widget.onSelectionChanged(_localSelectedItems);
                   });
                 },
-                selectedColor: Colors.redAccent.withOpacity(0.2), // Lighter selected color for modern feel
-                checkmarkColor: Colors.redAccent.shade700,
+                selectedColor: const Color(0xFFAD1457).withOpacity(0.2), // Lighter selected color for modern feel
+                checkmarkColor: const Color(0xFFAD1457).withOpacity(0.7), // Changed from Colors.redAccent.shade700
                 labelStyle: TextStyle(
-                  color: isSelected ? Colors.redAccent.shade700 : Colors.grey.shade800, // Better contrast
+                  color: isSelected ? const Color(0xFFAD1457).withOpacity(0.7) : Colors.grey.shade800, // Better contrast
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(24), // More rounded chips
                   side: BorderSide(
-                    color: isSelected ? Colors.redAccent.shade400 : Colors.grey.shade300, // Softer border
+                    color: isSelected ? const Color(0xFFAD1457).withOpacity(0.4) : Colors.grey.shade300, // Softer border
                     width: 1.0,
                   ),
                 ),

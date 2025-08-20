@@ -362,10 +362,6 @@ class _MatchingScreenState extends State<MatchingScreen> {
           query = query.where('userProfile.city', isEqualTo: _currentFilters.desiredCity);
         }
         if (_currentFilters.areaPreference != null && _currentFilters.areaPreference!.isNotEmpty) {
-          // This field is not in the provided schema, so it will not work.
-          // It's likely you need to use `userProfile.city` and other relevant fields instead.
-          // As a placeholder, I will comment this out.
-          // query = query.where('areaPreference', isEqualTo: _currentFilters.areaPreference);
         }
         if (_currentFilters.moveInDate != null) {
           query = query.where('moveInDate', isLessThanOrEqualTo: _currentFilters.moveInDate);
@@ -805,10 +801,10 @@ class _MatchingScreenState extends State<MatchingScreen> {
     // Find the first profile that the current user liked, but hasn't liked them back
     dynamic pendingLikedProfile;
     for (var outgoingProfile in currentOutgoingLikes) {
-      final bool hasLikedMeBack = currentIncomingLikes
+      final bool hasLikedMe = currentIncomingLikes
           .any((incomingProfile) => incomingProfile.documentId == outgoingProfile.documentId);
 
-      if (!hasLikedMeBack) {
+      if (!hasLikedMe) {
         // --- NEW ADDITION START ---
         // Check Firestore to see if contact was already revealed for this like
         final likeDocRef = _firestore
@@ -867,15 +863,15 @@ class _MatchingScreenState extends State<MatchingScreen> {
       barrierDismissible: false,
       builder: (BuildContext context) {
         return BannerPopupScreen(
-          message: message,
-          subMessage: sub, // Pass the sub-message
-          profileImageUrl: imageUrl, // Pass the image URL
-          buttonText: 'OK',
+          message: 'Wanna find another flatmate?',
+          subMessage: 'There are many other people waiting for you!',
+          buttonText: 'Show Ad',
           onButtonPressed: () {
             setState(() {
               _isBannerPopupShowing = false;
             });
             Navigator.of(context).pop();
+            Navigator.push(context, MaterialPageRoute(builder: (context) => const AdPage()));
           },
         );
       },
@@ -951,7 +947,7 @@ class _MatchingScreenState extends State<MatchingScreen> {
               );
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blueAccent,
+              backgroundColor: const Color(0xFFAD1457), // Changed from Colors.blueAccent
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 12),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -1032,6 +1028,10 @@ class _MatchingScreenState extends State<MatchingScreen> {
             ),
             ElevatedButton(
               onPressed: onChatPressed,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFAD1457), // Changed to consistent primary button color
+                foregroundColor: Colors.white,
+              ),
               child: const Text('Chat Now'),
             ),
           ],
@@ -1089,8 +1089,7 @@ class _MatchingScreenState extends State<MatchingScreen> {
     // Implement your matching logic here
     return 0.0;
   }
-
-  // NEW: Method to build the list view of profiles
+// NEW: Method to build the list view of profiles
   Widget _buildListView() {
     if (_profiles.isEmpty) {
       return Center(
@@ -1118,7 +1117,7 @@ class _MatchingScreenState extends State<MatchingScreen> {
               icon: const Icon(Icons.filter_list),
               label: const Text('Adjust Filters'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blueAccent,
+                backgroundColor: const Color(0xFFAD1457),
                 foregroundColor: Colors.white,
               ),
             ),
@@ -1140,44 +1139,55 @@ class _MatchingScreenState extends State<MatchingScreen> {
           profileImageUrl = profile.imageUrls!.first;
         }
 
-        // This is a basic example of a list tile. You can customize it further.
         return Card(
           elevation: 4.0,
           margin: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 6.0),
-          child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
-            leading: CircleAvatar(
-              backgroundImage: profileImageUrl != null ? NetworkImage(profileImageUrl) : null,
-              child: profileImageUrl == null ? const Icon(Icons.person) : null,
-              radius: 25,
+          clipBehavior: Clip.antiAlias, // Ensures gradient respects card shape
+          child: Container( // Wrap ListTile in Container for gradient
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF6A1B9A), Color(0xFFAD1457)], // Gradient for the card
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
             ),
-            title: Text(
-              profileName,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            subtitle: Text(_getProfileTypeDisplay(profile)),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-            onTap: () {
-              // Navigate to the full profile view
-              // NOTE: The parameters below may need to be adjusted based on the ViewProfileScreen constructor.
-              // The original error "The named parameter 'profile' isn't defined" suggests the parameter name is different.
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ViewProfileScreen(
-                    userId: profile.uid, // Use uid for userId
-                    profileDocumentId: profile.documentId!,
+            child: ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+              leading: CircleAvatar(
+                backgroundColor: Colors.white, // White background for avatar
+                backgroundImage: profileImageUrl != null ? NetworkImage(profileImageUrl) : null,
+                child: profileImageUrl == null ? const Icon(Icons.person, color: Color(0xFFAD1457)) : null, // Icon color
+                radius: 25,
+              ),
+              title: Text(
+                profileName,
+                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white), // White text
+              ),
+              subtitle: Text(
+                _getProfileTypeDisplay(profile),
+                style: const TextStyle(color: Colors.white70), // Lighter white for subtitle
+              ),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.white), // White icon
+              onTap: () {
+                // Navigate to the full profile view
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ViewProfileScreen(
+                      userId: profile.uid,
+                      profileDocumentId: profile.documentId!,
+                    ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
         );
       },
     );
   }
 
-  // MODIFIED: Method to build the original card/swipe view
+// MODIFIED: Method to build the original card/swipe view
   Widget _buildCardView() {
     if (_profiles.isEmpty) {
       return Center(
@@ -1197,7 +1207,7 @@ class _MatchingScreenState extends State<MatchingScreen> {
               icon: const Icon(Icons.refresh),
               label: const Text('Refresh Profiles'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blueAccent,
+                backgroundColor: const Color(0xFFAD1457),
                 foregroundColor: Colors.white,
               ),
             ),
@@ -1206,13 +1216,11 @@ class _MatchingScreenState extends State<MatchingScreen> {
       );
     }
 
-    // This code block handles the stacking of cards.
     return Stack(
       children: _profiles.asMap().entries.map((entry) {
         int index = entry.key;
         dynamic profile = entry.value;
 
-        // Only show the top few cards to maintain performance
         if (index >= 3) {
           return const SizedBox.shrink();
         }
@@ -1221,7 +1229,6 @@ class _MatchingScreenState extends State<MatchingScreen> {
         double topPadding = math.max(0.0, index * 20.0);
         double horizontalPadding = math.max(0.0, index * 10.0);
 
-        // This is the swipeable card.
         return Positioned(
           top: topPadding,
           left: horizontalPadding,
@@ -1230,27 +1237,22 @@ class _MatchingScreenState extends State<MatchingScreen> {
             scale: scale,
             alignment: Alignment.topCenter,
             child: Dismissible(
-              // Use a unique key for each card to allow Flutter to differentiate them
               key: Key(profile.documentId ?? index.toString()),
               direction: DismissDirection.horizontal,
-              // Call the new, simplified handler
               onDismissed: (direction) => _handleProfileDismissed(direction),
               child: InkWell(
                 onTap: () {
-                  // Navigate to the full profile view
-                  // NOTE: The parameters below may need to be adjusted based on the ViewProfileScreen constructor.
-                  // The original error "The named parameter 'profile' isn't defined" suggests the parameter name is different.
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => ViewProfileScreen(
-                        userId: profile.uid, // Use uid for userId
+                        userId: profile.uid,
                         profileDocumentId: profile.documentId!,
                       ),
                     ),
                   );
                 },
-                child: _buildProfileCard(
+                child: _buildProfileCard( // This method now handles the gradient
                   profile,
                   _userProfileType!,
                 ),
@@ -1262,7 +1264,7 @@ class _MatchingScreenState extends State<MatchingScreen> {
     );
   }
 
-  // NEW: ProfileCard widget implementation
+// NEW: ProfileCard widget implementation with gradient
   Widget _buildProfileCard(dynamic profile, String userProfileType) {
     String profileName = '';
     String? imageUrl;
@@ -1272,9 +1274,6 @@ class _MatchingScreenState extends State<MatchingScreen> {
     if (profile is FlatListingProfile) {
       profileName = profile.userProfile.name ?? 'Flat Owner';
       profileType = 'Flat Listing';
-      // CORRECTED: Assuming rentPrice and city are direct properties on FlatListingProfile
-      // The previous code caused a "The getter 'flatDetails' isn't defined" error.
-      // This is the correct way to access the properties without a `flatDetails` getter.
       description = '${profile.rentPrice ?? 'N/A'} / month in ${profile.userProfile.city ?? 'N/A'}';
       if (profile.imageUrls != null && profile.imageUrls!.isNotEmpty) {
         imageUrl = profile.imageUrls!.first;
@@ -1288,18 +1287,23 @@ class _MatchingScreenState extends State<MatchingScreen> {
       }
     }
 
-    // FIX: Wrap the Column in a Container or SizedBox to give it a finite height.
-    // This resolves the `RenderFlex` error caused by an `Expanded` widget inside an unconstrained parent.
     return Container(
       height: MediaQuery.of(context).size.height * 0.7, // Set a height relative to the screen size
       child: Card(
         elevation: 8,
-        margin: EdgeInsets.all(16),
+        margin: const EdgeInsets.all(16),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
         ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
+        clipBehavior: Clip.antiAlias, // Important for gradient to follow rounded corners
+        child: Container( // This Container will hold the gradient
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF6A1B9A), Color(0xFFAD1457)], // Gradient for the card
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
           child: Column(
             children: [
               if (imageUrl != null)
@@ -1309,12 +1313,12 @@ class _MatchingScreenState extends State<MatchingScreen> {
                     fit: BoxFit.cover,
                     width: double.infinity,
                     errorBuilder: (context, error, stackTrace) =>
-                        Center(child: Icon(Icons.person, size: 150)),
+                    const Center(child: Icon(Icons.person, size: 150, color: Colors.white)), // Icon on gradient bg
                   ),
                 )
               else
-                Expanded(
-                  child: Center(child: Icon(Icons.person, size: 150)),
+                const Expanded(
+                  child: Center(child: Icon(Icons.person, size: 150, color: Colors.white)), // Icon on gradient bg
                 ),
               Padding(
                 padding: const EdgeInsets.all(16.0),
@@ -1323,33 +1327,34 @@ class _MatchingScreenState extends State<MatchingScreen> {
                   children: [
                     Text(
                       profileName,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
+                        color: Colors.white, // White text on gradient
                       ),
                     ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     Text(
                       profileType,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 18,
-                        color: Colors.grey[700],
+                        color: Colors.white70, // Lighter white on gradient
                       ),
                     ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     Text(
                       description,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 16,
-                        color: Colors.grey[700],
+                        color: Colors.white70, // Lighter white on gradient
                       ),
                     ),
-                    SizedBox(height: 16),
+                    const SizedBox(height: 16),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        _buildLikeButton(),
-                        _buildPassButton(),
+                        _buildLikeButton(), // Ensure these buttons also have appropriate colors
+                        _buildPassButton(), // for contrast on the gradient background
                       ],
                     ),
                   ],
@@ -1399,7 +1404,16 @@ class _MatchingScreenState extends State<MatchingScreen> {
       key: _scaffoldKey, // Assign the key to Scaffold
       appBar: AppBar(
         title: const Text('MyTennant Matching', style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.redAccent,
+        // Changed to a consistent gradient background
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF6A1B9A), Color(0xFFAD1457)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
         iconTheme: const IconThemeData(color: Colors.white),
         elevation: 0,
         actions: [
@@ -1432,7 +1446,7 @@ class _MatchingScreenState extends State<MatchingScreen> {
         ),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator(color: Color(0xFF6A1B9A))) // Changed to a consistent color
           : isLargeScreen
           ? Row(
         children: [
