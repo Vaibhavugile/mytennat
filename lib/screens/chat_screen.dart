@@ -1,16 +1,17 @@
-// screens/chat_screen.dart
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart'; // For date formatting
 import 'package:flutter/scheduler.dart'; // For post-frame callbacks
+import 'package:rxdart/rxdart.dart'; // Ensure rxdart is imported if not already
 
-// Custom Colors for a modern look
-const Color kPrimaryColor = Color(0xFF6B7280); // Softer Grey/Blue
-const Color kAccentColor = Color(0xFF5CF694); // Vibrant Purple
-const Color kLightGrey = Color(0xFFF3F4F6); // Light background for received messages
-const Color kDarkGrey = Color(0xFF6B7280); // For text and icons
-const Color kReadTickColor = Color(0xFF3B82F6); // Blue for read ticks
+
+// Custom Colors for a modern look, aligned with your gradient theme
+const Color kPrimaryColor = Color(0xFF6A1B9A); // Deep Purple
+const Color kAccentColor = Color(0xFFAD1457); // Pink-Red/Magenta
+const Color kLightGrey = Color(0xFFF3F4F6); // Very Light Grey for text field background
+const Color kDarkGrey = Color(0xFF6B7280); // Softer Grey for text and icons on white background
+const Color kReadTickColor = Color(0xFF3B82F6); // Blue for read ticks (distinct operational color)
 
 class ChatScreen extends StatefulWidget {
   final String chatPartnerId; // The UID of the chat partner
@@ -280,19 +281,18 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: kLightGrey,
+      backgroundColor: Colors.white, // Full page background is now white
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            // START OF CHANGES
+        // Removed const for AppBar to allow dynamic flexibleSpace
+        backgroundColor: Colors.transparent, // Make app bar background transparent to show gradient
+        elevation: 0, // No shadow for a flat, modern look
+        flexibleSpace: Container( // Removed const here to fix potential `const_with_non_const` error
+          decoration: const BoxDecoration( // BoxDecoration can be const
             gradient: LinearGradient(
-              colors: [Color(0xFF6A1B9A), Color(0xFFAD1457)], // Deep Purple to Pink-Red from PlansScreen
+              colors: [Color(0xFF6A1B9A), Color(0xFFAD1457)], // Deep Purple to Pink-Red
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            // END OF CHANGES
           ),
         ),
         title: Row(
@@ -303,6 +303,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                 child: CircleAvatar(
                   backgroundImage: NetworkImage(widget.chatPartnerImageUrl!),
                   radius: 20,
+                  backgroundColor: Colors.white, // White background for avatar
                 ),
               ),
             Text(
@@ -310,11 +311,12 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 20,
-                color: Colors.white,
+                color: Colors.white, // White text on gradient
               ),
             ),
           ],
         ),
+        iconTheme: const IconThemeData(color: Colors.white), // White back arrow
         actions: [
           IconButton(
             icon: const Icon(Icons.call, color: Colors.white),
@@ -349,7 +351,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
           Column(
             children: [
               Expanded(
-                child: StreamBuilder<QuerySnapshot>(
+                child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>( // Explicitly typing QuerySnapshot
                   stream: _firestore
                       .collection('chats')
                       .doc(_chatRoomId)
@@ -384,10 +386,10 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                       itemCount: messages.length,
                       itemBuilder: (context, index) {
                         final message = messages[index];
-                        final messageData = message.data() as Map<String, dynamic>;
+                        final messageData = message.data(); // No longer casting here directly
                         final bool isMe = messageData['senderId'] == _currentUser!.uid;
                         final Timestamp? timestamp = messageData['timestamp'] as Timestamp?;
-                        final List<dynamic> readBy = messageData['readBy'] as List<dynamic>? ?? [];
+                        final List<dynamic> readBy = (messageData['readBy'] as List<dynamic>?) ?? [];
                         final bool isRead = readBy.contains(widget.chatPartnerId) && isMe;
 
                         String timeFormatted = '';
@@ -398,20 +400,22 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                         }
 
                         bool showDateSeparator = false;
-                        if (index == messages.length - 1) {
+                        // Logic for date separator
+                        if (index == messages.length - 1) { // Always show date for the first (oldest) message displayed
                           showDateSeparator = true;
                         } else {
-                          final prevMessage = messages[index + 1];
-                          final prevTimestamp = (prevMessage.data() as Map<String, dynamic>)['timestamp'] as Timestamp?;
-                          if (messageDateTime != null && prevTimestamp != null) {
-                            final prevDateTime = prevTimestamp.toDate();
-                            if (messageDateTime.day != prevDateTime.day ||
-                                messageDateTime.month != prevDateTime.month ||
-                                messageDateTime.year != prevDateTime.year) {
+                          final nextMessage = messages[index + 1]; // Use index + 1 for comparison
+                          final nextTimestamp = (nextMessage.data())['timestamp'] as Timestamp?;
+                          if (messageDateTime != null && nextTimestamp != null) {
+                            final nextDateTime = nextTimestamp.toDate();
+                            if (messageDateTime.day != nextDateTime.day ||
+                                messageDateTime.month != nextDateTime.month ||
+                                messageDateTime.year != nextDateTime.year) {
                               showDateSeparator = true;
                             }
                           }
                         }
+
 
                         return Column(
                           children: [
@@ -427,6 +431,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                                     child: CircleAvatar(
                                       backgroundImage: NetworkImage(widget.chatPartnerImageUrl!),
                                       radius: 14,
+                                      backgroundColor: Colors.white, // White background for partner's avatar
                                     ),
                                   ),
                                 _MessageBubble(
@@ -465,7 +470,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                     _showScrollToBottomButton = false;
                   });
                 },
-                backgroundColor: kAccentColor.withOpacity(0.9),
+                backgroundColor: kAccentColor.withOpacity(0.9), // Uses new kAccentColor
                 mini: true,
                 child: const Icon(Icons.arrow_downward_rounded, color: Colors.white),
                 shape: const CircleBorder(),
@@ -478,7 +483,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   }
 }
 
-// Extracted Message Bubble Widget (no changes needed)
+// Extracted Message Bubble Widget
 class _MessageBubble extends StatelessWidget {
   final String message;
   final String time;
@@ -499,7 +504,7 @@ class _MessageBubble extends StatelessWidget {
       margin: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 0),
       constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
       decoration: BoxDecoration(
-        color: isMe ? kAccentColor.withOpacity(0.9) : Colors.white,
+        color: isMe ? kAccentColor.withOpacity(0.9) : kPrimaryColor.withOpacity(0.9), // Uses new kAccentColor
         borderRadius: BorderRadius.only(
           topLeft: const Radius.circular(18),
           topRight: const Radius.circular(18),
@@ -521,7 +526,7 @@ class _MessageBubble extends StatelessWidget {
           Text(
             message,
             style: TextStyle(
-              color: isMe ? Colors.white : kDarkGrey,
+              color: isMe ? Colors.white : Colors.white, // White text on "my" gradient, kDarkGrey on white
               fontSize: 16.0,
             ),
           ),
@@ -533,7 +538,7 @@ class _MessageBubble extends StatelessWidget {
                 time,
                 style: TextStyle(
                   fontSize: 11.0,
-                  color: isMe ? Colors.white70 : Colors.grey[600],
+                  color: isMe ? Colors.white70 : Colors.white,
                 ),
               ),
               if (isMe) ...[
@@ -552,7 +557,7 @@ class _MessageBubble extends StatelessWidget {
   }
 }
 
-// New Date Separator Widget (no changes needed)
+// New Date Separator Widget
 class _DateSeparator extends StatelessWidget {
   final DateTime date;
 
@@ -564,13 +569,13 @@ class _DateSeparator extends StatelessWidget {
       margin: const EdgeInsets.symmetric(vertical: 10.0),
       padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
       decoration: BoxDecoration(
-        color: Colors.grey[300],
+        color: Colors.white, // Keep a light grey for separation
         borderRadius: BorderRadius.circular(20.0),
       ),
       child: Text(
         DateFormat('MMMM d, y').format(date),
         style: const TextStyle(
-          color: kDarkGrey,
+          color: kDarkGrey, // Dark grey text on light grey background
           fontSize: 12.0,
           fontWeight: FontWeight.w600,
         ),
@@ -580,7 +585,7 @@ class _DateSeparator extends StatelessWidget {
 }
 
 
-// Extracted Message Input Widget (no changes needed)
+// Extracted Message Input Widget
 class _MessageInput extends StatelessWidget {
   final TextEditingController controller;
   final VoidCallback onSendMessage;
@@ -595,11 +600,11 @@ class _MessageInput extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
-      color: Colors.white,
+      color: Colors.white, // White background for the input area
       child: Row(
         children: [
           IconButton(
-            icon: const Icon(Icons.add_circle_outline, color: kPrimaryColor, size: 28),
+            icon: const Icon(Icons.add_circle_outline, color: kPrimaryColor, size: 28), // Uses new kPrimaryColor
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Attachment functionality coming soon!')),
@@ -618,10 +623,10 @@ class _MessageInput extends StatelessWidget {
                   borderSide: BorderSide.none,
                 ),
                 filled: true,
-                fillColor: kLightGrey,
+                fillColor: kLightGrey, // Very light grey for text field fill
                 contentPadding: const EdgeInsets.symmetric(horizontal: 18.0, vertical: 12.0),
                 suffixIcon: IconButton(
-                  icon: const Icon(Icons.emoji_emotions_outlined, color: kPrimaryColor),
+                  icon: const Icon(Icons.emoji_emotions_outlined, color: kPrimaryColor), // Uses new kPrimaryColor
                   onPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Emoji picker coming soon!')),
@@ -640,18 +645,16 @@ class _MessageInput extends StatelessWidget {
           const SizedBox(width: 8.0),
           Container(
             decoration: const BoxDecoration(
-              // START OF CHANGES
               gradient: LinearGradient(
-                colors: [Color(0xFF6A1B9A), Color(0xFFAD1457)], // Deep Purple to Pink-Red from PlansScreen
+                colors: [Color(0xFF6A1B9A), Color(0xFFAD1457)], // Deep Purple to Pink-Red
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              shape: BoxShape.circle,// END OF CHANGES
+              shape: BoxShape.circle,
             ),
-
             child: IconButton(
               onPressed: onSendMessage,
-              icon: const Icon(Icons.send_rounded, color: Colors.white),
+              icon: const Icon(Icons.send_rounded, color: Colors.white), // White icon on gradient
               tooltip: 'Send message',
             ),
           ),

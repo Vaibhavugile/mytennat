@@ -1353,8 +1353,9 @@ class _MatchingScreenState extends State<MatchingScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        _buildLikeButton(), // Ensure these buttons also have appropriate colors
-                        _buildPassButton(), // for contrast on the gradient background
+                         // Ensure these buttons also have appropriate colors
+                        _buildPassButton(),
+                        _buildLikeButton(),// for contrast on the gradient background
                       ],
                     ),
                   ],
