@@ -13,6 +13,12 @@ import 'package:mytennat/screens/banner_popup_screen.dart'; // NEW: Import the b
 import 'package:mytennat/screens/PlansScreen.dart';
 import 'package:mytennat/screens/ad_page.dart'; // NEW: Import the AdPage
 
+// NEW: Enum to manage different view types
+enum _ViewType {
+  card,
+  list,
+}
+
 class MatchingScreen extends StatefulWidget {
   // Add these final fields to receive the active profile details
   final String profileType;
@@ -53,6 +59,10 @@ class _MatchingScreenState extends State<MatchingScreen> {
   int _interactionCount = 0; // NEW: Counter for likes/dislikes
   int _remainingContacts = 0; // State to hold remaining contacts
   String? _currentPlanName; // State to hold current plan name
+
+  // NEW: State variable to track the current view
+  _ViewType _currentViewType = _ViewType.card;
+
   @override
   void initState() {
     super.initState();
@@ -833,19 +843,6 @@ class _MatchingScreenState extends State<MatchingScreen> {
     }
   }
 
-  void _moveToNextProfile() {
-    setState(() {
-      _currentIndex++;
-      if (_currentIndex >= _profiles.length) {
-        // Handle end of profiles (e.g., show a message, fetch more)
-        _profiles.clear(); // Clear to prevent out of bounds access
-
-        _interactionCount = 0; // NEW: Reset interaction count if profiles run out
-      }
-      // Re-evaluate banner state after moving to the next profile or if profiles end
-      _checkForBanner();
-    });
-  }
   // NEW: Function to show the banner popup
   Future<void> _showBannerPopup(dynamic pendingLikedProfile) {
     if (_isBannerPopupShowing) {
@@ -883,9 +880,7 @@ class _MatchingScreenState extends State<MatchingScreen> {
         );
       },
     );
-  }
-
-  // --- NEW: Ad Banner Widget ---
+  } // --- NEW: Ad Banner Widget ---
   Widget _buildAdBanner(String title, String imageUrl) {
     return Card(
       elevation: 4.0,
@@ -907,8 +902,7 @@ class _MatchingScreenState extends State<MatchingScreen> {
                 fit: BoxFit.cover,
                 width: double.infinity,
                 height: 100, // Adjust height as needed for your ads
-                errorBuilder: (context, error, stackTrace) =>
-                const Center(child: Icon(Icons.broken_image, size: 50, color: Colors.grey)),
+                errorBuilder: (context, error, stackTrace) => const Center(child: Icon(Icons.broken_image, size: 50, color: Colors.grey)),
               ),
             ),
             Padding(
@@ -923,9 +917,7 @@ class _MatchingScreenState extends State<MatchingScreen> {
         ),
       ),
     );
-  }
-
-  // --- NEW: Ad Panel Widget ---
+  } // --- NEW: Ad Panel Widget ---
   Widget _buildAdPanel(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -970,7 +962,6 @@ class _MatchingScreenState extends State<MatchingScreen> {
       ),
     );
   }
-
   // This function is for creating a match document and a chat room
   Future<void> _createMatchAndChatRoom(
       String user1Uid,
@@ -1024,8 +1015,6 @@ class _MatchingScreenState extends State<MatchingScreen> {
       rethrow; // Re-throw the error to be caught by the caller
     }
   }
-
-
   void _showMatchDialog(String title, String message, VoidCallback onChatPressed) {
     showDialog(
       context: context,
@@ -1050,40 +1039,50 @@ class _MatchingScreenState extends State<MatchingScreen> {
       },
     );
   }
-
+  // MODIFIED: _handleProfileDismissed now only contains the logic for managing state
   void _handleProfileDismissed(DismissDirection direction) {
-    if (_profiles.isEmpty || _currentIndex >= _profiles.length) {
-      print("_handleProfileDismissed: No profiles to dismiss or index out of bounds.");
+    if (_profiles.isEmpty) {
+      print("_handleProfileDismissed: No profiles to dismiss.");
       return;
     }
 
-    setState(() {
-      final dismissedProfile = _profiles[_currentIndex];
-      String likedOrPassedUserId = '';
-      String dismissedProfileDocId = ''; // Variable to hold the document ID
+    final dismissedProfile = _profiles[0]; // Always dismiss the top card
+    String likedOrPassedUserId = '';
+    String dismissedProfileDocId = '';
+    if (dismissedProfile is FlatListingProfile) {
+      likedOrPassedUserId = dismissedProfile.uid!;
+      dismissedProfileDocId = dismissedProfile.documentId!;
+    } else if (dismissedProfile is SeekingFlatmateProfile) {
+      likedOrPassedUserId = dismissedProfile.uid!;
+      dismissedProfileDocId = dismissedProfile.documentId!;
+    } else {
+      print("Error: Unknown profile type encountered in _handleProfileDismissed");
+      return;
+    }
 
-      if (dismissedProfile is FlatListingProfile) {
-        likedOrPassedUserId = dismissedProfile.uid!;
-        dismissedProfileDocId = dismissedProfile.documentId!; // Get documentId
-      } else if (dismissedProfile is SeekingFlatmateProfile) {
-        likedOrPassedUserId = dismissedProfile.uid!;
-        dismissedProfileDocId = dismissedProfile.documentId!; // Get documentId
-      } else {
-        print("Error: Unknown profile type encountered in _handleProfileDismissed");
-        return;
-      }
-      // NEW: Increment interaction count regardless of like or dislike
-      _interactionCount++;
-      if (direction == DismissDirection.endToStart) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Profile Passed'))
-        );
-        _moveToNextProfile(); // Move to next even if disliked
-      } else if (direction == DismissDirection.startToEnd) {
-        _processLike(likedOrPassedUserId, dismissedProfileDocId); // Pass both IDs
-        _moveToNextProfile(); // Move to next after like process
-      }
+    // NEW: Increment interaction count regardless of like or dislike
+    _interactionCount++;
+
+    if (direction == DismissDirection.startToEnd) {
+      _processLike(likedOrPassedUserId, dismissedProfileDocId);
+    } else if (direction == DismissDirection.endToStart) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile Passed'))
+      );
+    }
+
+    // FIX: Remove the dismissed profile from the list to trigger a rebuild
+    setState(() {
+      _profiles.removeAt(0);
+      _checkForBanner(); // Re-evaluate banner state
     });
+
+    if (_profiles.isEmpty) {
+      // Show a message or fetch more profiles when the list is empty
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No more profiles to show. Check back later!')),
+      );
+    }
   }
 
   double _calculateMatchPercentage(dynamic userProfile, dynamic otherProfile) {
@@ -1091,36 +1090,10 @@ class _MatchingScreenState extends State<MatchingScreen> {
     return 0.0;
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final double screenWidth = MediaQuery.of(context).size.width;
-    final bool isLargeScreen = screenWidth > 900; // Define your breakpoint for web layout
-    return Scaffold(
-      key: _scaffoldKey, // Assign the key to Scaffold
-      appBar: AppBar(
-        title: const Text('MyTennant Matching', style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.redAccent,
-        iconTheme: const IconThemeData(color: Colors.white),
-        elevation: 0,
-        actions: [
-          if (!isLargeScreen) // Show filter icon only on smaller screens
-            IconButton(
-              icon: const Icon(Icons.filter_list),
-              onPressed: () {
-                _scaffoldKey.currentState?.openDrawer(); // Open the drawer
-              },
-            ),
-        ],
-      ),
-      drawer: isLargeScreen ? null // No drawer on large screens, as filter is inline
-          : Drawer(
-        child: FilterScreen(
-          initialFilters: _currentFilters.copyWith(),
-          isSeekingFlatmate: _userProfileType == 'seeking_flatmate',
-          onFiltersChanged: _onFiltersChanged,
-        ),
-      ),
-      body: _isLoading ? const Center(child: CircularProgressIndicator()) : _profiles.isEmpty ? Center(
+  // NEW: Method to build the list view of profiles
+  Widget _buildListView() {
+    if (_profiles.isEmpty) {
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -1151,7 +1124,317 @@ class _MatchingScreenState extends State<MatchingScreen> {
             ),
           ],
         ),
-      ) : isLargeScreen ? Row(
+      );
+    }
+
+    return ListView.builder(
+      itemCount: _profiles.length,
+      itemBuilder: (context, index) {
+        final profile = _profiles[index];
+        final String profileName = _getProfileDisplayName(profile);
+        String? profileImageUrl;
+
+        if (profile is FlatListingProfile && profile.imageUrls != null && profile.imageUrls!.isNotEmpty) {
+          profileImageUrl = profile.imageUrls!.first;
+        } else if (profile is SeekingFlatmateProfile && profile.imageUrls != null && profile.imageUrls!.isNotEmpty) {
+          profileImageUrl = profile.imageUrls!.first;
+        }
+
+        // This is a basic example of a list tile. You can customize it further.
+        return Card(
+          elevation: 4.0,
+          margin: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 6.0),
+          child: ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+            leading: CircleAvatar(
+              backgroundImage: profileImageUrl != null ? NetworkImage(profileImageUrl) : null,
+              child: profileImageUrl == null ? const Icon(Icons.person) : null,
+              radius: 25,
+            ),
+            title: Text(
+              profileName,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            subtitle: Text(_getProfileTypeDisplay(profile)),
+            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+            onTap: () {
+              // Navigate to the full profile view
+              // NOTE: The parameters below may need to be adjusted based on the ViewProfileScreen constructor.
+              // The original error "The named parameter 'profile' isn't defined" suggests the parameter name is different.
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ViewProfileScreen(
+                    userId: profile.uid, // Use uid for userId
+                    profileDocumentId: profile.documentId!,
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  // MODIFIED: Method to build the original card/swipe view
+  Widget _buildCardView() {
+    if (_profiles.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text(
+              'No more profiles to show.',
+              style: TextStyle(fontSize: 18, color: Colors.grey),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: () {
+                _fetchUserProfile(applyFilters: true);
+              },
+              icon: const Icon(Icons.refresh),
+              label: const Text('Refresh Profiles'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blueAccent,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // This code block handles the stacking of cards.
+    return Stack(
+      children: _profiles.asMap().entries.map((entry) {
+        int index = entry.key;
+        dynamic profile = entry.value;
+
+        // Only show the top few cards to maintain performance
+        if (index >= 3) {
+          return const SizedBox.shrink();
+        }
+
+        double scale = math.max(0.0, 1.0 - index * 0.1);
+        double topPadding = math.max(0.0, index * 20.0);
+        double horizontalPadding = math.max(0.0, index * 10.0);
+
+        // This is the swipeable card.
+        return Positioned(
+          top: topPadding,
+          left: horizontalPadding,
+          right: horizontalPadding,
+          child: Transform.scale(
+            scale: scale,
+            alignment: Alignment.topCenter,
+            child: Dismissible(
+              // Use a unique key for each card to allow Flutter to differentiate them
+              key: Key(profile.documentId ?? index.toString()),
+              direction: DismissDirection.horizontal,
+              // Call the new, simplified handler
+              onDismissed: (direction) => _handleProfileDismissed(direction),
+              child: InkWell(
+                onTap: () {
+                  // Navigate to the full profile view
+                  // NOTE: The parameters below may need to be adjusted based on the ViewProfileScreen constructor.
+                  // The original error "The named parameter 'profile' isn't defined" suggests the parameter name is different.
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ViewProfileScreen(
+                        userId: profile.uid, // Use uid for userId
+                        profileDocumentId: profile.documentId!,
+                      ),
+                    ),
+                  );
+                },
+                child: _buildProfileCard(
+                  profile,
+                  _userProfileType!,
+                ),
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  // NEW: ProfileCard widget implementation
+  Widget _buildProfileCard(dynamic profile, String userProfileType) {
+    String profileName = '';
+    String? imageUrl;
+    String profileType = 'Unknown';
+    String description = 'No details available.';
+
+    if (profile is FlatListingProfile) {
+      profileName = profile.userProfile.name ?? 'Flat Owner';
+      profileType = 'Flat Listing';
+      // CORRECTED: Assuming rentPrice and city are direct properties on FlatListingProfile
+      // The previous code caused a "The getter 'flatDetails' isn't defined" error.
+      // This is the correct way to access the properties without a `flatDetails` getter.
+      description = '${profile.rentPrice ?? 'N/A'} / month in ${profile.userProfile.city ?? 'N/A'}';
+      if (profile.imageUrls != null && profile.imageUrls!.isNotEmpty) {
+        imageUrl = profile.imageUrls!.first;
+      }
+    } else if (profile is SeekingFlatmateProfile) {
+      profileName = profile.userProfile.name ?? 'Flatmate Seeker';
+      profileType = 'Seeking Flatmate';
+      description = 'Budget up to ${profile.budgetMax ?? 'N/A'}';
+      if (profile.imageUrls != null && profile.imageUrls!.isNotEmpty) {
+        imageUrl = profile.imageUrls!.first;
+      }
+    }
+
+    // FIX: Wrap the Column in a Container or SizedBox to give it a finite height.
+    // This resolves the `RenderFlex` error caused by an `Expanded` widget inside an unconstrained parent.
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.7, // Set a height relative to the screen size
+      child: Card(
+        elevation: 8,
+        margin: EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Column(
+            children: [
+              if (imageUrl != null)
+                Expanded(
+                  child: Image.network(
+                    imageUrl,
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    errorBuilder: (context, error, stackTrace) =>
+                        Center(child: Icon(Icons.person, size: 150)),
+                  ),
+                )
+              else
+                Expanded(
+                  child: Center(child: Icon(Icons.person, size: 150)),
+                ),
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      profileName,
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      profileType,
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: Colors.grey[700],
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      description,
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey[700],
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _buildLikeButton(),
+                        _buildPassButton(),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // These are placeholder button widgets for the ProfileCard
+  Widget _buildLikeButton() {
+    return ElevatedButton(
+      onPressed: () {
+        _handleProfileDismissed(DismissDirection.startToEnd);
+      },
+      child: const Icon(Icons.favorite, color: Colors.white),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.green,
+        shape: const CircleBorder(),
+        padding: const EdgeInsets.all(16),
+      ),
+    );
+  }
+
+  Widget _buildPassButton() {
+    return ElevatedButton(
+      onPressed: () {
+        _handleProfileDismissed(DismissDirection.endToStart);
+      },
+      child: const Icon(Icons.close, color: Colors.white),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.red,
+        shape: const CircleBorder(),
+        padding: const EdgeInsets.all(16),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final bool isLargeScreen = screenWidth > 900; // Define your breakpoint for web layout
+    return Scaffold(
+      key: _scaffoldKey, // Assign the key to Scaffold
+      appBar: AppBar(
+        title: const Text('MyTennant Matching', style: TextStyle(color: Colors.white)),
+        backgroundColor: Colors.redAccent,
+        iconTheme: const IconThemeData(color: Colors.white),
+        elevation: 0,
+        actions: [
+          // NEW: Button to toggle between card and list view
+          IconButton(
+            icon: Icon(
+              _currentViewType == _ViewType.card ? Icons.list : Icons.view_carousel,
+            ),
+            onPressed: () {
+              setState(() {
+                _currentViewType = _currentViewType == _ViewType.card ? _ViewType.list : _ViewType.card;
+              });
+            },
+          ),
+          if (!isLargeScreen) // Show filter icon only on smaller screens
+            IconButton(
+              icon: const Icon(Icons.filter_list),
+              onPressed: () {
+                _scaffoldKey.currentState?.openDrawer(); // Open the drawer
+              },
+            ),
+        ],
+      ),
+      drawer: isLargeScreen ? null // No drawer on large screens, as filter is inline
+          : Drawer(
+        child: FilterScreen(
+          initialFilters: _currentFilters.copyWith(),
+          isSeekingFlatmate: _userProfileType == 'seeking_flatmate',
+          onFiltersChanged: _onFiltersChanged,
+        ),
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : isLargeScreen
+          ? Row(
         children: [
           // Filter Panel on the left for large screens
           SizedBox(
@@ -1182,813 +1465,23 @@ class _MatchingScreenState extends State<MatchingScreen> {
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.all(16.0),
-                      child: _profiles.isNotEmpty && _currentIndex < _profiles.length // Add index check
-                          ? Dismissible(
-                        key: ValueKey(_profiles[_currentIndex].documentId),
-                        direction: DismissDirection.horizontal,
-                        onDismissed: _handleProfileDismissed,
-                        background: Container(
-                          color: Colors.green,
-                          alignment: Alignment.centerLeft,
-                          padding: const EdgeInsets.only(left: 20),
-                          child: const Icon(Icons.favorite, color: Colors.white, size: 40),
-                        ),
-                        secondaryBackground: Container(
-                          color: Colors.red,
-                          alignment: Alignment.centerRight,
-                          padding: const EdgeInsets.only(right: 20),
-                          child: const Icon(Icons.close, color: Colors.white, size: 40),
-                        ),
-                        child: _profiles[_currentIndex] is FlatListingProfile
-                            ? FlatListingProfileCard(
-                          profile: _profiles[_currentIndex],
-                          matchPercentage: _calculateMatchPercentage(_currentUserParsedProfile, _profiles[_currentIndex]),
-                          imageUrls: (_profiles[_currentIndex] as FlatListingProfile).imageUrls ?? [],
-                          profileType: 'flat_listing', // Pass profile type
-                        )
-                            : SeekingFlatmateProfileCard(
-                          profile: _profiles[_currentIndex],
-                          matchPercentage: _calculateMatchPercentage(_currentUserParsedProfile, _profiles[_currentIndex]),
-                          imageUrls: (_profiles[_currentIndex] as SeekingFlatmateProfile).imageUrls ?? [],
-                          profileType: 'seeking_flatmate', // Pass profile type
-                        ),
-                      )
-                          : const SizedBox.shrink(),
+                      child:
+                      // NEW: Conditionally render the view
+                      _currentViewType == _ViewType.card
+                          ? _buildCardView() // This is the existing view, assuming there's a method for it
+                          : _buildListView(),
                     ),
                   ),
-                  if (_profiles.isNotEmpty && _currentIndex < _profiles.length) // Add index check for buttons
-                    _buildActionButtons(
-                        _profiles[_currentIndex] is FlatListingProfile
-                            ? (_profiles[_currentIndex] as FlatListingProfile).uid!
-                            : (_profiles[_currentIndex] as SeekingFlatmateProfile).uid!
-                    ),
                 ],
               ),
             ),
-          ),
-          // Ad Panel on the right for large screens
-          SizedBox(
-            width: math.min(350.0, screenWidth * 0.3), // Occupy 30% or max 350px
-            child: _buildAdPanel(context), // Use the new ad panel here
           ),
         ],
-      ) : Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: _profiles.isNotEmpty && _currentIndex < _profiles.length // Add index check
-                    ? Dismissible(
-                  key: ValueKey(_profiles[_currentIndex].documentId),
-                  direction: DismissDirection.horizontal,
-                  onDismissed: _handleProfileDismissed,
-                  background: Container(
-                    color: Colors.green,
-                    alignment: Alignment.centerLeft,
-                    padding: const EdgeInsets.only(left: 20),
-                    child: const Icon(Icons.favorite, color: Colors.white, size: 40),
-                  ),
-                  secondaryBackground: Container(
-                    color: Colors.red,
-                    alignment: Alignment.centerRight,
-                    padding: const EdgeInsets.only(right: 20),
-                    child: const Icon(Icons.close, color: Colors.white, size: 40),
-                  ),
-                  child: _profiles[_currentIndex] is FlatListingProfile
-                      ? FlatListingProfileCard(
-                    profile: _profiles[_currentIndex],
-                    matchPercentage: _calculateMatchPercentage(_currentUserParsedProfile, _profiles[_currentIndex]),
-                    imageUrls: (_profiles[_currentIndex] as FlatListingProfile).imageUrls ?? [],
-                    profileType: 'flat_listing', // Pass profile type
-                  )
-                      : SeekingFlatmateProfileCard(
-                    profile: _profiles[_currentIndex],
-                    matchPercentage: _calculateMatchPercentage(_currentUserParsedProfile, _profiles[_currentIndex]),
-                    imageUrls: (_profiles[_currentIndex] as SeekingFlatmateProfile).imageUrls ?? [],
-                    profileType: 'seeking_flatmate', // Pass profile type
-                  ),
-                )
-                    : const SizedBox.shrink(),
-              ),
-            ),
-            if (_profiles.isNotEmpty && _currentIndex < _profiles.length) // Add index check for buttons
-              _buildActionButtons(
-                  _profiles[_currentIndex] is FlatListingProfile
-                      ? (_profiles[_currentIndex] as FlatListingProfile).uid!
-                      : (_profiles[_currentIndex] as SeekingFlatmateProfile).uid!
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActionButtons(String targetUserId) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          FloatingActionButton(
-            heroTag: 'passBtn',
-            onPressed: () {
-              _handleProfileDismissed(DismissDirection.endToStart); // Simulate swipe left
-            },
-            backgroundColor: Colors.red,
-            child: const Icon(Icons.close, color: Colors.white),
-          ),
-          FloatingActionButton(
-            heroTag: 'likeBtn',
-            onPressed: () {
-              _handleProfileDismissed(DismissDirection.startToEnd); // Simulate swipe right
-            },
-            backgroundColor: Colors.green,
-            child: const Icon(Icons.favorite, color: Colors.white),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// Placeholder for your actual profile display widgets
-// You would replace these with your existing widgets like FlatListingProfileDisplay
-// and SeekingFlatmateProfileDisplay, adapting them to take a matchPercentage if needed.
-class FlatListingProfileCard extends StatelessWidget {
-  final FlatListingProfile profile;
-  final double matchPercentage;
-  final List<String> imageUrls;
-  final String profileType; // NEW PARAMETER
-
-  const FlatListingProfileCard({
-    super.key,
-    required this.profile,
-    required this.matchPercentage,
-    required this.imageUrls,
-    required this.profileType, // NEW PARAMETER
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    // Determine actual images to display (with placeholder)
-    final List<String> imagesToDisplay = (imageUrls.isNotEmpty) ? List<String>.from(imageUrls) : ['https://via.placeholder.com/400x300?text=No+Flat+Images'];
-
-    return GestureDetector( // Wrap with GestureDetector
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ViewProfileScreen(
-              userId: profile.uid, // Use uid for userId
-              profileDocumentId: profile.documentId!, // Use documentId for profileDocumentId
-            ),
-          ),
-        );
-      },
-      child: Card(
-        margin: const EdgeInsets.all(16.0),
-        elevation: 8.0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-        // Wrap the Column with SingleChildScrollView
-        child: SingleChildScrollView( // Added SingleChildScrollView here
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Image Carousel with Indicators
-              StatefulBuilder(
-                builder: (BuildContext context, StateSetter setState) {
-                  final PageController pageController = PageController();
-                  int currentImageLocalIndex = 0;
-                  // Listener to update the index for dot indicators
-                  pageController.addListener(() {
-                    if (pageController.page != null) {
-                      setState(() {
-                        currentImageLocalIndex = pageController.page!.round();
-                      });
-                    }
-                  });
-
-                  return Column(
-                    children: [
-                      SizedBox(
-                        height: 300, // Fixed height for the image carousel
-                        child: PageView.builder(
-                          controller: pageController,
-                          itemCount: imagesToDisplay.length,
-                          itemBuilder: (context, index) {
-                            return ClipRRect(
-                              borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
-                              child: Image.network(
-                                imagesToDisplay[index],
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) =>
-                                const Center(child: Icon(Icons.broken_image, size: 100)),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      if (imagesToDisplay.length > 1) // Show indicators only if more than one image
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: List.generate(imagesToDisplay.length, (index) {
-                              return Container(
-                                width: 8.0,
-                                height: 8.0,
-                                margin: const EdgeInsets.symmetric(horizontal: 4.0),
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: currentImageLocalIndex == index ? Colors.redAccent : Colors.grey.withOpacity(0.5),
-                                ),
-                              );
-                            }),
-                          ),
-                        ),
-                    ],
-                  );
-                },
-              ),
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      profile.userProfile.name ?? 'N/A',
-                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      '${profile.userProfile.age ?? 'N/A'} years old, ${profile.userProfile.gender ?? 'N/A'}',
-                      style: const TextStyle(fontSize: 16, color: Colors.grey),
-                    ),
-                    const SizedBox(height: 20),
-                    _buildInfoSection(
-                      title: 'Match Score',
-                      value: '${matchPercentage.toStringAsFixed(0)}%',
-                      icon: Icons.percent,
-                      isMatchScore: true,
-                    ),
-                    _buildInfoSection(
-                      title: 'Flat Details',
-                      icon: Icons.home,
-                      children: [
-                        _buildChipList(
-                          title: 'Type:',
-                          items: [profile.flatType],
-                          backgroundColor: Colors.lightBlue.shade100,
-                          textColor: Colors.lightBlue.shade800,
-                        ),
-                        _buildChipList(
-                          title: 'Furnishing:',
-                          items: [profile.furnishedStatus],
-                          backgroundColor: Colors.lightGreen.shade100,
-                          textColor: Colors.lightGreen.shade800,
-                        ),
-                        _buildChipList(
-                          title: 'Available For:',
-                          items: [profile.availableFor],
-                          backgroundColor: Colors.pink.shade100,
-                          textColor: Colors.pink.shade800,
-                        ),
-                        _buildChipList(
-                          title: 'Rent:',
-                          items: [profile.rentPrice != null ? '₹${profile.rentPrice!.toStringAsFixed(0)}' : null],
-                          backgroundColor: Colors.deepPurple.shade100,
-                          textColor: Colors.deepPurple.shade800,
-                        ),
-
-                        _buildChipList(
-                          title: 'Availability Date:',
-                          items: [profile.availabilityDate != null ? DateFormat('yyyy-MM-dd').format(profile.availabilityDate!) : null],
-                          backgroundColor: Colors.teal.shade100,
-                          textColor: Colors.teal.shade800,
-                        ),
-                      ],
-                    ),
-                    _buildInfoSection(
-                      title: 'Location Preferences',
-                      icon: Icons.location_on,
-                      children: [
-                        _buildChipList(
-                          title: 'City:',
-                          items: [profile.userProfile.city],
-                          backgroundColor: Colors.blue.shade100,
-                          textColor: Colors.blue.shade800,
-                        ),
-                        _buildChipList(
-                          title: 'Area:',
-                          items: [profile.userProfile.city],
-                          backgroundColor: Colors.cyan.shade100,
-                          textColor: Colors.cyan.shade800,
-                        ),
-                      ],
-                    ),
-                    _buildInfoSection(
-                      title: 'Lifestyle & Habits',
-                      icon: Icons.emoji_people,
-                      children: [
-                        _buildChipList(
-                          title: 'Cleanliness:',
-                          items: [profile.userProfile.cleanlinessLevel],
-                          backgroundColor: Colors.green.shade100,
-                          textColor: Colors.green.shade800,
-                        ),
-                        _buildChipList(
-                          title: 'Social:',
-                          items: [profile.userProfile.socialPreferences],
-                          backgroundColor: Colors.red.shade100,
-                          textColor: Colors.red.shade800,
-                        ),
-                        _buildChipList(
-                          title: 'Smoking:',
-                          items: [profile.userProfile.smokingHabit],
-                          backgroundColor: Colors.grey.shade100,
-                          textColor: Colors.grey.shade800,
-                        ),
-                        _buildChipList(
-                          title: 'Drinking:',
-                          items: [profile.userProfile.drinkingHabit],
-                          backgroundColor: Colors.brown.shade100,
-                          textColor: Colors.brown.shade800,
-                        ),
-                        _buildChipList(
-                          title: 'Food:',
-                          items: [profile.userProfile.foodPreference],
-                          backgroundColor: Colors.yellow.shade100,
-                          textColor: Colors.yellow.shade800,
-                        ),
-                        _buildChipList(
-                          title: 'Pets:',
-                          items: [profile.userProfile.petOwnership],
-                          backgroundColor: Colors.orange.shade100,
-                          textColor: Colors.orange.shade800,
-                        ),
-                        _buildChipList(
-                          title: 'Pet Tolerance:',
-                          items: [profile.userProfile.petTolerance],
-                          backgroundColor: Colors.deepOrange.shade100,
-                          textColor: Colors.deepOrange.shade800,
-                        ),
-                      ],
-                    ),
-                    _buildInfoSection(
-                      title: 'About Owner',
-                      icon: Icons.person,
-                      children: [
-                        _buildChipList(
-                          title: 'Occupation:',
-                          items: [profile.userProfile.occupation],
-                          backgroundColor: Colors.indigo.shade100,
-                          textColor: Colors.indigo.shade800,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoSection({
-    required String title,
-    IconData? icon,
-    String? value,
-    List<Widget>? children,
-    bool isMatchScore = false,
-  }) {
-    if (value == null && (children == null || children.isEmpty)) {
-      return const SizedBox.shrink(); // Don't show if no content
-    }
-    return Card(
-      elevation: 1,
-      margin: const EdgeInsets.symmetric(vertical: 8.0),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                if (icon != null) Icon(icon, color: isMatchScore ? Colors.green : Colors.redAccent, size: 24),
-                if (icon != null) const SizedBox(width: 10),
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: isMatchScore ? Colors.green.shade700 : Colors.black87,
-                  ),
-                ),
-                if (isMatchScore && value != null) ...[
-                  const Spacer(),
-                  Text(
-                    value,
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.green.shade700,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-            if (value != null && !isMatchScore) ...[
-              const SizedBox(height: 10),
-              Text(
-                value,
-                style: const TextStyle(fontSize: 16, color: Colors.black87),
-              ),
-            ],
-            if (children != null && children.isNotEmpty) ...[
-              const SizedBox(height: 10),
-              Wrap(
-                spacing: 8.0, // horizontal space between chips
-                runSpacing: 8.0, // vertical space between lines of chips
-                children: children,
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildChipList({
-    String? title,
-    required List<String?>? items, // Corrected: Made items nullable in the signature
-    Color backgroundColor = Colors.redAccent,
-    Color textColor = Colors.white,
-  }) {
-    final nonNullItems = (items ?? []).where((item) => item != null && item.isNotEmpty).toList();
-    if (nonNullItems.isEmpty) return const SizedBox.shrink();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (title != null)
-          Text(
-            title,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
-          ),
-        if (title != null) const SizedBox(height: 5),
-        Wrap(
-          spacing: 8.0,
-          runSpacing: 8.0,
-          children: nonNullItems.map((item) {
-            return Chip(
-              label: Text(
-                item!,
-                style: TextStyle(color: textColor),
-              ),
-              backgroundColor: backgroundColor,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-                side: BorderSide(color: textColor.withOpacity(0.5), width: 0.8),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            );
-          }).toList(),
-        ),
-      ],
-    );
-  }
-}
-
-class SeekingFlatmateProfileCard extends StatelessWidget {
-  final SeekingFlatmateProfile profile;
-  final double matchPercentage;
-  final List<String> imageUrls;
-  final String profileType; // NEW PARAMETER
-
-  const SeekingFlatmateProfileCard({
-    super.key,
-    required this.profile,
-    required this.matchPercentage,
-    required this.imageUrls,
-    required this.profileType, // NEW PARAMETER
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final List<String> imagesToDisplay = (imageUrls.isNotEmpty) ? List<String>.from(imageUrls) : ['https://via.placeholder.com/400x300?text=No+Flatmate+Images'];
-
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ViewProfileScreen(
-              userId: profile.uid, // Use uid for userId
-              profileDocumentId: profile.documentId!, // Use documentId for profileDocumentId
-            ),
-          ),
-        );
-      },
-      child: Card(
-        margin: const EdgeInsets.all(16.0),
-        elevation: 8.0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              StatefulBuilder(
-                builder: (BuildContext context, StateSetter setState) {
-                  final PageController pageController = PageController();
-                  int currentImageLocalIndex = 0;
-                  pageController.addListener(() {
-                    if (pageController.page != null) {
-                      setState(() {
-                        currentImageLocalIndex = pageController.page!.round();
-                      });
-                    }
-                  });
-                  return Column(
-                    children: [
-                      SizedBox(
-                        height: 300,
-                        child: PageView.builder(
-                          controller: pageController,
-                          itemCount: imagesToDisplay.length,
-                          itemBuilder: (context, index) {
-                            return ClipRRect(
-                              borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
-                              child: Image.network(
-                                imagesToDisplay[index],
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) =>
-                                const Center(child: Icon(Icons.broken_image, size: 100)),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      if (imagesToDisplay.length > 1)
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: List.generate(imagesToDisplay.length, (index) {
-                              return Container(
-                                width: 8.0,
-                                height: 8.0,
-                                margin: const EdgeInsets.symmetric(horizontal: 4.0),
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: currentImageLocalIndex == index ? Colors.redAccent : Colors.grey.withOpacity(0.5),
-                                ),
-                              );
-                            }),
-                          ),
-                        ),
-                    ],
-                  );
-                },
-              ),
-              Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      profile.userProfile.name ?? 'N/A',
-                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      '${profile.userProfile.age ?? 'N/A'} years old, ${profile.userProfile.gender ?? 'N/A'}',
-                      style: const TextStyle(fontSize: 18, color: Colors.grey),
-                    ),
-                    const SizedBox(height: 20),
-                    _buildInfoSection(
-                      title: 'Match Score',
-                      value: '${matchPercentage.toStringAsFixed(0)}%',
-                      icon: Icons.percent,
-                      isMatchScore: true,
-                    ),
-                    _buildInfoSection(
-                      title: 'Looking For',
-                      icon: Icons.search,
-                      children: [
-                        _buildChipList(
-                          title: 'Move-in Date:',
-                          items: [profile.moveInDate != null ? DateFormat('yyyy-MM-dd').format(profile.moveInDate!) : null],
-                          backgroundColor: Colors.teal.shade100,
-                          textColor: Colors.teal.shade800,
-                        ),
-                        _buildChipList(
-                          title: 'Budget:',
-                          items: [
-                            profile.budgetMin != null && profile.budgetMax != null
-                                ? '₹${profile.budgetMin!.toStringAsFixed(0)} - ₹${profile.budgetMax!.toStringAsFixed(0)}'
-                                : null
-                          ],
-                          backgroundColor: Colors.deepPurple.shade100,
-                          textColor: Colors.deepPurple.shade800,
-                        ),
-                      ],
-                    ),
-                    _buildInfoSection(
-                      title: 'Location Preferences',
-                      icon: Icons.location_on,
-                      children: [
-                        _buildChipList(
-                          title: 'City:',
-                          items: [profile.userProfile.city],
-                          backgroundColor: Colors.blue.shade100,
-                          textColor: Colors.blue.shade800,
-                        ),
-                        _buildChipList(
-                          title: 'Area:',
-                          items: [profile.userProfile.city],
-                          backgroundColor: Colors.cyan.shade100,
-                          textColor: Colors.cyan.shade800,
-                        ),
-                      ],
-                    ),
-                    _buildInfoSection(
-                      title: 'Lifestyle & Habits',
-                      icon: Icons.emoji_people,
-                      children: [
-                        _buildChipList(
-                          title: 'Cleanliness:',
-                          items: [profile.userProfile.cleanlinessLevel],
-                          backgroundColor: Colors.green.shade100,
-                          textColor: Colors.green.shade800,
-                        ),
-                        _buildChipList(
-                          title: 'Social Habits:',
-                          items: [profile.userProfile.socialPreferences],
-                          backgroundColor: Colors.pink.shade100,
-                          textColor: Colors.pink.shade800,
-                        ),
-                        _buildChipList(
-                          title: 'Smoking Habits:',
-                          items: [profile.userProfile.smokingHabit],
-                          backgroundColor: Colors.deepOrange.shade100,
-                          textColor: Colors.deepOrange.shade800,
-                        ),
-                        _buildChipList(
-                          title: 'Drinking Habits:',
-                          items: [profile.userProfile.drinkingHabit],
-                          backgroundColor: Colors.cyan.shade100,
-                          textColor: Colors.cyan.shade800,
-                        ),
-                        _buildChipList(
-                          title: 'Food Preference:',
-                          items: [profile.userProfile.foodPreference],
-                          backgroundColor: Colors.amber.shade100,
-                          textColor: Colors.amber.shade800,
-                        ),
-
-                        _buildChipList(
-                          title: 'Pet Ownership:',
-                          items: [profile.userProfile.petOwnership],
-                          backgroundColor: Colors.lightGreen.shade100,
-                          textColor: Colors.lightGreen.shade800,
-                        ),
-                        _buildChipList(
-                          title: 'Pet Tolerance:',
-                          items: [profile.userProfile.petTolerance],
-                          backgroundColor: Colors.lime.shade100,
-                          textColor: Colors.lime.shade800,
-                        ),
-                      ],
-                    ),
-                    _buildInfoSection(
-                      title: 'Occupation',
-                      icon: Icons.work,
-                      children: [
-                        _buildChipList(
-                          title: 'Occupation:',
-                          items: [profile.userProfile.occupation],
-                          backgroundColor: Colors.indigo.shade100,
-                          textColor: Colors.indigo.shade800,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoSection({
-    required String title,
-    IconData? icon,
-    String? value,
-    List<Widget>? children,
-    bool isMatchScore = false,
-  }) {
-    if (value == null && (children == null || children.isEmpty)) {
-      return const SizedBox.shrink(); // Don't show if no content
-    }
-    return Card(
-      elevation: 1,
-      margin: const EdgeInsets.symmetric(vertical: 8.0),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                if (icon != null) Icon(icon, color: isMatchScore ? Colors.green : Colors.redAccent, size: 24),
-                if (icon != null) const SizedBox(width: 10),
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: isMatchScore ? Colors.green.shade700 : Colors.black87,
-                  ),
-                ),
-                if (isMatchScore && value != null) ...[
-                  const Spacer(),
-                  Text(
-                    value,
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.green.shade700,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-            if (value != null && !isMatchScore) ...[
-              const SizedBox(height: 10),
-              Text(
-                value,
-                style: const TextStyle(fontSize: 16, color: Colors.black87),
-              ),
-            ],
-            if (children != null && children.isNotEmpty) ...[
-              const SizedBox(height: 10),
-              Wrap(
-                spacing: 8.0, // horizontal space between chips
-                runSpacing: 8.0, // vertical space between lines of chips
-                children: children,
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildChipList({
-    String? title,
-    required List<String?>? items,
-    Color backgroundColor = Colors.redAccent,
-    Color textColor = Colors.white,
-  }) {
-    final nonNullItems = (items ?? []).where((item) => item != null && item.isNotEmpty).toList();
-    if (nonNullItems.isEmpty) return const SizedBox.shrink();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (title != null)
-          Text(
-            title,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
-          ),
-        if (title != null) const SizedBox(height: 5),
-        Wrap(
-          spacing: 8.0,
-          runSpacing: 8.0,
-          children: nonNullItems.map((item) {
-            return Chip(
-              label: Text(
-                item!,
-                style: TextStyle(color: textColor),
-              ),
-              backgroundColor: backgroundColor,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-                side: BorderSide(color: textColor.withOpacity(0.5), width: 0.8),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            );
-          }).toList(),
-        ),
-      ],
+      )
+      // NEW: Conditionally render for small screens as well
+          : _currentViewType == _ViewType.card
+          ? _buildCardView()
+          : _buildListView(),
     );
   }
 }
